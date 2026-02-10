@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { redirect } from "next/navigation";
 
 const DEMO_SLUGS = new Set([

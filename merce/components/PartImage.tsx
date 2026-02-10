@@ -13,8 +13,6 @@ function cleanUrl(u: unknown) {
 
 type PartImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   imageUrl?: string | null;
-  alt?: string;
-  className?: string;
 };
 
 export default function PartImage({
@@ -31,7 +29,10 @@ export default function PartImage({
     setPortalRoot(document.body);
   }, []);
 
-  const initialSrc = useMemo(() => cleanUrl(imageUrl) || FALLBACK_IMG, [imageUrl]);
+  const initialSrc = useMemo(
+    () => cleanUrl(imageUrl) || FALLBACK_IMG,
+    [imageUrl]
+  );
   const [src, setSrc] = useState(initialSrc);
 
   useEffect(() => {
@@ -66,7 +67,9 @@ export default function PartImage({
             isHovering ? "opacity-100" : "opacity-0",
           ].join(" ")}
         >
-          <span className="px-2 text-center leading-tight">Click for Full Screen View</span>
+          <span className="px-2 text-center leading-tight">
+            Click for Full Screen View
+          </span>
         </div>
       </div>
 

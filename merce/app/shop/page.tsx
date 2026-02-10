@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
