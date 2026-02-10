@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Footer from '../components/homepage/footer/Footer'
+import Footer from "../components/homepage/footer/Footer";
 import ResponsiveNav from "@/components/homepage/navbar/responsiveNav";
 import { CartProvider } from "@/app/context/CartContext";
 
@@ -27,16 +27,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <CartProvider>
-            <ResponsiveNav />
-             {/* GLOBAL OFFSET FOR FIXED NAV */}
-              <main className="pt-40 md:pt-44">
-                {children}
-              </main>
-            <Footer />
+          {/* ✅ DEPLOY DEBUG MARKER */}
+          <div className="p-2 text-xs font-bold bg-yellow-200 text-black">
+            LAYOUT DEBUG: if you don’t see this, Cloudflare isn’t deploying your latest code.
+          </div>
+
+          <ResponsiveNav />
+
+          {/* GLOBAL OFFSET FOR FIXED NAV */}
+          <main className="pt-40 md:pt-44">
+            <div className="w-full container mx-auto mt-10">
+              {children}
+            </div>
+          </main>
+
+          <Footer />
         </CartProvider>
       </body>
     </html>
