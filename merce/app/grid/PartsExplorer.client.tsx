@@ -14,7 +14,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 // import SEO from "../seo/SEO";
 
 import { makePartTitle } from "@/lib/PartsTitle";
-import { useCart } from "@/context/CartContext";
+import { useCart } from "@/app/context/CartContext"; // ✅ FIX: match RootLayout’s provider import
 import PartImage from "@/components/PartImage";
 
 /* ================================
@@ -257,7 +257,7 @@ export default function PartsExplorer() {
   // - change API_BASE usage so buildGridUrl points to /api/grid (relative)
 
   return (
-    <div className="p-6 text-white">
+    <div className="p-6 text-black">
       <div className="font-semibold">PartsExplorer port stub</div>
       <div className="opacity-80 text-sm">
         Paste the remainder of your component below this return.
