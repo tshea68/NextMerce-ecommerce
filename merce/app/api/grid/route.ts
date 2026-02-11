@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+export const runtime = "edge";
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -33,10 +33,23 @@ function facet(items: any[], key: string) {
     .sort((a, b) => b.count - a.count);
 }
 
+function pickDataset(url: URL) {
+  const explicit = (url.searchParams.get("dataset") || "").toLowerCase().trim();
+  if (explicit === "offers" || explicit === "refurb") return "offers";
+  if (explicit === "parts" || explicit === "new") return "parts";
+
+  const inv = (url.searchParams.get("inv_mode") || url.searchParams.get("inv") || "")
+    .toLowerCase()
+    .trim();
+  if (inv === "offers" || inv === "refurb" || inv === "refurbs") return "offers";
+
+  // default: parts (safe)
+  return "parts";
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
 
-  // Your component sends these
   const page = Math.max(parseInt(url.searchParams.get("page") ?? "1", 10) || 1, 1);
   const perPage = Math.min(Math.max(parseInt(url.searchParams.get("per_page") ?? "30", 10) || 30, 1), 100);
 
@@ -46,10 +59,11 @@ export async function GET(req: Request) {
   const partTypes = url.searchParams.getAll("part_types").filter(Boolean);
   const inStockOnly = asBool(url.searchParams.get("in_stock_only"));
 
-  // Avoid timeouts by default: planned counts are usually much faster than exact
-  const countMode = parseCountMode(url.searchParams.get("count"), "planned");
+  // ✅ default NONE: you said you don't need frontend counting anymore
+  const countMode = parseCountMode(url.searchParams.get("count"), "none");
 
   const sort = (url.searchParams.get("sort") || "price_desc").trim();
+  const dataset = pickDataset(url);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey =
@@ -66,25 +80,49 @@ export async function GET(req: Request) {
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const selectCols =
-    "id,mpn,title,price,image_url,stock_status_canon,brand,part_type,appliance_type";
+  // limit+1 paging so we can return has_more without COUNT(*)
+  const from = (page - 1) * perPage;
+  const to = from + perPage; // ✅ one extra row
+
+  // build select + query per dataset
+  let selectCols: string;
+
+  if (dataset === "offers") {
+    selectCols =
+      "id,listing_id,price,mpn,title,image_url,brand,part_type,appliance_type,inventory_total,inventory_sellers,mpn_norm,ebay_url,marketplace";
+  } else {
+    selectCols =
+      "id,mpn,title,price,image_url,stock_status_canon,brand,part_type,appliance_type";
+  }
 
   let query =
     countMode === "none"
-      ? supabase.from("parts").select(selectCols)
-      : supabase.from("parts").select(selectCols, { count: countMode });
+      ? supabase.from(dataset).select(selectCols)
+      : supabase.from(dataset).select(selectCols, { count: countMode as any });
 
+  // ✅ Force price conditions so your partial price indexes can be used
+  // (This is a big deal for avoiding timeouts on ORDER BY price)
+  query = query.not("price", "is", null).gt("price", 0);
+
+  // search
   if (q) {
+    // Keep it reasonable: wide OR searches can be expensive.
+    // For now we keep the behavior but you can tighten later.
     const like = `%${q}%`;
-    query = query.or(
-      [
-        `mpn.ilike.${like}`,
-        `title.ilike.${like}`,
-        `brand.ilike.${like}`,
-        `part_type.ilike.${like}`,
-        `appliance_type.ilike.${like}`,
-      ].join(",")
-    );
+
+    if (dataset === "offers") {
+      query = query.or([`mpn.ilike.${like}`, `title.ilike.${like}`, `brand.ilike.${like}`].join(","));
+    } else {
+      query = query.or(
+        [
+          `mpn.ilike.${like}`,
+          `title.ilike.${like}`,
+          `brand.ilike.${like}`,
+          `part_type.ilike.${like}`,
+          `appliance_type.ilike.${like}`,
+        ].join(",")
+      );
+    }
   }
 
   if (applianceType) query = query.eq("appliance_type", applianceType);
@@ -92,47 +130,70 @@ export async function GET(req: Request) {
   if (partTypes.length) query = query.in("part_type", partTypes);
 
   if (inStockOnly) {
-    query = query.in("stock_status_canon", ["in stock", "instock", "in_stock"]);
+    if (dataset === "offers") {
+      // netted offers: treat "in stock" as inventory_total > 0
+      query = query.gt("inventory_total", 0);
+    } else {
+      query = query.in("stock_status_canon", ["in stock", "instock", "in_stock"]);
+    }
   }
 
-  // Sorting
+  // sorting
   if (sort === "price_asc") query = query.order("price", { ascending: true, nullsFirst: false });
   else query = query.order("price", { ascending: false, nullsFirst: false });
 
-  const from = (page - 1) * perPage;
-  const to = from + perPage - 1;
   query = query.range(from, to);
 
   const { data, error, count } = await query;
 
   if (error) {
     return NextResponse.json(
-      { ok: false, error: error.message, items: [], total_count: null },
+      { ok: false, error: error.message, items: [], total_count: null, dataset },
       { status: 500 }
     );
   }
 
-  const items = Array.isArray(data) ? data : [];
+  const rows = Array.isArray(data) ? data : [];
+  const has_more = rows.length > perPage;
+  const items = has_more ? rows.slice(0, perPage) : rows;
 
-  // Facets are computed from returned page for now (fast).
-  // If you want full-dataset facets later, we’ll add RPC / SQL views.
+  // normalize offers rows a bit for the UI
+  const normalizedItems =
+    dataset === "offers"
+      ? items.map((r: any) => ({
+          ...r,
+          is_refurb: true, // ✅ lets your PartRow treat these as refurb
+        }))
+      : items;
+
+  // facets computed from current page only (fast)
   const facets = {
-    brands: facet(items, "brand"),
-    parts: facet(items, "part_type"),
-    appliances: facet(items, "appliance_type"),
+    brands: facet(normalizedItems, "brand"),
+    parts: facet(normalizedItems, "part_type"),
+    appliances: facet(normalizedItems, "appliance_type"),
   };
+
+  // inventory sum (page-level) - cheap, and aligns with your new model
+  const page_inventory_total =
+    dataset === "offers"
+      ? normalizedItems.reduce((acc: number, it: any) => acc + (Number(it?.inventory_total) || 0), 0)
+      : null;
 
   return NextResponse.json({
     ok: true,
-    items,
-    total_count: countMode === "none" ? items.length : (count ?? items.length),
-    totals: {
-      new: countMode === "none" ? items.length : (count ?? items.length),
-      refurb: 0,
-      refurb_only_total: 0,
-      new_only_total: countMode === "none" ? items.length : (count ?? items.length),
-    },
-    facets,
+    dataset,
+    page,
+    per_page: perPage,
+    has_more,
+    items: normalizedItems,
+
+    // only present if countMode requested; otherwise null
+    total_count: countMode === "none" ? null : count ?? null,
     count_mode: countMode,
+
+    // don't “count for inventory” anymore — surface the new canonical numbers instead
+    page_inventory_total,
+
+    facets,
   });
 }
