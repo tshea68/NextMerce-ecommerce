@@ -40,3 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 pnpm_build.log
+
+# local backups
+nextmerce-backup.tar.gz
+*.tar.gz
