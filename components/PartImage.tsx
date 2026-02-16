@@ -1,105 +1,83 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useMemo, useState } from "react";
 
-const FALLBACK_IMG =
-  "https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/part_images/mpn/00249736/imagecomingsoon.png";
-
-function cleanUrl(u: unknown) {
-  const s = (u ?? "").toString().trim();
-  return s.length ? s : null;
-}
-
-type PartImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+type PartImageProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> & {
+  /** Preferred prop used across this repo */
   imageUrl?: string | null;
+
+  /** Allow regular img usage too */
+  src?: string | null;
+
+  /** Back-compat: caller passes this today */
+  disableHoverPreview?: boolean;
+
+  /** Optional fallback label */
+  fallbackText?: string;
 };
 
-export default function PartImage({
-  imageUrl,
-  alt = "",
-  className = "",
-  ...rest
-}: PartImageProps) {
-  const [isHovering, setIsHovering] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+export default function PartImage(props: PartImageProps) {
+  const {
+    imageUrl,
+    src,
+    disableHoverPreview,
+    fallbackText = "No image",
+    className,
+    alt,
+    onError,
+    ...imgProps
+  } = props;
 
-  useEffect(() => {
-    setPortalRoot(document.body);
-  }, []);
+  const [broken, setBroken] = useState(false);
 
-  const initialSrc = useMemo(
-    () => cleanUrl(imageUrl) || FALLBACK_IMG,
-    [imageUrl]
-  );
-  const [src, setSrc] = useState(initialSrc);
+  const resolvedSrc = useMemo(() => {
+    const s = String((src ?? imageUrl ?? "")).trim();
+    return s.length ? s : "";
+  }, [src, imageUrl]);
 
-  useEffect(() => {
-    setSrc(initialSrc);
-  }, [initialSrc]);
-
-  const handleImgError = () => {
-    setSrc((prev) => (prev === FALLBACK_IMG ? prev : FALLBACK_IMG));
-  };
-
-  return (
-    <>
+  // Fallback UI (no src or broken)
+  if (!resolvedSrc || broken) {
+    return (
       <div
-        className={`relative inline-flex items-center justify-center ${className}`}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        onClick={() => setModalOpen(true)}
+        className={
+          className ??
+          "flex items-center justify-center bg-gray-50 rounded border text-xs text-gray-400"
+        }
+        aria-label={alt ?? fallbackText}
       >
-        <img
-          src={src}
-          alt={alt}
-          className="w-full h-full object-contain"
-          onError={handleImgError}
-          {...rest}
-        />
-
-        <div
-          className={[
-            "pointer-events-none absolute inset-0 flex items-center justify-center",
-            "bg-black/55 text-white text-[11px] font-semibold uppercase tracking-wide",
-            "rounded transition-opacity duration-300 ease-out",
-            isHovering ? "opacity-100" : "opacity-0",
-          ].join(" ")}
-        >
-          <span className="px-2 text-center leading-tight">
-            Click for Full Screen View
-          </span>
-        </div>
+        {fallbackText}
       </div>
+    );
+  }
 
-      {modalOpen &&
-        portalRoot &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
-            onClick={() => setModalOpen(false)}
-          >
-            <div className="relative max-w-4xl w-[min(90vw,900px)] max-h-[90vh]">
-              <button
-                type="button"
-                className="absolute -top-3 -right-3 h-8 w-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold shadow-lg border border-white/60"
-                onClick={() => setModalOpen(false)}
-              >
-                ×
-              </button>
+  const img = (
+    <img
+      {...imgProps}
+      src={resolvedSrc}
+      alt={alt ?? "Part image"}
+      className={className}
+      loading={imgProps.loading ?? "lazy"}
+      onError={(e) => {
+        setBroken(true);
+        onError?.(e);
+      }}
+    />
+  );
 
-              <img
-                src={src}
-                alt={alt}
-                className="w-full h-auto max-h-[90vh] object-contain bg-white rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-                onError={handleImgError}
-              />
-            </div>
-          </div>,
-          portalRoot
-        )}
-    </>
+  // Caller explicitly disabled hover behavior — just render the img.
+  if (disableHoverPreview) return img;
+
+  // Lightweight hover preview (does not change layout)
+  return (
+    <span className="relative inline-block group">
+      {img}
+      <span className="pointer-events-none absolute left-full top-0 z-50 hidden group-hover:block ml-2 rounded border bg-white p-2 shadow">
+        <img
+          src={resolvedSrc}
+          alt={alt ?? "Part image preview"}
+          className="max-h-64 max-w-64 object-contain"
+        />
+      </span>
+    </span>
   );
 }

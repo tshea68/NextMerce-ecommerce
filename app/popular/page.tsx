@@ -17,7 +17,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Eye, Heart, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/app/context/CartContext";
+import { useCart } from "@/context/CartContext";
 
 const page = () => {
   const newarrivals = [

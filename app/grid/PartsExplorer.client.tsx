@@ -79,7 +79,7 @@ function PartRow({ p, addToCart }: any) {
     String(p?.offer_type || "").toLowerCase().includes("refurb");
 
   const baseTitle =
-    makePartTitle(p, mpn) ||
+    makePartTitle(p) ||
     p?.title ||
     `${p?.brand || ""} ${p?.part_type || ""} ${p?.appliance_type || ""}`.trim() ||
     mpn;

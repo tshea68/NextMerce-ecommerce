@@ -1,13 +1,11 @@
-export const runtime = 'edge';
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
-export const dynamic = "force-dynamic";
-
 function norm(s: string) {
-  // basic normalization to match mpn_normalized patterns
   return s.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
@@ -17,9 +15,21 @@ function money(v: any) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const slugRaw = decodeURIComponent(params.slug ?? "").trim();
-  if (!slugRaw) return notFound();
+type PageParams = { slug: string };
+type Props = { params: Promise<PageParams> };
+
+export default async function ProductPage({ params }: Props) {
+  const { slug } = await params;
+
+  const slugRaw = (() => {
+    try {
+      return decodeURIComponent(slug ?? "").trim();
+    } catch {
+      return String(slug ?? "").trim();
+    }
+  })();
+
+  if (!slugRaw) notFound();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey =
@@ -39,17 +49,19 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Try exact mpn first
   let part: any = null;
 
+  // Try exact mpn first
   {
     const { data } = await supabase
       .from("parts")
-      .select("id, mpn, mpn_normalized, title, description, price, image_url, stock_status_canon, reliable_total_available, reliable_part_url, brand_code, brand")
+      .select(
+        "id, mpn, mpn_normalized, title, description, price, image_url, stock_status_canon, reliable_total_available, reliable_part_url, brand_code, brand"
+      )
       .eq("mpn", slugRaw)
       .limit(1);
 
-    if (data && data.length) part = data[0];
+    if (data?.length) part = data[0];
   }
 
   // Fallback to mpn_normalized
@@ -57,19 +69,23 @@ export default async function ProductPage({ params }: { params: { slug: string }
     const key = norm(slugRaw);
     const { data } = await supabase
       .from("parts")
-      .select("id, mpn, mpn_normalized, title, description, price, image_url, stock_status_canon, reliable_total_available, reliable_part_url, brand_code, brand")
+      .select(
+        "id, mpn, mpn_normalized, title, description, price, image_url, stock_status_canon, reliable_total_available, reliable_part_url, brand_code, brand"
+      )
       .eq("mpn_normalized", key)
       .limit(1);
 
-    if (data && data.length) part = data[0];
+    if (data?.length) part = data[0];
   }
 
-  if (!part) return notFound();
+  if (!part) notFound();
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between gap-4">
-        <Link href="/shop" className="text-sm underline">← Back to shop</Link>
+        <Link href="/shop" className="text-sm underline">
+          ← Back to shop
+        </Link>
         <Link
           href={`/api/supabase-test?table=parts&sample=1&limit=1&cols=id,mpn,title,price`}
           className="text-sm underline"
@@ -82,7 +98,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
         <div className="rounded-lg border p-4 bg-white">
           <div className="aspect-square w-full bg-gray-50 rounded-md overflow-hidden flex items-center justify-center">
             {part.image_url ? (
-              <img src={part.image_url} alt={part.title ?? part.mpn ?? "Part"} className="h-full w-full object-contain" />
+              <img
+                src={part.image_url}
+                alt={part.title ?? part.mpn ?? "Part"}
+                className="h-full w-full object-contain"
+              />
             ) : (
               <div className="text-xs text-gray-400">No image</div>
             )}
@@ -102,16 +122,15 @@ export default async function ProductPage({ params }: { params: { slug: string }
             MPN: <span className="font-mono">{part.mpn ?? "—"}</span>
             {part.mpn_normalized ? (
               <>
-                {" "}• norm: <span className="font-mono">{part.mpn_normalized}</span>
+                {" "}
+                • norm: <span className="font-mono">{part.mpn_normalized}</span>
               </>
             ) : null}
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-3">
             <div className="text-2xl font-bold">{money(part.price)}</div>
-            <div className="text-sm text-gray-600">
-              {part.stock_status_canon ?? "—"}
-            </div>
+            <div className="text-sm text-gray-600">{part.stock_status_canon ?? "—"}</div>
           </div>
 
           <div className="mt-2 text-sm text-gray-600">
@@ -121,13 +140,20 @@ export default async function ProductPage({ params }: { params: { slug: string }
           {part.description ? (
             <div className="mt-4">
               <div className="text-sm font-semibold">Description</div>
-              <p className="mt-1 text-sm text-gray-700 whitespace-pre-line">{part.description}</p>
+              <p className="mt-1 text-sm text-gray-700 whitespace-pre-line">
+                {part.description}
+              </p>
             </div>
           ) : null}
 
           {part.reliable_part_url ? (
             <div className="mt-4">
-              <a className="text-sm underline" href={part.reliable_part_url} target="_blank" rel="noreferrer">
+              <a
+                className="text-sm underline"
+                href={part.reliable_part_url}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Source link
               </a>
             </div>

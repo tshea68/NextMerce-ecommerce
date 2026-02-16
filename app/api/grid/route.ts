@@ -29,10 +29,13 @@ export async function GET(req: Request) {
     : "parts") as "parts" | "offers";
 
   const page = Math.max(parseInt(url.searchParams.get("page") ?? "1", 10) || 1, 1);
-  const perPage = Math.min(Math.max(parseInt(url.searchParams.get("per_page") ?? "30", 10) || 30, 1), 100);
+  const perPage = Math.min(
+    Math.max(parseInt(url.searchParams.get("per_page") ?? "30", 10) || 30, 1),
+    100
+  );
 
   const q = (url.searchParams.get("q") || "").trim();
-  const model = (url.searchParams.get("model") || "").trim(); // NEW
+  const model = (url.searchParams.get("model") || "").trim();
   const applianceType = (url.searchParams.get("appliance_type") || "").trim();
 
   const brands = url.searchParams.getAll("brands").filter(Boolean);
@@ -59,19 +62,16 @@ export async function GET(req: Request) {
       ? "id,mpn,title,price,image_url,stock_status_canon,brand,part_type,appliance_type"
       : "id,listing_id,mpn,title,price,image_url,brand,part_type,appliance_type,inventory_total,marketplace,compatible_models";
 
-  // IMPORTANT PERFORMANCE:
-  // - no count
-  // - fetch perPage+1 to compute has_more
-  // - filter price > 0 so the price-desc order can use a partial index
-
-  let query = supabase.from(dataset).select(selectCols);
+  // KEY FIX:
+  // Supabase select-string typing can produce ParserError types when the select string isn't a literal.
+  // Force it to any so the build doesn't die on inventory_total typing.
+  let query = supabase.from(dataset).select(selectCols as any);
 
   // base filters
   query = query.not("price", "is", null).gt("price", 0);
 
   if (q) {
     const like = `%${q}%`;
-    // keep OR small: mpn/title/brand only (avoid wide scans)
     query = query.or([`mpn.ilike.${like}`, `title.ilike.${like}`, `brand.ilike.${like}`].join(","));
   }
 
@@ -83,20 +83,14 @@ export async function GET(req: Request) {
     if (dataset === "parts") {
       query = query.in("stock_status_canon", ["in stock", "instock", "in_stock"]);
     } else {
-      // offers
       query = query.gt("inventory_total", 0);
     }
   }
 
-  // model filter applies to offers only (compatible_models)
   if (dataset === "offers" && model) {
-    // compatible_models is json in your schema but indexed as (compatible_models::jsonb)
-    // supabase .contains uses the @> operator, works best if compatible_models is jsonb.
-    // If this ever errors for JSON type, change column to jsonb.
     query = query.contains("compatible_models", [model]);
   }
 
-  // always price desc (no UI sort)
   query = query.order("price", { ascending: false, nullsFirst: false }).order("id", { ascending: false });
 
   const from = (page - 1) * perPage;
@@ -112,9 +106,9 @@ export async function GET(req: Request) {
     );
   }
 
-  const rows = Array.isArray(data) ? data : [];
+  const rows: any[] = Array.isArray(data) ? (data as any[]) : [];
   const has_more = rows.length > perPage;
-  const items = has_more ? rows.slice(0, perPage) : rows;
+  const items: any[] = has_more ? rows.slice(0, perPage) : rows;
 
   const facets = {
     brands: facet(items, "brand"),
@@ -124,7 +118,7 @@ export async function GET(req: Request) {
 
   const page_inventory_total =
     dataset === "offers"
-      ? items.reduce((sum, r) => sum + (Number(r?.inventory_total) || 0), 0)
+      ? items.reduce((sum: number, r: any) => sum + (Number(r?.inventory_total) || 0), 0)
       : null;
 
   return NextResponse.json({

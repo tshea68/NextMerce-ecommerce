@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { X } from "lucide-react";
 import wishlistImg from "../../public/images/wishlist.png";
-import { useCart } from "@/app/context/CartContext";
+import { useCart } from "@/context/CartContext";
 
 const WishlistPage = () => {
   const {

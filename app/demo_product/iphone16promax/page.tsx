@@ -31,7 +31,7 @@ import {
   X,
   Trash2,
 } from "lucide-react";
-import { useCart } from "@/app/context/CartContext";
+import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 
 const page = () => {

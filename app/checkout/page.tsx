@@ -12,7 +12,7 @@ import {
   X,
   ArrowRightCircle,
 } from "lucide-react";
-import { useCart } from "@/app/context/CartContext";
+import { useCart } from "@/context/CartContext";
 import fedex from "../../public/images/fedex.png";
 import stripe from "../../public/images/stripe.png";
 import dhl from "../../public/images/dhl.png";
