@@ -1,0 +1,263 @@
+// app/parts/[mpn]/page.tsx
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
+
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+
+type PartRow = {
+  mpn?: string | null;
+  mpn_display?: string | null;
+  mpn_normalized?: string | null;
+  title?: string | null;
+  name?: string | null;
+  brand?: string | null;
+  part_type?: string | null;
+  appliance_type?: string | null;
+  price?: number | string | null;
+  stock_status_canon?: string | null;
+  image_url?: string | null;
+};
+
+type OfferRow = {
+  id?: string | number | null;
+  offer_id?: string | null;
+  listing_id?: string | null;
+  mpn?: string | null;
+  mpn_normalized?: string | null;
+  title?: string | null;
+  brand?: string | null;
+  part_type?: string | null;
+  appliance_type?: string | null;
+  price?: number | string | null;
+  inventory_total?: number | null;
+  image_url?: string | null;
+};
+
+function money(v: any) {
+  const n = typeof v === "number" ? v : Number(String(v ?? "").replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(n)) return "—";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+}
+
+function normMpn(mpn: string) {
+  return mpn.trim().toUpperCase();
+}
+
+function supabaseServer() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!url || !key) throw new Error("Missing Supabase env: NEXT_PUBLIC_SUPABASE_URL + (ANON or SERVICE_ROLE key).");
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+export async function generateMetadata({ params }: { params: { mpn: string } }) {
+  const mpn = decodeURIComponent(params.mpn || "").trim();
+  if (!mpn) return { title: "Part not found" };
+
+  // best-effort, don’t hard fail metadata
+  try {
+    const sb = supabaseServer();
+    const mpnNorm = normMpn(mpn);
+
+    const { data } = await sb
+      .from("parts")
+      .select("mpn,mpn_display,mpn_normalized,title,name,brand,part_type,appliance_type,price,image_url")
+      .or(`mpn_normalized.eq.${mpnNorm},mpn.eq.${mpnNorm},mpn_display.eq.${mpnNorm}`)
+      .limit(1)
+      .maybeSingle();
+
+    const title = (data?.title || data?.name || "").trim();
+    const brand = (data?.brand || "").trim();
+    const pt = (data?.part_type || "").trim();
+
+    return {
+      title: title ? `${title} (${mpnNorm})` : `${brand ? brand + " " : ""}${pt ? pt + " " : ""}Part ${mpnNorm}`,
+      description: title
+        ? `${title} — Part #${mpnNorm}${brand ? ` — ${brand}` : ""}${pt ? ` — ${pt}` : ""}`
+        : `Part #${mpnNorm}`,
+      alternates: { canonical: `/parts/${encodeURIComponent(mpnNorm)}` },
+      openGraph: data?.image_url ? { images: [data.image_url] } : undefined,
+    };
+  } catch {
+    return { title: `Part ${normMpn(mpn)}` };
+  }
+}
+
+export default async function PartPage({ params }: { params: { mpn: string } }) {
+  const mpnRaw = decodeURIComponent(params.mpn || "").trim();
+  const mpnNorm = normMpn(mpnRaw);
+  if (!mpnNorm) notFound();
+
+  const sb = supabaseServer();
+
+  // ---- Part (new/OEM) ----
+  const partQ = sb
+    .from("parts")
+    .select(
+      "mpn,mpn_display,mpn_normalized,title,name,brand,part_type,appliance_type,price,stock_status_canon,image_url"
+    )
+    .or(`mpn_normalized.eq.${mpnNorm},mpn.eq.${mpnNorm},mpn_display.eq.${mpnNorm}`)
+    .limit(1)
+    .maybeSingle();
+
+  // ---- Related refurbs (offers) by mpn ----
+  const offersQ = sb
+    .from("offers")
+    .select("id,offer_id,listing_id,mpn,mpn_normalized,title,brand,part_type,appliance_type,price,inventory_total,image_url")
+    .or(`mpn_normalized.eq.${mpnNorm},mpn.eq.${mpnNorm}`)
+    .order("inventory_total", { ascending: false, nullsFirst: false })
+    .order("price", { ascending: true, nullsFirst: false })
+    .limit(8);
+
+  const [{ data: part }, { data: offers }] = await Promise.all([partQ, offersQ]);
+
+  if (!part) notFound();
+
+  const title = (part.title || part.name || `Part ${mpnNorm}`).trim();
+  const brand = (part.brand || "").trim();
+  const partType = (part.part_type || "").trim();
+  const applianceType = (part.appliance_type || "").trim();
+  const price = money(part.price);
+  const img = part.image_url || null;
+
+  return (
+    <div className="w-full px-6 py-8">
+      <div className="text-[12px] text-gray-600 mb-4">
+        <Link className="underline hover:text-gray-800" href="/">
+          Home
+        </Link>{" "}
+        /{" "}
+        <Link className="underline hover:text-gray-800" href="/grid">
+          Grid
+        </Link>{" "}
+        / <span className="text-gray-900 font-semibold">Parts</span> /{" "}
+        <span className="text-gray-900 font-semibold">{mpnNorm}</span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-8">
+        <div className="border border-gray-200 rounded-lg bg-white p-4">
+          <div className="w-full aspect-square bg-gray-50 border border-gray-200 rounded flex items-center justify-center overflow-hidden">
+            {img ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={img} alt={mpnNorm} className="w-full h-full object-contain" />
+            ) : (
+              <div className="text-[12px] text-gray-500">No image</div>
+            )}
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-bold text-gray-900 leading-tight">{title}</h1>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-[12px] font-mono text-gray-700 border border-gray-200 rounded px-2 py-1 bg-white">
+              Part #: {mpnNorm}
+            </span>
+
+            {brand ? (
+              <span className="text-[12px] text-gray-700 border border-gray-200 rounded px-2 py-1 bg-white">
+                Brand: {brand}
+              </span>
+            ) : null}
+
+            {applianceType ? (
+              <span className="text-[12px] text-gray-700 border border-gray-200 rounded px-2 py-1 bg-white">
+                Appliance: {applianceType}
+              </span>
+            ) : null}
+
+            {partType ? (
+              <span className="text-[12px] text-gray-700 border border-gray-200 rounded px-2 py-1 bg-white">
+                Part type: {partType}
+              </span>
+            ) : null}
+
+            {part.stock_status_canon ? (
+              <span className="text-[12px] font-semibold text-white bg-green-700 rounded px-2 py-1">
+                {part.stock_status_canon}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-5 text-[28px] font-extrabold text-green-700">{price}</div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {/* SEO-friendly fallback actions. You can later wire these into your cart system. */}
+            <Link
+              href={`/cart?add=${encodeURIComponent(mpnNorm)}&qty=1`}
+              className="inline-flex items-center justify-center rounded bg-blue-700 hover:bg-blue-800 text-white text-[13px] font-semibold px-4 py-2"
+            >
+              Add to cart
+            </Link>
+
+            <Link
+              href={`/cart?add=${encodeURIComponent(mpnNorm)}&qty=1&checkout=1`}
+              className="inline-flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 text-gray-900 text-[13px] font-semibold px-4 py-2"
+            >
+              Buy now
+            </Link>
+          </div>
+
+          <div className="mt-8 border-t border-gray-200 pt-6">
+            <h2 className="text-[14px] font-bold text-gray-900">Refurbished options (Offers)</h2>
+            <div className="mt-3 flex flex-col gap-3">
+              {!offers || offers.length === 0 ? (
+                <div className="text-[13px] text-gray-600">No refurb offers found for this part number.</div>
+              ) : (
+                (offers as OfferRow[]).map((o, idx) => {
+                  const id = (o.offer_id || o.listing_id || o.id || "").toString();
+                  const href = id ? `/offers/${encodeURIComponent(id)}` : "#";
+                  const oTitle = (o.title || title || `Offer for ${mpnNorm}`).trim();
+                  const oPrice = money(o.price);
+                  const qty =
+                    typeof o.inventory_total === "number" ? o.inventory_total : Number(o.inventory_total ?? NaN);
+                  const oImg = o.image_url || null;
+
+                  return (
+                    <div key={`${id}-${idx}`} className="border border-gray-200 rounded-lg bg-white p-3 flex gap-3">
+                      <div className="w-[72px] h-[72px] border border-gray-200 rounded bg-gray-50 flex items-center justify-center overflow-hidden">
+                        {oImg ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={oImg} alt={oTitle} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="text-[11px] text-gray-500">No image</div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <Link href={href} className="text-[13px] font-semibold text-blue-700 hover:underline">
+                          {oTitle}
+                        </Link>
+                        <div className="mt-1 text-[12px] text-gray-700">
+                          <span className="font-semibold text-blue-800">Refurbished</span>
+                          {Number.isFinite(qty) ? <span className="ml-2 text-gray-600">Qty: {qty}</span> : null}
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-[16px] font-bold text-green-700">{oPrice}</div>
+                        <Link
+                          href={href}
+                          className="mt-2 inline-flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 text-gray-900 text-[12px] font-semibold px-3 py-1.5"
+                        >
+                          View offer
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
