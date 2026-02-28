@@ -2,11 +2,6 @@
 
 /**
  * PartsExplorer.client.tsx
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
- * - Real grid UI that fetches /api/grid
- * - No expensive frontend counting by default
- * - Supports dataset=parts|offers (offers are refurb/netted)
-=======
  * - Grid UI that fetches /api/grid
  * - Item type filter: both | new | refurb
  * - Availability filter: in_stock | orderable | all  (DEFAULT: all)
@@ -33,7 +28,6 @@
  *
  * Models in cards:
  * - If API returns items with `model_number`, UI renders ModelRow cards automatically.
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -49,11 +43,6 @@ import PartImage from "@/components/PartImage";
 const API_BASE = ""; // use relative
 const DEFAULT_PER_PAGE = 30;
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-/* ================================
-   UTILS
-   ================================ */
-=======
 type Condition = "both" | "new" | "refurb";
 type Availability = "in_stock" | "orderable" | "all";
 
@@ -110,8 +99,6 @@ const DEFAULT_LANDING_Q = "";
 const DEFAULT_LANDING_CONDITION: Condition = "refurb";
 const DEFAULT_SORT = "inventory_desc";
 const DEFAULT_AVAILABILITY: Availability = "all";
-
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
 const normalize = (s: any) => (s || "").toLowerCase().trim();
 
 /* ================================
@@ -258,14 +245,7 @@ const priceFmt = (n: any) => {
   const x = typeof n === "number" ? n : Number(String(n ?? "").replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(x)) return "—";
   try {
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: "USD",
-    }).format(Number(n));
-=======
     return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(x);
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   } catch {
     return `$${x.toFixed(2)}`;
   }
@@ -273,9 +253,7 @@ const priceFmt = (n: any) => {
 
 const fmtCount = (num: any) => {
   const n = Number(num);
-  return Number.isFinite(n)
-    ? n.toLocaleString(undefined, { maximumFractionDigits: 0 })
-    : String(num || "");
+  return Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : String(num || "");
 };
 
 function uniq(arr: string[]) {
@@ -378,15 +356,13 @@ function PartRow({ p, addToCart }: any) {
     (p?.mpn_normalized && String(p.mpn_normalized).trim()) ||
     "";
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
+  // ✅ authoritative refurb detection
   const isRefurb =
     p?.is_refurb === true ||
+    String(p?.source || "").toLowerCase() === "offers" ||
     String(p?.condition || "").toLowerCase().includes("used") ||
-    String(p?.source || "").toLowerCase().includes("refurb") ||
-    String(p?.offer_type || "").toLowerCase().includes("refurb");
-=======
-  // ✅ authoritative refurb detection
-  const isRefurb = p?.is_refurb === true || String(p?.source || "").toLowerCase() === "offers";
+    String(p?.offer_type || "").toLowerCase().includes("refurb") ||
+    String(p?.source || "").toLowerCase().includes("refurb");
 
   // ✅ injected by API OR inferred from status when availability=all
   const isNla = p?.is_nla === true || (!isRefurb && isNlaishStatus(p?.stock_status_canon));
@@ -395,7 +371,6 @@ function PartRow({ p, addToCart }: any) {
     (p?.replaced_by && String(p.replaced_by).trim()) ||
     (p?.replacement_mpn && String(p.replacement_mpn).trim()) ||
     "";
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
 
   const baseTitle =
     makePartTitle(p, mpn) ||
@@ -407,29 +382,17 @@ function PartRow({ p, addToCart }: any) {
   const displayTitle = isRefurb ? `Refurbished: ${baseTitle}` : baseTitle;
 
   const priceNum =
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-    typeof p?.price === "number"
-      ? p.price
-      : Number(String(p?.price ?? "").replace(/[^0-9.]/g, ""));
-
-=======
     typeof p?.price === "number" ? p.price : Number(String(p?.price ?? "").replace(/[^0-9.]/g, ""));
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
+
   const img = p?.image_url || null;
 
   const detailHref = (() => {
     if (!mpn) return "#";
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
     if (isRefurb) {
       const listingId = p?.listing_id || p?.offer_id || "";
-      return `/refurb/${encodeURIComponent(mpn)}${
-        listingId ? `?offer=${encodeURIComponent(listingId)}` : ""
-      }`;
+      return `/refurb/${encodeURIComponent(mpn)}${listingId ? `?offer=${encodeURIComponent(listingId)}` : ""}`;
     }
     return `/parts/${encodeURIComponent(mpn)}`;
-=======
-    return isRefurb ? `/offers/${encodeURIComponent(mpn)}` : `/parts/${encodeURIComponent(mpn)}`;
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   })();
 
   const replacementHref = replacedBy ? `/parts/${encodeURIComponent(replacedBy)}` : "";
@@ -464,13 +427,9 @@ function PartRow({ p, addToCart }: any) {
     if (detailHref && detailHref !== "#") router.push(detailHref);
   }
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-  const cardBg = isRefurb
-=======
   const cardBg = isNla
     ? "bg-amber-50 border-amber-300"
     : isRefurb
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
     ? "bg-blue-50 border-blue-300"
     : "bg-white border-gray-200";
 
@@ -519,9 +478,7 @@ function PartRow({ p, addToCart }: any) {
           )}
 
           {mpn && (
-            <span className="text-[11px] font-mono text-gray-600 leading-none">
-              Part #: {mpn}
-            </span>
+            <span className="text-[11px] font-mono text-gray-600 leading-none">Part #: {mpn}</span>
           )}
         </div>
 
@@ -554,16 +511,9 @@ function PartRow({ p, addToCart }: any) {
         )}
       </div>
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-      {/* right */}
-      <div className="w-full max-w-[200px] flex-shrink-0 flex flex-col items-end text-right gap-2">
-        <div className="text-lg font-bold text-green-700 leading-none">
-          {priceFmt(priceNum)}
-=======
       <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-end text-right gap-2">
         <div className={`text-lg font-bold leading-none ${isNla ? "text-amber-800" : "text-green-700"}`}>
           {isNla ? "—" : priceFmt(priceNum)}
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
         </div>
 
         <div className="flex items-center w-full justify-end gap-2">
@@ -585,9 +535,6 @@ function PartRow({ p, addToCart }: any) {
           )}
 
           <button
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-            className={`${isRefurb ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-700 hover:bg-blue-800"} text-white text-[12px] font-semibold rounded px-3 py-2`}
-=======
             className={`${
               isNla
                 ? "bg-gray-400 cursor-not-allowed"
@@ -595,7 +542,6 @@ function PartRow({ p, addToCart }: any) {
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-blue-700 hover:bg-blue-800"
             } text-white text-[12px] font-semibold rounded px-3 py-2`}
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
             onClick={handleAddToCart}
             disabled={isNla}
             title={isNla ? "This part is not available for purchase" : "Add to Cart"}
@@ -709,19 +655,6 @@ type GridResp = {
   has_more?: boolean;
   page?: number;
   per_page?: number;
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-  count_mode?: string;
-  total_count?: number | null;
-  facets?: {
-    brands?: { value: string; count: number }[];
-    parts?: { value: string; count: number }[];
-    appliances?: { value: string; count: number }[];
-  };
-  page_inventory_total?: number | null;
-};
-
-export default function PartsExplorer() {
-=======
   facets?: Facets | null;
   total_count?: number | null;
   facets_source?: string;
@@ -741,16 +674,12 @@ function RadioDot({ checked }: { checked: boolean }) {
 }
 
 export default function PartsExplorer(props: PartsExplorerProps) {
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   const { addToCart } = useCart();
   const router = useRouter();
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-  // initialize from URL once
-=======
   // ✅ SSR match check (prevents hydration double-fetch)
   const currentKey = useMemo(() => {
     return stableKeyFromSearchParamsString(searchParams?.toString() ?? "");
@@ -758,18 +687,11 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
   const canUseSsr = !!props?.ssr && props.ssr.key === currentKey;
 
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   const init = useMemo(() => {
     // ✅ legacy explicit seed wins (kept)
     if (props?.initial) return props.initial;
 
     const sp = new URLSearchParams(searchParams?.toString() ?? "");
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-    const dataset = ((sp.get("dataset") || "parts").toLowerCase() as Dataset) || "parts";
-    const q = (sp.get("q") || "").trim();
-    const sort = (sp.get("sort") || "price_desc").trim();
-    const inStockOnly = asBool(sp.get("in_stock_only"));
-=======
     const hasAnyParam = sp.toString().length > 0;
 
     const conditionRaw = (sp.get("condition") || "").toLowerCase();
@@ -784,24 +706,15 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     const q = qFromUrl || (!hasAnyParam ? DEFAULT_LANDING_Q : "");
 
     const availability = parseAvailability(sp);
-
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
     const applianceType = (sp.get("appliance_type") || "").trim();
     const brands = parseCsvMulti(sp, "brands");
     const partTypes = parseCsvMulti(sp, "part_types");
     const page = Math.max(parseInt(sp.get("page") || "1", 10) || 1, 1);
-    const perPage = Math.min(Math.max(parseInt(sp.get("per_page") || String(DEFAULT_PER_PAGE), 10) || DEFAULT_PER_PAGE, 1), 100);
+    const perPage = Math.min(
+      Math.max(parseInt(sp.get("per_page") || String(DEFAULT_PER_PAGE), 10) || DEFAULT_PER_PAGE, 1),
+      100
+    );
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-    return { dataset, q, sort, inStockOnly, applianceType, brands, partTypes, page, perPage };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // only once
-
-  const [dataset, setDataset] = useState<Dataset>(init.dataset);
-  const [q, setQ] = useState(init.q);
-  const [sort, setSort] = useState(init.sort);
-  const [inStockOnly, setInStockOnly] = useState(init.inStockOnly);
-=======
     return { condition, q, availability, applianceType, brands, partTypes, page, perPage };
   }, [props?.initial, searchParams]);
 
@@ -809,7 +722,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   const [availability, setAvailability] = useState<Availability>(init.availability);
 
   const [q, setQ] = useState(init.q);
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   const [applianceType, setApplianceType] = useState(init.applianceType);
   const [selectedBrands, setSelectedBrands] = useState<string[]>(init.brands);
   const [selectedPartTypes, setSelectedPartTypes] = useState<string[]>(init.partTypes);
@@ -817,14 +729,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   const [perPage, setPerPage] = useState(init.perPage);
 
   const [loading, setLoading] = useState(false);
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-  const [err, setErr] = useState<string | null>(null);
-  const [items, setItems] = useState<any[]>([]);
-  const [hasMore, setHasMore] = useState(false);
-  const [facets, setFacets] = useState<GridResp["facets"]>({});
-  const [pageInventoryTotal, setPageInventoryTotal] = useState<number | null>(null);
-
-=======
 
   const [err, setErr] = useState<string | null>(() => {
     if (canUseSsr) return null;
@@ -920,7 +824,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     return () => ro.disconnect();
   }, []);
 
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   // debounce q
   const [qDebounced, setQDebounced] = useState(q);
   useEffect(() => {
@@ -928,9 +831,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     return () => clearTimeout(t);
   }, [q]);
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-  // keep URL in sync (no infinite loop)
-=======
   const searchMode = qDebounced.trim().length > 0;
 
   function toggleInList(list: string[], v: string) {
@@ -953,31 +853,17 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   }
 
   // keep URL in sync
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   const didInitUrl = useRef(false);
   useEffect(() => {
     if (!pathname) return;
 
-    // reset to page 1 when filters/search change
-    // (page state changes separately below)
-    // handled by callers setting page(1)
-
     const sp = new URLSearchParams();
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-    sp.set("dataset", dataset);
-    if (qDebounced) sp.set("q", qDebounced);
-    if (sort) sp.set("sort", sort);
-    if (inStockOnly) sp.set("in_stock_only", "1");
-    if (applianceType) sp.set("appliance_type", applianceType);
-    for (const b of selectedBrands) sp.append("brands", b);
-    for (const pt of selectedPartTypes) sp.append("part_types", pt);
-=======
 
     // In search mode, keep URL clean & truthful: search overrides filters.
     if (!searchMode) {
       sp.set("condition", condition);
 
-      // ✅ FIX: always include availability in URL (even when "all")
+      // ✅ always include availability in URL (even when "all")
       sp.set("availability", availability);
 
       if (applianceType) sp.set("appliance_type", applianceType);
@@ -986,7 +872,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     }
 
     if (qDebounced) sp.set("q", qDebounced);
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
     sp.set("page", String(page));
     sp.set("per_page", String(perPage));
 
@@ -1002,20 +887,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   }, [
     pathname,
     router,
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-    dataset,
-    qDebounced,
-    sort,
-    inStockOnly,
-    applianceType,
-    selectedBrands,
-    selectedPartTypes,
-    page,
-    perPage,
-  ]);
-
-  // fetch grid data
-=======
     condition,
     availability,
     applianceType,
@@ -1028,7 +899,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   ]);
 
   // facets fetch (cached; global; fast) + estimated totals
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   useEffect(() => {
     if (skipFirstFacetsFetch.current) {
       skipFirstFacetsFetch.current = false;
@@ -1037,9 +907,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
     const ctrl = new AbortController();
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-    async function run() {
-=======
     async function runFacetsCache() {
       setMetaLoading(true);
 
@@ -1049,11 +916,11 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
       const sp = new URLSearchParams();
       sp.set("availability", effectiveAvailability);
-      sp.set("condition", effectiveCondition); // ✅ enable new vs offers segmented facets
+      sp.set("condition", effectiveCondition);
       sp.set("facet_limit", "300");
 
-      // ✅ NO TRAILING SLASH
-      const facetsUrl = `${API_BASE}/api/parts/facets?${sp.toString()}`;
+      // ✅ FIX: use trailing slash to avoid 308 redirect
+      const facetsUrl = `${API_BASE}/api/parts/facets/?${sp.toString()}`;
 
       try {
         const res = await fetch(facetsUrl, {
@@ -1114,7 +981,8 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       sp.set("availability", "all");
       if (qDebounced) sp.set("q", qDebounced);
 
-      const url = `${API_BASE}/api/grid?${sp.toString()}`;
+      // ✅ FIX: use trailing slash to avoid 308 redirect
+      const url = `${API_BASE}/api/grid/?${sp.toString()}`;
 
       try {
         const res = await fetch(url, {
@@ -1152,26 +1020,12 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     const ctrl = new AbortController();
 
     async function runItems() {
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
       setLoading(true);
       setErr(null);
 
       const sp = new URLSearchParams();
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-      sp.set("dataset", dataset);
-      if (qDebounced) sp.set("q", qDebounced);
-      if (sort) sp.set("sort", sort);
-      if (inStockOnly) sp.set("in_stock_only", "1");
-      if (applianceType) sp.set("appliance_type", applianceType);
-      for (const b of selectedBrands) sp.append("brands", b);
-      for (const pt of selectedPartTypes) sp.append("part_types", pt);
-      sp.set("page", String(page));
-      sp.set("per_page", String(perPage));
 
-      const url = `${API_BASE}/api/grid?${sp.toString()}`;
-=======
-
-      // ✅ FIX: always send availability to /api/grid (even when "all")
+      // ✅ always send availability to /api/grid (even when "all")
       sp.set("condition", searchMode ? "both" : condition);
       sp.set("availability", searchMode ? "all" : availability);
 
@@ -1187,15 +1041,14 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       sp.set("per_page", String(perPage));
       sp.set("sort", DEFAULT_SORT);
 
-      // ✅ NO TRAILING SLASH
-      const itemsUrl = `${API_BASE}/api/grid?${sp.toString()}`;
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
+      // ✅ FIX: use trailing slash to avoid 308 redirect
+      const itemsUrl = `${API_BASE}/api/grid/?${sp.toString()}`;
 
       try {
-        const res = await fetch(url, {
+        const res = await fetch(itemsUrl, {
           method: "GET",
           signal: ctrl.signal,
-          headers: { "accept": "application/json" },
+          headers: { accept: "application/json" },
           cache: "no-store",
         });
 
@@ -1210,86 +1063,60 @@ export default function PartsExplorer(props: PartsExplorerProps) {
           setErr(msg);
           setItems([]);
           setHasMore(false);
-          setFacets({});
           setPageInventoryTotal(null);
           return;
         }
 
         setItems(Array.isArray(json.items) ? json.items : []);
         setHasMore(!!json.has_more);
-        setFacets(json.facets || {});
-        setPageInventoryTotal(
-          typeof json.page_inventory_total === "number" ? json.page_inventory_total : null
-        );
+        setPageInventoryTotal(typeof json.page_inventory_total === "number" ? json.page_inventory_total : null);
       } catch (e: any) {
         if (e?.name === "AbortError") return;
         setErr(e?.message || "Request failed");
         setItems([]);
         setHasMore(false);
-        setFacets({});
         setPageInventoryTotal(null);
       } finally {
         setLoading(false);
       }
     }
 
-    run();
+    runItems();
     return () => ctrl.abort();
   }, [
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-    dataset,
-    qDebounced,
-    sort,
-    inStockOnly,
-=======
     condition,
     availability,
     qDebounced,
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
+    searchMode,
     applianceType,
     selectedBrands,
     selectedPartTypes,
     page,
     perPage,
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-=======
-    searchMode,
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
   ]);
 
-  // ✅ facet key compat shims (API may return part_types / appliance_types)
-  const brandFacet: FacetRow[] = (facets as any)?.brands || [];
-  const partFacet: FacetRow[] = (facets as any)?.parts || (facets as any)?.part_types || [];
-  const applianceFacet: FacetRow[] = (facets as any)?.appliances || (facets as any)?.appliance_types || [];
+  // ---- facet slices ----
+  const brandFacet = useMemo(() => (Array.isArray(facets?.brands) ? facets!.brands! : []), [facets]);
+  const partFacetRaw = useMemo(() => (Array.isArray(facets?.parts) ? facets!.parts! : []), [facets]);
+  const applianceFacet = useMemo(() => (Array.isArray(facets?.appliances) ? facets!.appliances! : []), [facets]);
 
-  function toggleInList(list: string[], v: string) {
-    const n = normalize(v);
-    if (!n) return list;
-    const has = list.some((x) => normalize(x) === n);
-    return has ? list.filter((x) => normalize(x) !== n) : [...list, v];
-  }
+  const [showAllBrands, setShowAllBrands] = useState(false);
+  const [showAllParts, setShowAllParts] = useState(false);
 
-  function resetToFirstPage() {
-    if (page !== 1) setPage(1);
-  }
+  const brandFacetShown = useMemo(() => (showAllBrands ? brandFacet : brandFacet.slice(0, 10)), [brandFacet, showAllBrands]);
+  const partFacetShown = useMemo(() => (showAllParts ? partFacetRaw : partFacetRaw.slice(0, 10)), [partFacetRaw, showAllParts]);
 
-  // estimated totals from cache (non-search mode)
-  const estimatedTotal =
-    typeof facetsMeta?.estimated_total === "number" ? facetsMeta!.estimated_total : null;
+  const estimatedTotal = useMemo(() => {
+    if (!facetsMeta) return null;
+    const x = facetsMeta.estimated_total;
+    return typeof x === "number" ? x : null;
+  }, [facetsMeta]);
 
   return (
-    <div className="w-full px-6 py-6">
-      {/* Header row */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div className="max-w-[1250px] mx-auto px-4 py-8">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
         <div className="flex flex-col gap-2">
-          <div className="text-[13px] font-semibold text-gray-700">
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-            {dataset === "parts" ? "New Parts" : "Refurb Offers"}
-            {dataset === "offers" && typeof pageInventoryTotal === "number" ? (
-              <span className="ml-2 text-gray-500 font-normal">
-                (page inventory total: {fmtCount(pageInventoryTotal)})
-              </span>
-=======
+          <div className="text-[18px] font-bold text-gray-900">
             Models and Parts Results{" "}
             {searchMode ? (
               typeof totalCount === "number" ? (
@@ -1310,73 +1137,10 @@ export default function PartsExplorer(props: PartsExplorerProps) {
               <span className="ml-2 text-gray-500 font-normal">
                 (page refurb qty total: {fmtCount(pageInventoryTotal)})
               </span>
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
             ) : null}
           </div>
 
           <div className="flex flex-col md:flex-row gap-2 md:items-center">
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-            <div className="flex items-center gap-2">
-              <button
-                className={`px-3 py-2 rounded border text-[12px] font-semibold ${
-                  dataset === "parts" ? "bg-blue-700 text-white border-blue-700" : "bg-white text-gray-800 border-gray-300"
-                }`}
-                onClick={() => {
-                  setDataset("parts");
-                  resetToFirstPage();
-                }}
-              >
-                Parts
-              </button>
-              <button
-                className={`px-3 py-2 rounded border text-[12px] font-semibold ${
-                  dataset === "offers" ? "bg-blue-700 text-white border-blue-700" : "bg-white text-gray-800 border-gray-300"
-                }`}
-                onClick={() => {
-                  setDataset("offers");
-                  resetToFirstPage();
-                }}
-              >
-                Offers (Refurb)
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                value={q}
-                onChange={(e) => {
-                  setQ(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Search MPN, title, brand…"
-                className="w-full md:w-[360px] border border-gray-300 rounded px-3 py-2 text-[13px] text-black"
-              />
-
-              <select
-                value={sort}
-                onChange={(e) => {
-                  setSort(e.target.value);
-                  setPage(1);
-                }}
-                className="border border-gray-300 rounded px-2 py-2 text-[13px] text-black"
-              >
-                <option value="price_desc">Price: high → low</option>
-                <option value="price_asc">Price: low → high</option>
-              </select>
-
-              <label className="flex items-center gap-2 text-[12px] text-gray-700 select-none">
-                <input
-                  type="checkbox"
-                  checked={inStockOnly}
-                  onChange={(e) => {
-                    setInStockOnly(e.target.checked);
-                    setPage(1);
-                  }}
-                />
-                In stock only
-              </label>
-            </div>
-=======
             <input
               value={q}
               onChange={(e) => {
@@ -1401,7 +1165,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                 Clear search
               </button>
             )}
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
           </div>
         </div>
 
@@ -1429,9 +1192,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
           >
             Prev
           </button>
-          <div className="text-[12px] text-gray-700 w-[70px] text-center">
-            Page {page}
-          </div>
+          <div className="text-[12px] text-gray-700 w-[70px] text-center">Page {page}</div>
           <button
             className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
             disabled={!hasMore || loading}
@@ -1442,15 +1203,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
         </div>
       </div>
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-      {/* Body */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
-        {/* Sidebar */}
-        <aside className="border border-gray-200 rounded-lg bg-white p-4 h-fit">
-          <div className="text-[13px] font-bold text-gray-800 mb-3">Filters</div>
-
-          {/* Appliance type (single-select) */}
-=======
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
         <aside
           ref={asideRef}
@@ -1531,7 +1283,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
             </div>
           </div>
 
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
           <div className="mb-4">
             <div className="text-[12px] font-semibold text-gray-700 mb-2">Appliance Type</div>
             <select
@@ -1550,30 +1301,16 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                 </option>
               ))}
             </select>
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-=======
-
-            {applianceFacet.length > 10 && (
-              <button
-                type="button"
-                disabled={filtersDisabled}
-                className="mt-2 text-[12px] text-blue-700 underline disabled:cursor-not-allowed disabled:text-gray-400"
-                onClick={() => setShowAllAppliances((v) => !v)}
-              >
-                {showAllAppliances ? "Show top 10" : "Show all"}
-              </button>
-            )}
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
           </div>
 
           {/* Brands (multi) */}
           <div className="mb-4">
             <div className="text-[12px] font-semibold text-gray-700 mb-2">Brands</div>
             <div className="max-h-[240px] overflow-auto pr-1">
-              {brandFacet.length === 0 ? (
+              {brandFacetShown.length === 0 ? (
                 <div className="text-[12px] text-gray-500">No facets yet.</div>
               ) : (
-                brandFacet.map((x) => {
+                brandFacetShown.map((x) => {
                   const checked = selectedBrands.some((b) => normalize(b) === normalize(x.value));
                   return (
                     <label key={x.value} className="flex items-center justify-between gap-2 py-1 text-[12px] text-gray-800">
@@ -1596,8 +1333,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                 })
               )}
             </div>
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-=======
 
             {brandFacet.length > 10 && (
               <button
@@ -1609,17 +1344,16 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                 {showAllBrands ? "Show top 10" : "Show all"}
               </button>
             )}
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
           </div>
 
           {/* Part types (multi) */}
           <div className="mb-2">
             <div className="text-[12px] font-semibold text-gray-700 mb-2">Part Types</div>
             <div className="max-h-[240px] overflow-auto pr-1">
-              {partFacet.length === 0 ? (
+              {partFacetShown.length === 0 ? (
                 <div className="text-[12px] text-gray-500">No facets yet.</div>
               ) : (
-                partFacet.map((x) => {
+                partFacetShown.map((x) => {
                   const checked = selectedPartTypes.some((p) => normalize(p) === normalize(x.value));
                   return (
                     <label key={x.value} className="flex items-center justify-between gap-2 py-1 text-[12px] text-gray-800">
@@ -1642,29 +1376,8 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                 })
               )}
             </div>
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-          </div>
 
-          {/* Clear */}
-          <div className="mt-4 flex gap-2">
-            <button
-              className="w-full px-3 py-2 rounded bg-gray-100 border border-gray-200 text-[12px] font-semibold text-gray-800 hover:bg-gray-200"
-              onClick={() => {
-                setQ("");
-                setApplianceType("");
-                setSelectedBrands([]);
-                setSelectedPartTypes([]);
-                setInStockOnly(false);
-                setSort("price_desc");
-                setPage(1);
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
-=======
-
-            {partFacet.length > 10 && (
+            {partFacetRaw.length > 10 && (
               <button
                 type="button"
                 disabled={filtersDisabled}
@@ -1675,14 +1388,11 @@ export default function PartsExplorer(props: PartsExplorerProps) {
               </button>
             )}
           </div>
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
         </aside>
 
         {/* Main list */}
         <main className="min-w-0">
-          {loading && (
-            <div className="mb-3 text-[12px] text-gray-600">Loading…</div>
-          )}
+          {loading && <div className="mb-3 text-[12px] text-gray-600">Loading…</div>}
 
           {err && (
             <div className="mb-4 border border-red-300 bg-red-50 text-red-700 rounded p-3 text-[12px]">
@@ -1691,10 +1401,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
             </div>
           )}
 
-<<<<<<< HEAD:merce/app/grid/PartsExplorer.client.tsx
-          {!loading && !err && items.length === 0 && (
-            <div className="text-[13px] text-gray-700">No results.</div>
-=======
           {!loading && !err && items.length === 0 && <div className="text-[13px] text-gray-700">No results.</div>}
 
           {items.length > 0 && (
@@ -1734,35 +1440,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                 </button>
               </div>
             </div>
->>>>>>> 4bcdcfcc (SSR PDP foundation + grid reapply + netted offers integration):app/grid/PartsExplorer.client.tsx
           )}
-
-          <div className="flex flex-col gap-3">
-            {items.map((p, idx) => (
-              <PartRow key={p?.id ?? `${p?.mpn ?? "row"}-${idx}`} p={p} addToCart={addToCart} />
-            ))}
-          </div>
-
-          {/* Pagination controls (bottom) */}
-          <div className="mt-6 flex items-center justify-center gap-2">
-            <button
-              className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-            >
-              Prev
-            </button>
-            <div className="text-[12px] text-gray-700 w-[80px] text-center">
-              Page {page}
-            </div>
-            <button
-              className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
-              disabled={!hasMore || loading}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </button>
-          </div>
         </main>
       </div>
     </div>

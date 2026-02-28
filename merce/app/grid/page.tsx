@@ -16,7 +16,13 @@ const DEFAULT_PER_PAGE = 30;
 type SP = Record<string, string | string[] | undefined>;
 
 function asStr(v: any) {
-  return typeof v === "string" ? v : Array.isArray(v) ? String(v[0] ?? "") : v == null ? "" : String(v);
+  return typeof v === "string"
+    ? v
+    : Array.isArray(v)
+    ? String(v[0] ?? "")
+    : v == null
+    ? ""
+    : String(v);
 }
 
 function asArr(v: any): string[] {
@@ -54,10 +60,26 @@ async function readJsonSafe(res: Response) {
   }
 }
 
-// Keep key behavior consistent with client (default sort + stable ordering)
+// ✅ Keep key behavior consistent with client (including search override + stable ordering)
 function stableKeyFromParams(sp: URLSearchParams) {
-  if (!sp.get("condition")) sp.set("condition", DEFAULT_CONDITION);
-  if (!sp.get("availability")) sp.set("availability", DEFAULT_AVAILABILITY);
+  const q = (sp.get("q") || "").trim();
+  const searchMode = q.length > 0;
+
+  if (searchMode) {
+    // Server forces these, even if URL omits them
+    sp.set("condition", "both");
+    sp.set("availability", "all");
+
+    // Server ignores filters in search mode -> remove from key
+    sp.delete("appliance_type");
+    sp.delete("brands");
+    sp.delete("part_types");
+    sp.delete("in_stock_only");
+  } else {
+    if (!sp.get("condition")) sp.set("condition", DEFAULT_CONDITION);
+    if (!sp.get("availability")) sp.set("availability", DEFAULT_AVAILABILITY);
+  }
+
   if (!sp.get("page")) sp.set("page", "1");
   if (!sp.get("per_page")) sp.set("per_page", String(DEFAULT_PER_PAGE));
   if (!sp.get("sort")) sp.set("sort", DEFAULT_SORT);
@@ -87,7 +109,6 @@ async function getRequestOrigin() {
   if (process.env.CODESPACES === "true") return localOrigin;
   if (host && isCodespacesHost(host)) return localOrigin;
 
-  // Prefer explicit env if you have one (prod)
   const envOrigin =
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -119,7 +140,6 @@ async function fetchWithTimeout(url: string, timeoutMs = 12000) {
 export default async function GridPage({
   searchParams,
 }: {
-  // Next 15+ may pass this as a Promise
   searchParams?: SP | Promise<SP>;
 }) {
   const spObj = (await Promise.resolve(searchParams)) || {};
@@ -167,8 +187,8 @@ export default async function GridPage({
 
   const origin = await getRequestOrigin();
 
-  // ✅ NO TRAILING SLASH: /api/grid?..., not /api/grid/?...
-  const itemsUrl = new URL(`/api/grid?${itemsParams.toString()}`, origin).toString();
+  // ✅ IMPORTANT: use trailing slash to avoid 308 -> HTML -> bad JSON in SSR
+  const itemsUrl = new URL(`/api/grid/?${itemsParams.toString()}`, origin).toString();
 
   // SSR only the ITEMS. Meta facets intentionally client-side.
   let itemsRes: Response | null = null;
@@ -187,13 +207,13 @@ export default async function GridPage({
     !itemsRes
       ? `SSR fetch failed: ${itemsJson?.message || "unknown"}`
       : !itemsRes.ok
-        ? `HTTP ${itemsRes.status}`
-        : itemsJson?.ok
-          ? null
-          : itemsJson?.error ||
-            (itemsJson?.__non_json
-              ? `Non-JSON from /api/grid (status ${itemsJson?.status ?? itemsRes.status}, ct ${itemsJson?.ct})`
-              : `HTTP ${itemsRes.status}`);
+      ? `HTTP ${itemsRes.status}`
+      : itemsJson?.ok
+      ? null
+      : itemsJson?.error ||
+        (itemsJson?.__non_json
+          ? `Non-JSON from /api/grid (status ${itemsJson?.status ?? itemsRes.status}, ct ${itemsJson?.ct})`
+          : `HTTP ${itemsRes.status}`);
 
   const initial = {
     condition: (itemsJson?.condition || condition || DEFAULT_CONDITION) as Condition,
@@ -206,6 +226,7 @@ export default async function GridPage({
     perPage: per_page,
   };
 
+  // ✅ Key must match client’s stableKeyFromSearchParamsString behavior
   const key = stableKeyFromParams(new URLSearchParams(itemsParams.toString()));
 
   const ssr =
@@ -214,9 +235,7 @@ export default async function GridPage({
           key,
           items: Array.isArray(itemsJson?.items) ? itemsJson.items : [],
           has_more: !!itemsJson?.has_more,
-          page_inventory_total:
-            typeof itemsJson?.page_inventory_total === "number" ? itemsJson.page_inventory_total : null,
-          // Meta intentionally not SSR
+          page_inventory_total: typeof itemsJson?.page_inventory_total === "number" ? itemsJson.page_inventory_total : null,
           facets: null,
           total_count: null,
         }

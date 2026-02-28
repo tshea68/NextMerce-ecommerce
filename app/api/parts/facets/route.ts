@@ -56,8 +56,8 @@ type CacheRow = {
 
 type FacetOutRow = {
   value: string;
-  count: number;       // total (new + refurb)
-  new_count?: number;  // parts count
+  count: number; // total (new + refurb)
+  new_count?: number; // parts count
   refurb_count?: number; // offers count
 };
 
@@ -99,8 +99,10 @@ function mergeFacet(
   limit: number,
   mode: Condition
 ): FacetOutRow[] {
-  const partsMap = mode !== "refurb" ? buildFacetMap(partsRows, availability, facet) : new Map<string, number>();
-  const offersMap = mode !== "new" ? buildFacetMap(offersRows, availability, facet) : new Map<string, number>();
+  const partsMap =
+    mode !== "refurb" ? buildFacetMap(partsRows, availability, facet) : new Map<string, number>();
+  const offersMap =
+    mode !== "new" ? buildFacetMap(offersRows, availability, facet) : new Map<string, number>();
 
   const keys = new Set<string>([...partsMap.keys(), ...offersMap.keys()]);
 
@@ -143,8 +145,15 @@ export async function GET(req: Request) {
     // back-compat in_stock_only=1
     const availabilityParam = u.searchParams.get("availability");
     const inStockOnly = asBool(u.searchParams.get("in_stock_only"));
-    const availability = normalizeAvailability(availabilityParam ?? (inStockOnly ? "in_stock" : "all"));
-    const effectiveAvailability: EffectiveAvailability = availability === "in_stock" ? "in_stock" : "all";
+
+    // "orderable" should behave like a non-"all" bucket for cache purposes.
+    const availabilityRequested = normalizeAvailability(
+      availabilityParam ?? (inStockOnly ? "in_stock" : "all")
+    );
+
+    // Cache only has: all | in_stock
+    const effectiveAvailability: EffectiveAvailability =
+      availabilityRequested === "all" ? "all" : "in_stock";
 
     // condition=both|new|refurb
     const condition = normalizeCondition(u.searchParams.get("condition"));
@@ -204,19 +213,25 @@ export async function GET(req: Request) {
     const offersEffective = effectiveAvailability === "in_stock" ? offersTotals.in_stock : offersTotals.all;
 
     const estimated_total =
-      condition === "new" ? partsEffective :
-      condition === "refurb" ? offersEffective :
-      partsEffective + offersEffective;
+      condition === "new"
+        ? partsEffective
+        : condition === "refurb"
+        ? offersEffective
+        : partsEffective + offersEffective;
 
     const estimated_total_all =
-      condition === "new" ? partsTotals.all :
-      condition === "refurb" ? offersTotals.all :
-      partsTotals.all + offersTotals.all;
+      condition === "new"
+        ? partsTotals.all
+        : condition === "refurb"
+        ? offersTotals.all
+        : partsTotals.all + offersTotals.all;
 
     const estimated_total_in_stock =
-      condition === "new" ? partsTotals.in_stock :
-      condition === "refurb" ? offersTotals.in_stock :
-      partsTotals.in_stock + offersTotals.in_stock;
+      condition === "new"
+        ? partsTotals.in_stock
+        : condition === "refurb"
+        ? offersTotals.in_stock
+        : partsTotals.in_stock + offersTotals.in_stock;
 
     // Facets
     const brands = mergeFacet(partsRows, offersRows, effectiveAvailability, "brands", facetLimit, condition);
@@ -227,14 +242,14 @@ export async function GET(req: Request) {
       {
         ok: true,
         condition,
-        availability,
+        availability: availabilityRequested, // keep what caller asked for
         meta: {
           // Estimated totals for current mode
           estimated_total,
           estimated_total_all,
           estimated_total_in_stock,
 
-          // ✅ the key thing you wanted: explicit split
+          // Split breakdown (you asked for this)
           breakdown: {
             parts_total: partsTotals.all,
             offers_total: offersTotals.all,
@@ -242,10 +257,11 @@ export async function GET(req: Request) {
             offers_in_stock: offersTotals.in_stock,
           },
 
-          // Debug/trace
+          // Trace/debug
           sources,
           warning,
           source: sources[0] || null,
+          availability_requested: availabilityRequested,
           effective_availability: effectiveAvailability,
           facet_limit: facetLimit,
         },
