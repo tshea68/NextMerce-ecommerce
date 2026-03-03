@@ -25,97 +25,92 @@ function isPartInStock(stock_status_canon: any, availability_rank: any) {
   return s === "in_stock" || s === "available" || s === "instock";
 }
 
-function looksLikeListingId(s: string) {
-  // If you ever change /offers/[mpn] to /offers/[listing_id], this will still work.
-  // Accept pure digits or long-ish mixed IDs.
-  const x = String(s ?? "").trim();
-  if (!x) return false;
-  if (/^\d{8,20}$/.test(x)) return true;
-  return false;
-}
-
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) return null;
+  // IMPORTANT: server lookups must bypass RLS
+  if (!supabaseUrl) {
+    throw new Error("Missing env: NEXT_PUBLIC_SUPABASE_URL");
+  }
+  if (!serviceKey) {
+    throw new Error(
+      "Missing env: SUPABASE_SERVICE_ROLE_KEY (required for server-side product lookups). " +
+        "Add it to .env.local and restart `npm run dev`."
+    );
+  }
 
-  return createClient(supabaseUrl, supabaseKey, {
+  return createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
 async function fetchPrimary(kind: Kind, slugRaw: string) {
   const supabase = getSupabase();
-  if (!supabase) return null;
 
   const slug = normAlnum(slugRaw);
   const mpn_norm = normMpn(slug);
-
   if (!slug || !mpn_norm) return null;
 
   if (kind === "parts") {
     const cols =
       "id,mpn,title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank,replaced_by,replaces_previous_parts,compatible_models";
-    const { data } = await supabase
+
+    const { data, error } = await supabase
       .from("parts")
       .select(cols)
       .eq("mpn_normalized", mpn_norm)
       .maybeSingle();
 
+    if (error) console.error("[ProductPageServer] parts lookup error", { slug, mpn_norm, error });
     if (!data) return null;
 
-    return {
-      source: "parts" as const,
-      mpn_norm,
-      row: data,
-    };
+    return { source: "parts" as const, mpn_norm, row: data };
   }
 
-  // offers
+  // OFFERS: canonical lookup is mpn_norm only (no listing_id required)
   const cols =
     "id,listing_id,mpn,title,price,image_url,brand,part_type,appliance_type,inventory_total,compatible_models";
 
-  // Try listing_id first if it looks like one; otherwise treat slug as MPN.
-  if (looksLikeListingId(slug)) {
-    const { data } = await supabase
+  {
+    const { data, error } = await supabase
       .from("offers")
       .select(cols)
-      .eq("listing_id", slug)
+      .eq("mpn_norm", mpn_norm)
+      .order("inventory_total", { ascending: false, nullsFirst: false })
+      .order("price", { ascending: false, nullsFirst: false })
+      .limit(1)
       .maybeSingle();
 
-    if (data) {
-      return {
-        source: "offers" as const,
-        mpn_norm: normMpn(data?.mpn ?? slug),
-        row: data,
-      };
-    }
+    if (error) console.error("[ProductPageServer] offers mpn_norm lookup error", { slug, mpn_norm, error });
+    if (data) return { source: "offers" as const, mpn_norm, row: data };
   }
 
-  // Fallback: match by normalized MPN (recommended)
-  const { data } = await supabase
-    .from("offers")
-    .select(cols)
-    .eq("mpn_norm", mpn_norm)
-    .order("inventory_total", { ascending: false, nullsFirst: false })
-    .order("price", { ascending: false, nullsFirst: false })
-    .limit(1)
-    .maybeSingle();
+  // Last-resort fallback for dirty rows: match mpn text
+  {
+    const like = `%${slug}%`;
+    const { data, error } = await supabase
+      .from("offers")
+      .select(cols)
+      .ilike("mpn", like)
+      .order("inventory_total", { ascending: false, nullsFirst: false })
+      .order("price", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (!data) return null;
+    if (error) console.error("[ProductPageServer] offers ilike(mpn) lookup error", { slug, mpn_norm, error });
+    if (!data) return null;
 
-  return {
-    source: "offers" as const,
-    mpn_norm,
-    row: data,
-  };
+    return {
+      source: "offers" as const,
+      mpn_norm: normMpn(data?.mpn ?? slug),
+      row: data,
+    };
+  }
 }
 
 async function fetchAlternates(mpn_norm: string) {
   const supabase = getSupabase();
-  if (!supabase) return { newPart: null as any, refurbOffers: [] as any[] };
 
   const partCols =
     "id,mpn,title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank,replaced_by,replaces_previous_parts";

@@ -389,8 +389,7 @@ function PartRow({ p, addToCart }: any) {
   const detailHref = (() => {
     if (!mpn) return "#";
     if (isRefurb) {
-      const listingId = p?.listing_id || p?.offer_id || "";
-      return `/refurb/${encodeURIComponent(mpn)}${listingId ? `?offer=${encodeURIComponent(listingId)}` : ""}`;
+      return `/offers/${encodeURIComponent(mpn)}`;
     }
     return `/parts/${encodeURIComponent(mpn)}`;
   })();

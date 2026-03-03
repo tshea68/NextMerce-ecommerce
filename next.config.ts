@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
 
   // ✅ avoids edge cases on some static hosts (safe on Pages)
-  trailingSlash: true,
+  trailingSlash: false,
 
   // ✅ stop template lint from failing builds while we refactor
   eslint: {

@@ -3,10 +3,13 @@ export const runtime = "nodejs";
 
 import ProductPageServer from "@/components/ProductPage.server";
 
-export default async function PartByMpnPage({
+type MaybePromise<T> = T | Promise<T>;
+
+export default async function PartsByMpnPage({
   params,
 }: {
-  params: { mpn: string };
+  params: MaybePromise<{ mpn: string }>;
 }) {
-  return <ProductPageServer kind="parts" slug={params.mpn} />;
+  const { mpn } = await params;
+  return <ProductPageServer kind="parts" slug={mpn} />;
 }
