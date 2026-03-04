@@ -1,21 +1,16 @@
-import ProductPageServer, { getProductSeo } from "@/components/ProductPage.server";
-import { notFound } from "next/navigation";
-
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: { mpn: string } }) {
-  const seo = await getProductSeo("offers", params.mpn);
-  if (!seo) return {};
+import ProductPageServer from "@/components/ProductPage.server";
 
-  return {
-    title: seo.title,
-    description: seo.description,
-    alternates: { canonical: `/offers/${encodeURIComponent(params.mpn)}` },
-  };
-}
+type MaybePromise<T> = T | Promise<T>;
 
-export default async function OffersByMpnPage({ params }: { params: { mpn: string } }) {
-  if (!params?.mpn) notFound();
-  return <ProductPageServer kind="offers" slug={params.mpn} />;
+export default async function OffersByMpnPage({
+  params,
+}: {
+  params: MaybePromise<{ mpn: string }>;
+}) {
+  const { mpn } = await params;
+
+  return <ProductPageServer kind="offers" slug={mpn} />;
 }
