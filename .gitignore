@@ -23,3 +23,6 @@ pnpm-debug.log*
 # your existing
 _legacy/
 *.bak.*
+
+# local artifacts
+repo-snapshot.zip
