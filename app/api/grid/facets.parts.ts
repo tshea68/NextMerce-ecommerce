@@ -35,6 +35,9 @@ function toFacetRows(v: any): FacetRow[] {
  * Requires a Supabase SQL function:
  *   public.grid_facets_parts(p_q text, p_availability text, p_appliance_type text, p_brands text[], p_part_types text[], p_facet_limit int)
  * returning jsonb with keys: brands, parts, appliances
+ *
+ * NOTE:
+ * p_part_types should now apply against canonical_part_type on the SQL side.
  */
 export async function fetchPartsFacets(sb: any, args: PartsFacetArgs): Promise<Facets> {
   const payload = {
@@ -43,7 +46,7 @@ export async function fetchPartsFacets(sb: any, args: PartsFacetArgs): Promise<F
     p_appliance_type: (args.appliance_type || "").trim() || null,
     p_brands: uniq(args.brands),
     p_part_types: uniq(args.part_types),
-    p_facet_limit: Number.isFinite(Number(args.facet_limit)) ? Number(args.facet_limit) : 300,
+    p_facet_limit: Number.isFinite(Number(args.facet_limit)) ? Number(args.facet_limit) : 20,
   };
 
   const r = await sb.rpc("grid_facets_parts", payload);
@@ -68,7 +71,7 @@ export async function fetchPartsTotalCount(sb: any, args: PartsFacetArgs): Promi
   if (brands.length) q = q.in("brand", brands);
 
   const partTypes = uniq(args.part_types);
-  if (partTypes.length) q = q.in("part_type", partTypes);
+  if (partTypes.length) q = q.in("canonical_part_type", partTypes);
 
   const term = (args.q || "").trim();
   if (term) {

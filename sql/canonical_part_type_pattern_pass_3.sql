@@ -1,0 +1,42 @@
+update parts
+set canonical_part_type =
+case
+  when lower(coalesce(specific_part_type,'')) like '%thermocouple%' then 'Thermostat / Sensor'
+  when lower(coalesce(specific_part_type,'')) like '%leg%' then 'Chassis / Cabinet'
+  when lower(coalesce(specific_part_type,'')) like '%lock%' then 'Latch'
+  when lower(coalesce(specific_part_type,'')) like '%heat shield%' then 'Vent / Air Flow'
+  when lower(coalesce(specific_part_type,'')) like '%sump%' then 'Pump'
+  when lower(coalesce(specific_part_type,'')) like '%suspension%' then 'Mechanical / Drive Component'
+  when lower(coalesce(specific_part_type,'')) like '%bellows%' then 'Gasket / Seal'
+  when lower(coalesce(specific_part_type,'')) like '%ignitor%' then 'Igniter'
+  when lower(coalesce(specific_part_type,'')) like '%txv%' then 'Compressor / Sealed System'
+  when lower(coalesce(specific_part_type,'')) like '%reflector%' then 'Light / Bulb'
+  when lower(coalesce(specific_part_type,'')) like '%agitator%' then 'Mechanical / Drive Component'
+  when lower(coalesce(specific_part_type,'')) like '%electrode%' then 'Igniter'
+  when lower(coalesce(specific_part_type,'')) like '%coupling%' then 'Mechanical / Drive Component'
+  when lower(coalesce(specific_part_type,'')) like '%reservoir%' then 'Reservoir / Tank'
+  when lower(coalesce(specific_part_type,'')) like '%float%' then 'Valve'
+  when lower(coalesce(specific_part_type,'')) like '%rotor%' then 'Motor / Blower'
+  when lower(coalesce(specific_part_type,'')) like '%stator%' then 'Motor / Blower'
+  when lower(coalesce(specific_part_type,'')) like '%regulator%' then 'Valve'
+  when lower(coalesce(specific_part_type,'')) like '%maintop%' then 'Panel'
+  when lower(coalesce(specific_part_type,'')) like '%worktop%' then 'Panel'
+  when lower(coalesce(specific_part_type,'')) like '%hob top%' then 'Panel'
+  when lower(coalesce(specific_part_type,'')) like '%backsplash%' then 'Panel'
+  when lower(coalesce(specific_part_type,'')) like '%deflector%' then 'Vent / Air Flow'
+  when lower(coalesce(specific_part_type,'')) like '%diffuser%' then 'Vent / Air Flow'
+  when lower(coalesce(specific_part_type,'')) like '%flue%' then 'Vent / Air Flow'
+  when lower(coalesce(specific_part_type,'')) like '%mount%' then 'Bracket'
+  when lower(coalesce(specific_part_type,'')) like '%mounting%' then 'Bracket'
+  when lower(coalesce(specific_part_type,'')) like '%brace%' then 'Bracket'
+  when lower(coalesce(specific_part_type,'')) like '%handle%' then 'Handle'
+  when lower(coalesce(specific_part_type,'')) like '%container%' then 'Reservoir / Tank'
+  when lower(coalesce(specific_part_type,'')) like '%bowl%' then 'Reservoir / Tank'
+  when lower(coalesce(specific_part_type,'')) like '%column%' then 'Chassis / Cabinet'
+  when lower(coalesce(specific_part_type,'')) like '%key%' then 'Hardware'
+  when lower(coalesce(specific_part_type,'')) like '%fixture%' then 'Hardware'
+  when lower(coalesce(specific_part_type,'')) like '%lp conversion%' then 'Hardware'
+  else canonical_part_type
+end
+where availability_rank in (1,2)
+  and canonical_part_type = 'Other';

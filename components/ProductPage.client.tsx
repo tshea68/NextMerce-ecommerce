@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import PartImage from "./PartImage";
+import ReliableAvailabilityPill from "./ReliableAvailabilityPill.client";
+import ComparisonBadge from "./ComparisonBadge.client";
 
 export type ProductCardVM = {
   source: "parts" | "offers";
@@ -23,13 +24,15 @@ export type ProductCardVM = {
   stock_status_canon?: string | null;
   availability_rank?: number | null;
 
+  // Replacement fields
   replaced_by?: string | null;
   replaces_previous_parts?: string | null;
 
+  // Compatibility fields
   compatible_models?: string | null;
+  compatible_brands?: string | null; // <-- must be sent by server VM
 
-  compatible_brands?: string | null;
-
+  // offers-only (DO NOT DISPLAY)
   listing_id?: string | null;
 };
 
@@ -50,31 +53,26 @@ function money(v: any) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 }
 
-function splitModels(s: string | null | undefined) {
-  return asList(s).slice(0, 50);
+function cleanStr(s: any): string {
+  return String(s ?? "").trim();
 }
 
-function asList(v: any): string[] {
-  if (v == null) return [];
-  if (Array.isArray(v)) return v.map((x) => String(x ?? "").trim()).filter(Boolean);
-
-  const s = String(v).trim();
-  if (!s || s === "[]" || s.toLowerCase() === "null") return [];
-
-  // If it looks like JSON, try parsing.
-  if ((s.startsWith("[") && s.endsWith("]")) || (s.startsWith("{") && s.endsWith("}"))) {
-    try {
-      return asList(JSON.parse(s));
-    } catch {
-      // fall through
-    }
-  }
-
-  // supports comma/space/newline delims
-  return s
-    .split(/[\n,;]+/)
-    .map((x) => x.replace(/^\s*[-•]+\s*/, "").trim())
+function splitList(s: string | null | undefined) {
+  const raw = cleanStr(s);
+  if (!raw) return [];
+  return raw
+    .split(/[\n,]+/)
+    .map((x) => x.trim())
     .filter(Boolean);
+}
+
+function splitModels(s: string | null | undefined) {
+  return splitList(s).slice(0, 200);
+}
+
+function splitBrands(s: string | null | undefined) {
+  // You said you have "3 compatible brands" in table; assume comma/newline delims.
+  return splitList(s).slice(0, 50);
 }
 
 export default function ProductPageClient({ vm }: { vm: ProductVM }) {
@@ -82,185 +80,203 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
   const title = p.title || p.mpn || "Product";
   const models = splitModels(p.compatible_models);
-  const replaces = asList(p.replaces_previous_parts);
-  const brands = splitModels(p.compatible_brands);
+  const brands = splitBrands(p.compatible_brands);
+
+  const refurbAlternatives =
+    p.source === "offers"
+      ? vm.refurb_offers.filter((o) => o.id !== p.id).length
+      : vm.refurb_offers.length;
+
+  const newOemAlternatives =
+    p.source === "offers" && vm.new_part ? 1 : 0;
+
+  const totalAlternatives = refurbAlternatives + newOemAlternatives;
+
+  const headerLeft = vm.new_part?.mpn
+    ? `NEW OEM PART: ${vm.new_part.mpn}`
+    : "NEW OEM PART: None Available";
+
+  const headerRight =
+    totalAlternatives > 0
+      ? `${totalAlternatives} Refurbished/New OEM Alternatives Available`
+      : "None Available";
+
+  const availabilityPartNumber =
+    p.source === "parts"
+      ? (p.mpn || null)
+      : (vm.new_part?.mpn || null);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-4 text-sm text-gray-600">
-        <Link className="hover:underline" href="/grid">
+      {/* Breadcrumb: Home / Title */}
+      <div className="mb-4 text-base text-gray-700">
+        <Link className="font-medium hover:underline" href="/grid">
           Home
         </Link>
-        <span className="mx-2">/</span>
-        <Link className="hover:underline" href="/grid">
-          Grid
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-gray-900">{p.mpn ?? vm.slug}</span>
+        <span className="mx-2 text-gray-400">/</span>
+        <span className="font-semibold text-gray-900">{title}</span>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
+        {/* LEFT: Image */}
         <div className="rounded-xl border bg-white p-4">
-          {/* Image */}
           <div className="aspect-square w-full overflow-hidden rounded-lg bg-gray-50">
-            <PartImage imageUrl={p.image_url} alt={title} className="h-full w-full" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.image_url || "/placeholder.png"}
+              alt={title}
+              className="h-full w-full object-contain"
+            />
           </div>
         </div>
 
-        <div className="rounded-xl border bg-white p-5">
-          <div className="flex items-center gap-2">
-            <span
-              className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                p.source === "offers"
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-emerald-100 text-emerald-800"
-              }`}
-            >
-              {p.source === "offers" ? "Refurbished Offer" : "New Part"}
-            </span>
-
-            {p.in_stock ? (
-              <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                In stock{p.source === "offers" && p.inventory_total != null ? ` (${p.inventory_total})` : ""}
-              </span>
-            ) : (
-              <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
-                Out of stock
-              </span>
-            )}
-          </div>
-
-          <h1 className="mt-3 text-2xl font-semibold text-gray-900">{title}</h1>
-
-          <div className="mt-2 text-sm text-gray-600">
-            <div>
-              <span className="font-medium text-gray-800">MPN:</span> {p.mpn ?? vm.slug}
+        {/* RIGHT: Details */}
+        <div className="rounded-xl border bg-white">
+          <div className="flex flex-col justify-between gap-3 rounded-t-xl bg-slate-900 px-5 py-4 text-white md:flex-row md:items-center">
+            <div className="text-sm font-semibold tracking-wide md:text-base">
+              {headerLeft}
             </div>
-            {p.brand && (
-              <div>
-                <span className="font-medium text-gray-800">Brand:</span> {p.brand}
-              </div>
-            )}
-            {p.appliance_type && (
-              <div>
-                <span className="font-medium text-gray-800">Appliance:</span> {p.appliance_type}
-              </div>
-            )}
-            {p.part_type && (
-              <div>
-                <span className="font-medium text-gray-800">Part type:</span> {p.part_type}
-              </div>
-            )}
-            {brands.length > 0 && (
-              <div>
-                <span className="font-medium text-gray-800">Compatible brands:</span> {brands.join(", ")}
-              </div>
-            )}
-            {p.source === "offers" && p.listing_id && (
-              <div>
-                <span className="font-medium text-gray-800">Listing ID:</span> {p.listing_id}
-              </div>
-            )}
+
+            <div className="text-sm font-semibold md:text-right md:text-base">
+              {headerRight}
+            </div>
           </div>
 
-          <div className="mt-4 text-3xl font-bold text-gray-900">{money(p.price)}</div>
+          <div className="flex justify-end px-5 pt-3">
+            <ComparisonBadge vm={vm} />
+          </div>
 
-          {/* Minimal action row (you can wire into your cart/checkout later) */}
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              href={p.href}
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
-            >
-              Refresh page
-            </Link>
+          <div className="px-5 py-4">
+            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
 
-            {p.source === "offers" && vm.new_part?.href ? (
-              <Link
-                href={vm.new_part.href}
-                className="rounded-lg border px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-              >
-                View new part
-              </Link>
+            {/* Compatible brands — BIG + under header bar */}
+            {brands.length ? (
+              <div className="mt-2 text-base font-semibold text-gray-900">
+                Compatible brands:{" "}
+                <span className="font-bold">
+                  {brands.join(", ")}
+                </span>
+              </div>
             ) : null}
 
-            {p.source === "parts" && vm.refurb_offers?.[0]?.href ? (
-              <Link
-                href={vm.refurb_offers[0].href}
-                className="rounded-lg border px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-              >
-                View refurbished options
-              </Link>
-            ) : null}
-          </div>
+            {/* Availability badge — customer-facing only */}
+            <div className="mt-3">
+              {(() => {
+                const status = (p.stock_status_canon || "").toLowerCase();
 
-          {/* Replacement info for new parts */}
-          {(p.replaced_by || replaces.length > 0) && (
-            <div className="mt-6 rounded-lg border bg-gray-50 p-4 text-sm">
-              <div className="font-semibold text-gray-900">Replacement info</div>
-              {p.replaced_by && (
-                <div className="mt-1">
-                  <span className="font-medium">Replaced by:</span> {p.replaced_by}
-                </div>
-              )}
-              {replaces.length > 0 && (
-                <div className="mt-1">
-                  <span className="font-medium">Replaces:</span> {replaces.join(", ")}
-                </div>
-              )}
+                const isNoLongerAvailable =
+                  status.includes("no longer") ||
+                  status.includes("discontinued") ||
+                  status.includes("nla");
+
+                const isInStock = p.in_stock;
+                const isSpecialOrder = !isNoLongerAvailable && !isInStock;
+
+                if (isNoLongerAvailable) {
+                  return (
+                    <div>
+                      <span className="inline-flex items-center rounded-full bg-black px-4 py-2 text-base font-bold text-white">
+                        No Longer Available
+                      </span>
+                    </div>
+                  );
+                }
+
+                if (isInStock) {
+                  return (
+                    <div>
+                      <span className="inline-flex items-center rounded-full bg-emerald-600 px-4 py-2 text-base font-bold text-white">
+                        In Stock
+                      </span>
+                    </div>
+                  );
+                }
+
+                if (isSpecialOrder) {
+                  return (
+                    <div>
+                      <span className="inline-flex items-center rounded-full bg-red-600 px-4 py-2 text-base font-bold text-white">
+                        Special Order
+                      </span>
+                      <div className="mt-2 text-sm font-medium text-gray-600">
+                        (Usually ships within 30 Days)
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })()}
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Alternates */}
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <div className="rounded-xl border bg-white p-5">
-          <div className="text-lg font-semibold text-gray-900">New part (if available)</div>
-          {vm.new_part ? (
-            <Link href={vm.new_part.href} className="mt-3 block rounded-lg border p-3 hover:bg-gray-50">
-              <div className="text-sm font-semibold text-gray-900">{vm.new_part.title || vm.new_part.mpn}</div>
-              <div className="mt-1 text-sm text-gray-700">{money(vm.new_part.price)}</div>
-              <div className="mt-1 text-xs text-gray-600">{vm.new_part.in_stock ? "In stock" : "Out of stock"}</div>
-            </Link>
-          ) : (
-            <div className="mt-2 text-sm text-gray-600">No matching new part found.</div>
-          )}
-        </div>
+            {availabilityPartNumber ? (
+              <div className="mt-3">
+                <ReliableAvailabilityPill
+                  partNumber={availabilityPartNumber}
+                  qty={1}
+                  hideWhenUnknown={false}
+                />
+              </div>
+            ) : null}
 
-        <div className="rounded-xl border bg-white p-5">
-          <div className="text-lg font-semibold text-gray-900">Refurbished offers</div>
-          {vm.refurb_offers.length ? (
-            <div className="mt-3 space-y-2">
-              {vm.refurb_offers.slice(0, 6).map((o) => (
-                <Link key={o.id} href={o.href} className="block rounded-lg border p-3 hover:bg-gray-50">
-                  <div className="text-sm font-semibold text-gray-900">{o.title || o.mpn}</div>
-                  <div className="mt-1 text-sm text-gray-700">{money(o.price)}</div>
-                  <div className="mt-1 text-xs text-gray-600">
-                    {o.in_stock ? `In stock (${o.inventory_total ?? 0})` : "Out of stock"}
+            {/* Meta (NO listing/ebay id) */}
+            <div className="mt-4 text-base text-gray-700">
+              {p.appliance_type ? (
+                <div>
+                  <span className="font-semibold text-gray-900">Appliance:</span> {p.appliance_type}
+                </div>
+              ) : null}
+              {p.part_type ? (
+                <div>
+                  <span className="font-semibold text-gray-900">Part type:</span> {p.part_type}
+                </div>
+              ) : null}
+            </div>
+
+            {/* Price only */}
+            <div className="mt-5">
+              <div className="text-4xl font-extrabold text-gray-900">{money(p.price)}</div>
+            </div>
+
+            {/* Replacement info — only show if present */}
+            {(p.replaced_by || p.replaces_previous_parts) ? (
+              <div className="mt-6 rounded-lg border bg-gray-50 p-4 text-base">
+                <div className="text-lg font-bold text-gray-900">Replacement info</div>
+                {p.replaced_by ? (
+                  <div className="mt-1">
+                    <span className="font-semibold">Replaced by:</span> {p.replaced_by}
                   </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-2 text-sm text-gray-600">No refurb offers found.</div>
-          )}
-        </div>
-      </div>
+                ) : null}
+                {p.replaces_previous_parts ? (
+                  <div className="mt-1">
+                    <span className="font-semibold">Replaces:</span> {p.replaces_previous_parts}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
-      {/* Compatible models */}
-      <div className="mt-8 rounded-xl border bg-white p-5">
-        <div className="text-lg font-semibold text-gray-900">Compatible models</div>
-        {models.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {models.map((m) => (
-              <span key={m} className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-800">
-                {m}
-              </span>
-            ))}
+            {/* Compatible models — INSIDE right container only, fixed height + scroll */}
+            {models.length ? (
+              <div className="mt-6 rounded-lg border bg-white p-4">
+                <div className="text-lg font-bold text-gray-900">Compatible models</div>
+
+                {/* Shows about 5 rows then scrolls */}
+                <div className="mt-3 max-h-44 overflow-auto rounded-md border bg-gray-50 p-2">
+                  <ul className="space-y-2">
+                    {models.map((m) => (
+                      <li
+                        key={m}
+                        className="rounded-md border bg-white px-3 py-2 text-base font-semibold text-gray-900"
+                      >
+                        {m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
           </div>
-        ) : (
-          <div className="mt-2 text-sm text-gray-600">No compatibility list available for this item.</div>
-        )}
+        </div>
       </div>
     </div>
   );

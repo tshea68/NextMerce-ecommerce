@@ -5,13 +5,22 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 const AVAIL_URL = "https://inventorychecker.timothyshea.workers.dev/availability";
 const DEFAULT_ZIP = "10001";
 
-type AvailStatus = "in_stock" | "special_order" | "discontinued" | "unavailable" | "unknown";
+type AvailStatus =
+  | "in_stock"
+  | "special_order"
+  | "discontinued"
+  | "unavailable"
+  | "unknown";
 
 function safeLower(v: any) {
   return String(v ?? "").toLowerCase();
 }
 
-function deriveStatus(payload: any): { status: AvailStatus; totalAvailable: number | null; label: string } {
+function deriveStatus(payload: any): {
+  status: AvailStatus;
+  totalAvailable: number | null;
+  label: string;
+} {
   const apiStatus =
     payload?.status ||
     payload?.meta?.apiStatus ||
@@ -27,30 +36,104 @@ function deriveStatus(payload: any): { status: AvailStatus; totalAvailable: numb
         ? payload.total_available
         : null;
 
-  // Direct API status first
-  if (apiStatus === "in_stock") return { status: "in_stock", totalAvailable: total, label: "In Stock" };
-  if (apiStatus === "special_order") return { status: "special_order", totalAvailable: total, label: "Backorder / Special Order" };
-  if (apiStatus === "discontinued") return { status: "discontinued", totalAvailable: total, label: "Discontinued" };
-  if (apiStatus === "no_stock") return { status: "unavailable", totalAvailable: total, label: "Unavailable" };
+  const statusNorm = safeLower(apiStatus);
+  const errNorm = safeLower(errMsg);
 
-  // Your React logic: Success + 0 means BACKORDER
-  if (errMsg === "Success" && total !== null) {
-    if (total > 0) return { status: "in_stock", totalAvailable: total, label: `In Stock` };
-    return { status: "special_order", totalAvailable: total, label: "Backorder / Special Order" };
+  // Direct API status first
+  if (statusNorm === "in_stock") {
+    return {
+      status: "in_stock",
+      totalAvailable: total,
+      label:
+        typeof total === "number" && total > 0
+          ? `In Stock • ${total} Available`
+          : "In Stock",
+    };
   }
 
-  const em = safeLower(errMsg);
-  if (em.includes("no longer available") || em.includes("invalid part") || em.includes("not available")) {
-    return { status: "unavailable", totalAvailable: total, label: "Unavailable" };
+  if (statusNorm === "special_order") {
+    return {
+      status: "special_order",
+      totalAvailable: total,
+      label: "Special Order",
+    };
+  }
+
+  if (statusNorm === "discontinued") {
+    return {
+      status: "discontinued",
+      totalAvailable: total,
+      label: "No Longer Available",
+    };
+  }
+
+  if (statusNorm === "no_stock") {
+    return {
+      status: "special_order",
+      totalAvailable: total,
+      label: "Special Order",
+    };
+  }
+
+  // Success + total means:
+  // > 0 => in stock
+  // 0 => special order
+  if (errMsg === "Success" && total !== null) {
+    if (total > 0) {
+      return {
+        status: "in_stock",
+        totalAvailable: total,
+        label: `In Stock • ${total} Available`,
+      };
+    }
+
+    return {
+      status: "special_order",
+      totalAvailable: total,
+      label: "Special Order",
+    };
+  }
+
+  // Treat unavailable-ish messages as NLA for customer-facing UI
+  if (
+    errNorm.includes("no longer available") ||
+    errNorm.includes("discontinued") ||
+    errNorm.includes("invalid part") ||
+    errNorm.includes("not available") ||
+    errNorm.includes("obsolete") ||
+    errNorm.includes("nla")
+  ) {
+    return {
+      status: "unavailable",
+      totalAvailable: total,
+      label: "No Longer Available",
+    };
   }
 
   // Fallback on totals if present
   if (total !== null) {
-    if (total > 0) return { status: "in_stock", totalAvailable: total, label: "In Stock" };
-    if (total === 0) return { status: "unavailable", totalAvailable: total, label: "Unavailable" };
+    if (total > 0) {
+      return {
+        status: "in_stock",
+        totalAvailable: total,
+        label: `In Stock • ${total} Available`,
+      };
+    }
+
+    if (total === 0) {
+      return {
+        status: "special_order",
+        totalAvailable: total,
+        label: "Special Order",
+      };
+    }
   }
 
-  return { status: "unknown", totalAvailable: total, label: "Availability unknown" };
+  return {
+    status: "unknown",
+    totalAvailable: total,
+    label: "Availability unknown",
+  };
 }
 
 export default function ReliableAvailabilityPill(props: {
@@ -113,7 +196,7 @@ export default function ReliableAvailabilityPill(props: {
 
   if (loading) {
     return (
-      <span className="inline-flex items-center gap-2 text-[11px] font-semibold px-2 py-1 rounded bg-gray-100 text-gray-700 border border-gray-200">
+      <span className="inline-flex items-center gap-2 rounded border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">
         Checking availability…
       </span>
     );
@@ -121,34 +204,30 @@ export default function ReliableAvailabilityPill(props: {
 
   if (err) {
     return (
-      <span className="inline-flex items-center gap-2 text-[11px] font-semibold px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200">
-        Inventory unavailable
+      <span className="inline-flex items-center gap-2 rounded border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">
+        Availability unknown
       </span>
     );
   }
 
   if (!payload) return null;
-
   if (hideWhenUnknown && derived.status === "unknown") return null;
 
   const cls =
     derived.status === "in_stock"
-      ? "bg-green-600 text-white border-green-700"
+      ? "bg-emerald-600 text-white border-emerald-700"
       : derived.status === "special_order"
-        ? "bg-red-700 text-white border-red-800"
+        ? "bg-red-600 text-white border-red-700"
         : derived.status === "discontinued" || derived.status === "unavailable"
           ? "bg-black text-white border-black"
           : "bg-gray-100 text-gray-700 border-gray-200";
 
   return (
-    <span className={`inline-flex items-center gap-2 text-[11px] font-semibold px-2 py-1 rounded border ${cls}`}>
+    <span
+      className={`inline-flex items-center gap-2 rounded border px-3 py-2 text-sm font-semibold ${cls}`}
+    >
       <span>{derived.label}</span>
-      {typeof derived.totalAvailable === "number" && (
-        <span className="bg-white/15 px-2 py-0.5 rounded font-mono">
-          {derived.totalAvailable}
-        </span>
-      )}
-      <span className="opacity-80 font-normal">ZIP {zip}</span>
+      <span className="opacity-80 text-xs font-normal">ZIP {zip}</span>
     </span>
   );
 }

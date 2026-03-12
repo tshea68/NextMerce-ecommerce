@@ -4,16 +4,6 @@ import ProductPageClient, { type ProductVM } from "./ProductPage.client";
 
 type Kind = "parts" | "offers";
 
-function pickTitle(row: any) {
-  return (
-    row?.title_display ??
-    row?.feed_title ??
-    row?.title ??
-    row?.mpn ??
-    null
-  );
-}
-
 function normAlnum(s: string) {
   return String(s ?? "").trim().replace(/[^A-Za-z0-9._-]+/g, "");
 }
@@ -35,97 +25,142 @@ function isPartInStock(stock_status_canon: any, availability_rank: any) {
   return s === "in_stock" || s === "available" || s === "instock";
 }
 
+function looksLikeListingId(s: string) {
+  const x = String(s ?? "").trim();
+  if (!x) return false;
+  if (/^\d{8,20}$/.test(x)) return true;
+  return false;
+}
+
+/**
+ * compatible_brands in Supabase is often TEXT like:
+ *   "kenmore, whirlpool, kitchenaid"
+ * But UI wants a list. Normalize to string[] (or null).
+ */
+function normalizeBrands(v: any): string[] | null {
+  if (v == null) return null;
+
+  if (Array.isArray(v)) {
+    const out = v
+      .map((x) => String(x ?? "").trim())
+      .filter(Boolean);
+    return out.length ? Array.from(new Set(out)) : null;
+  }
+
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+
+  // If it ever becomes a JSON array string, handle it.
+  if (s.startsWith("[") && s.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) {
+        const out = parsed
+          .map((x) => String(x ?? "").trim())
+          .filter(Boolean);
+        return out.length ? Array.from(new Set(out)) : null;
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  const out = s
+    .split(/[,|\n]+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  return out.length ? Array.from(new Set(out)) : null;
+}
+
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // IMPORTANT: server lookups must bypass RLS
-  if (!supabaseUrl) {
-    throw new Error("Missing env: NEXT_PUBLIC_SUPABASE_URL");
-  }
-  if (!serviceKey) {
-    throw new Error(
-      "Missing env: SUPABASE_SERVICE_ROLE_KEY (required for server-side product lookups). " +
-        "Add it to .env.local and restart `npm run dev`."
-    );
-  }
+  if (!supabaseUrl || !supabaseKey) return null;
 
-  return createClient(supabaseUrl, serviceKey, {
+  return createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
 async function fetchPrimary(kind: Kind, slugRaw: string) {
   const supabase = getSupabase();
+  if (!supabase) return null;
 
   const slug = normAlnum(slugRaw);
   const mpn_norm = normMpn(slug);
+
   if (!slug || !mpn_norm) return null;
 
   if (kind === "parts") {
     const cols =
-      "id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank,replaced_by,replaces_previous_parts,compatible_models,compatible_brands";
+      "id,mpn,title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank,replaced_by,replaces_previous_parts,compatible_models,compatible_brands";
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("parts")
       .select(cols)
       .eq("mpn_normalized", mpn_norm)
       .maybeSingle();
 
-    if (error) console.error("[ProductPageServer] parts lookup error", { slug, mpn_norm, error });
-    if (!data) return null;
-
-    return { source: "parts" as const, mpn_norm, row: data };
-  }
-
-  // OFFERS: canonical lookup is mpn_norm only (no listing_id required)
-  const cols =
-    "id,listing_id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
-
-  {
-    const { data, error } = await supabase
-      .from("offers")
-      .select(cols)
-      .eq("mpn_norm", mpn_norm)
-      .order("inventory_total", { ascending: false, nullsFirst: false })
-      .order("price", { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) console.error("[ProductPageServer] offers mpn_norm lookup error", { slug, mpn_norm, error });
-    if (data) return { source: "offers" as const, mpn_norm, row: data };
-  }
-
-  // Last-resort fallback for dirty rows: match mpn text
-  {
-    const like = `%${slug}%`;
-    const { data, error } = await supabase
-      .from("offers")
-      .select(cols)
-      .ilike("mpn", like)
-      .order("inventory_total", { ascending: false, nullsFirst: false })
-      .order("price", { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) console.error("[ProductPageServer] offers ilike(mpn) lookup error", { slug, mpn_norm, error });
     if (!data) return null;
 
     return {
-      source: "offers" as const,
-      mpn_norm: normMpn(data?.mpn ?? slug),
+      source: "parts" as const,
+      mpn_norm,
       row: data,
     };
   }
+
+  // offers
+  const cols =
+    "id,listing_id,mpn,title,price,image_url,brand,part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
+
+  // Try listing_id first if it looks like one; otherwise treat slug as MPN.
+  if (looksLikeListingId(slug)) {
+    const { data } = await supabase
+      .from("offers")
+      .select(cols)
+      .eq("listing_id", slug)
+      .maybeSingle();
+
+    if (data) {
+      return {
+        source: "offers" as const,
+        mpn_norm: normMpn(data?.mpn ?? slug),
+        row: data,
+      };
+    }
+  }
+
+  // Fallback: match by normalized MPN
+  const { data } = await supabase
+    .from("offers")
+    .select(cols)
+    .eq("mpn_norm", mpn_norm)
+    .order("inventory_total", { ascending: false, nullsFirst: false })
+    .order("price", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  return {
+    source: "offers" as const,
+    mpn_norm,
+    row: data,
+  };
 }
 
 async function fetchAlternates(mpn_norm: string) {
   const supabase = getSupabase();
+  if (!supabase) return { newPart: null as any, refurbOffers: [] as any[] };
 
   const partCols =
-    "id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank,replaced_by,replaces_previous_parts,compatible_models,compatible_brands";
+    "id,mpn,title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank,replaced_by,replaces_previous_parts,compatible_brands";
   const offerCols =
-    "id,listing_id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
+    "id,listing_id,mpn,title,price,image_url,brand,part_type,appliance_type,inventory_total,compatible_brands";
 
   const [newPartRes, offersRes] = await Promise.all([
     supabase.from("parts").select(partCols).eq("mpn_normalized", mpn_norm).maybeSingle(),
@@ -151,8 +186,11 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
 
   const { newPart, refurbOffers } = await fetchAlternates(primary.mpn_norm);
 
-  // When the primary is an offer, we can safely inherit richer fields from the canonical part.
-  const offerFallback = primary.source === "offers" ? newPart : null;
+  // Prefer compatible brands from the PARTS row (usually richer), but
+  // use whichever exists. This also makes offers pages show the brands.
+  const brandsFromParts = normalizeBrands(newPart?.compatible_brands);
+  const brandsFromPrimary = normalizeBrands((primary as any)?.row?.compatible_brands);
+  const bestBrands = (brandsFromPrimary?.length ? brandsFromPrimary : brandsFromParts) ?? null;
 
   const vm: ProductVM = {
     kind: props.kind,
@@ -164,85 +202,120 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
             source: "parts",
             id: String(primary.row.id),
             href: `/parts/${encodeURIComponent(primary.row.mpn ?? props.slug)}`,
+
             mpn: primary.row.mpn ?? null,
-            title: pickTitle(primary.row),
+            title: primary.row.title ?? null,
             price: primary.row.price ?? null,
             image_url: primary.row.image_url ?? null,
+
             brand: primary.row.brand ?? null,
             part_type: primary.row.part_type ?? null,
             appliance_type: primary.row.appliance_type ?? null,
+
             in_stock: isPartInStock(primary.row.stock_status_canon, primary.row.availability_rank),
             inventory_total: null,
+
             stock_status_canon: primary.row.stock_status_canon ?? null,
             availability_rank: primary.row.availability_rank ?? null,
+
             replaced_by: primary.row.replaced_by ?? null,
             replaces_previous_parts: primary.row.replaces_previous_parts ?? null,
+
             compatible_models: primary.row.compatible_models ?? null,
-            compatible_brands: primary.row.compatible_brands ?? null,
+            compatible_brands: bestBrands,
+
+            // never pass listing_id / ebay id
+            listing_id: null,
           }
         : {
             source: "offers",
             id: String(primary.row.id),
             href: `/offers/${encodeURIComponent(primary.row.mpn ?? props.slug)}`,
+
             mpn: primary.row.mpn ?? null,
-            title: pickTitle(primary.row) ?? pickTitle(offerFallback) ?? primary.row.title ?? null,
+            title: primary.row.title ?? null,
             price: primary.row.price ?? null,
-            image_url: primary.row.image_url ?? offerFallback?.image_url ?? null,
-            brand: primary.row.brand ?? offerFallback?.brand ?? null,
-            part_type: primary.row.part_type ?? offerFallback?.part_type ?? null,
-            appliance_type: primary.row.appliance_type ?? offerFallback?.appliance_type ?? null,
+            image_url: primary.row.image_url ?? null,
+
+            brand: primary.row.brand ?? null,
+            part_type: primary.row.part_type ?? null,
+            appliance_type: primary.row.appliance_type ?? null,
+
             in_stock: (Number(primary.row.inventory_total ?? 0) || 0) > 0,
             inventory_total: Number(primary.row.inventory_total ?? 0) || 0,
-            stock_status_canon: offerFallback?.stock_status_canon ?? null,
-            availability_rank: offerFallback?.availability_rank ?? null,
-            replaced_by: offerFallback?.replaced_by ?? null,
-            replaces_previous_parts: offerFallback?.replaces_previous_parts ?? null,
-            compatible_models: primary.row.compatible_models ?? offerFallback?.compatible_models ?? null,
-            compatible_brands: primary.row.compatible_brands ?? offerFallback?.compatible_brands ?? null,
-            listing_id: primary.row.listing_id != null ? String(primary.row.listing_id) : null,
+
+            stock_status_canon: null,
+            availability_rank: null,
+
+            replaced_by: null,
+            replaces_previous_parts: null,
+
+            compatible_models: primary.row.compatible_models ?? null,
+            compatible_brands: bestBrands,
+
+            // never pass listing_id / ebay id
+            listing_id: null,
           },
+
     new_part: newPart
       ? {
           source: "parts",
           id: String(newPart.id),
           href: `/parts/${encodeURIComponent(newPart.mpn ?? props.slug)}`,
+
           mpn: newPart.mpn ?? null,
-          title: pickTitle(newPart),
+          title: newPart.title ?? null,
           price: newPart.price ?? null,
           image_url: newPart.image_url ?? null,
+
           brand: newPart.brand ?? null,
           part_type: newPart.part_type ?? null,
           appliance_type: newPart.appliance_type ?? null,
+
           in_stock: isPartInStock(newPart.stock_status_canon, newPart.availability_rank),
           inventory_total: null,
+
           stock_status_canon: newPart.stock_status_canon ?? null,
           availability_rank: newPart.availability_rank ?? null,
+
           replaced_by: newPart.replaced_by ?? null,
           replaces_previous_parts: newPart.replaces_previous_parts ?? null,
-          compatible_models: newPart.compatible_models ?? null,
-          compatible_brands: newPart.compatible_brands ?? null,
+
+          compatible_models: null,
+          compatible_brands: brandsFromParts,
+
+          listing_id: null,
         }
       : null,
+
     refurb_offers: refurbOffers.map((o: any) => ({
       source: "offers",
       id: String(o.id),
       href: `/offers/${encodeURIComponent(o.mpn ?? props.slug)}`,
+
       mpn: o.mpn ?? null,
-      title: pickTitle(o),
+      title: o.title ?? null,
       price: o.price ?? null,
       image_url: o.image_url ?? null,
+
       brand: o.brand ?? null,
       part_type: o.part_type ?? null,
       appliance_type: o.appliance_type ?? null,
+
       in_stock: (Number(o.inventory_total ?? 0) || 0) > 0,
       inventory_total: Number(o.inventory_total ?? 0) || 0,
+
       stock_status_canon: null,
       availability_rank: null,
+
       replaced_by: null,
       replaces_previous_parts: null,
-      compatible_models: o.compatible_models ?? null,
-      compatible_brands: o.compatible_brands ?? null,
-      listing_id: o.listing_id != null ? String(o.listing_id) : null,
+
+      compatible_models: null,
+      compatible_brands: normalizeBrands(o.compatible_brands) ?? bestBrands,
+
+      // never pass listing_id / ebay id
+      listing_id: null,
     })),
   };
 

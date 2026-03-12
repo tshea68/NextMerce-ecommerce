@@ -56,9 +56,9 @@ type CacheRow = {
 
 type FacetOutRow = {
   value: string;
-  count: number; // total (new + refurb)
-  new_count?: number; // parts count
-  refurb_count?: number; // offers count
+  count: number;
+  new_count?: number;
+  refurb_count?: number;
 };
 
 function toNum(v: any) {
@@ -67,7 +67,6 @@ function toNum(v: any) {
 }
 
 function estimateTotal(rows: CacheRow[], availability: "all" | "in_stock") {
-  // Best-effort: sum counts of a facet that most likely covers the full set.
   const facets = ["brands", "parts", "appliances"];
   let best = 0;
 
@@ -113,7 +112,6 @@ function mergeFacet(
     const total = newCnt + refurbCnt;
     if (total <= 0) continue;
 
-    // Keep total in `count` for backwards compat; add split counts for UI.
     out.push({
       value: k,
       count: total,
@@ -141,44 +139,44 @@ export async function GET(req: Request) {
   try {
     const u = new URL(req.url);
 
-    // availability=all|in_stock|orderable
-    // back-compat in_stock_only=1
     const availabilityParam = u.searchParams.get("availability");
     const inStockOnly = asBool(u.searchParams.get("in_stock_only"));
-
-    // "orderable" should behave like a non-"all" bucket for cache purposes.
     const availabilityRequested = normalizeAvailability(
       availabilityParam ?? (inStockOnly ? "in_stock" : "all")
     );
 
-    // Cache only has: all | in_stock
+    // IMPORTANT:
+    // Cache only supports "all" and "in_stock".
+    // For now, collapse "orderable" -> "in_stock" for PARTS so we avoid live SQL timeouts.
     const effectiveAvailability: EffectiveAvailability =
       availabilityRequested === "all" ? "all" : "in_stock";
 
-    // condition=both|new|refurb
     const condition = normalizeCondition(u.searchParams.get("condition"));
 
     const facetLimit = clampInt(
-      u.searchParams.get("facet_limit") ?? u.searchParams.get("limit") ?? 200,
+      u.searchParams.get("facet_limit") ?? u.searchParams.get("limit") ?? 40,
       1,
-      500,
-      200
+      100,
+      40
     );
 
     const sb = getSupabase();
 
-    // Pull cache tables as needed
     let partsRows: CacheRow[] = [];
     let offersRows: CacheRow[] = [];
     const sources: string[] = [];
     let warning: string | null = null;
 
+    // NEW and BOTH now both read parts cache
     if (condition === "new" || condition === "both") {
       const r = await fetchCacheTable(sb, "parts_facets_cache");
       if (r.error) {
-        // parts cache is foundational; if missing, hard fail
         return NextResponse.json(
-          { ok: false, error: r.error, hint: "Could not read parts_facets_cache (RLS/policy/table missing?)" },
+          {
+            ok: false,
+            error: r.error,
+            hint: "Could not read parts_facets_cache (RLS/policy/table missing?)",
+          },
           { status: 500, headers: { "Cache-Control": "no-store" } }
         );
       }
@@ -186,10 +184,10 @@ export async function GET(req: Request) {
       sources.push("parts_facets_cache");
     }
 
+    // REFURB and BOTH read offers cache
     if (condition === "refurb" || condition === "both") {
       const r = await fetchCacheTable(sb, "offers_facets_cache");
       if (r.error) {
-        // Do not 500 the whole UI; return warning + empty offers facets
         warning = `offers_facets_cache: ${r.error}`;
         offersRows = [];
       } else {
@@ -198,19 +196,21 @@ export async function GET(req: Request) {
       }
     }
 
-    // Totals per source (best-effort from cache)
     const partsTotals = {
       all: partsRows.length ? estimateTotal(partsRows, "all") : 0,
       in_stock: partsRows.length ? estimateTotal(partsRows, "in_stock") : 0,
     };
+
     const offersTotals = {
       all: offersRows.length ? estimateTotal(offersRows, "all") : 0,
       in_stock: offersRows.length ? estimateTotal(offersRows, "in_stock") : 0,
     };
 
-    // Effective totals for this request
-    const partsEffective = effectiveAvailability === "in_stock" ? partsTotals.in_stock : partsTotals.all;
-    const offersEffective = effectiveAvailability === "in_stock" ? offersTotals.in_stock : offersTotals.all;
+    const partsEffective =
+      effectiveAvailability === "in_stock" ? partsTotals.in_stock : partsTotals.all;
+
+    const offersEffective =
+      effectiveAvailability === "in_stock" ? offersTotals.in_stock : offersTotals.all;
 
     const estimated_total =
       condition === "new"
@@ -233,33 +233,32 @@ export async function GET(req: Request) {
         ? offersTotals.in_stock
         : partsTotals.in_stock + offersTotals.in_stock;
 
-    // Facets
     const brands = mergeFacet(partsRows, offersRows, effectiveAvailability, "brands", facetLimit, condition);
     const parts = mergeFacet(partsRows, offersRows, effectiveAvailability, "parts", facetLimit, condition);
     const appliances = mergeFacet(partsRows, offersRows, effectiveAvailability, "appliances", facetLimit, condition);
+
+    const extraWarning =
+      condition === "new" && availabilityRequested === "orderable"
+        ? "Parts facets currently collapse orderable into in_stock cache."
+        : null;
 
     return NextResponse.json(
       {
         ok: true,
         condition,
-        availability: availabilityRequested, // keep what caller asked for
+        availability: availabilityRequested,
         meta: {
-          // Estimated totals for current mode
           estimated_total,
           estimated_total_all,
           estimated_total_in_stock,
-
-          // Split breakdown (you asked for this)
           breakdown: {
             parts_total: partsTotals.all,
             offers_total: offersTotals.all,
             parts_in_stock: partsTotals.in_stock,
             offers_in_stock: offersTotals.in_stock,
           },
-
-          // Trace/debug
           sources,
-          warning,
+          warning: [warning, extraWarning].filter(Boolean).join(" | ") || null,
           source: sources[0] || null,
           availability_requested: availabilityRequested,
           effective_availability: effectiveAvailability,

@@ -1,15 +1,33 @@
-export function makePartTitle(part: any): string {
-  const mpn =
+export function makePartTitle(part: any, forcedMpn?: string): string {
+  const mpn = (
+    forcedMpn ??
     part?.mpn ??
     part?.part_number ??
     part?.manufacturer_part_number ??
     part?.sku ??
     part?.id ??
-    "";
+    ""
+  )
+    .toString()
+    .trim();
 
-  const name = part?.name ?? part?.title ?? part?.part_name ?? "";
-  const brand = part?.brand ?? part?.manufacturer ?? "";
+  const brand = (part?.brand ?? part?.manufacturer ?? "").toString().trim();
+  const appliance = (part?.appliance_type ?? "").toString().trim();
+  const partType = (part?.specific_part_type ?? part?.part_type ?? "").toString().trim();
 
-  const bits = [brand, mpn, name].map((x) => (x ?? "").toString().trim()).filter(Boolean);
-  return bits.length ? bits.join(" – ") : "Part";
+  const structured = [brand, mpn, appliance, partType].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+
+  if (structured) return structured;
+
+  const fallbackName = (
+    part?.name ??
+    part?.part_name ??
+    part?.title ??
+    "Part"
+  )
+    .toString()
+    .trim();
+
+  const fallback = [brand, mpn, fallbackName].filter(Boolean).join(" – ").trim();
+  return fallback || "Part";
 }
