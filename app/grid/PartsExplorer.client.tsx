@@ -21,26 +21,25 @@
  * - Results card becomes the SAME HEIGHT as the filters column on lg+ screens
  * - Results list scrolls inside the results card
  *
- * NLA parts:
- * - When availability=all, NLA-ish parts can appear in results (client infers)
- * - API can inject an "is_nla" row on exact MPN searches when a part exists but is not sellable
- * - UI shows clear NLA badge + replacement info + disables Add to Cart
- *
  * Models in cards:
- * - If API returns items with `model_number`, UI renders ModelRow cards automatically.
+ * - API may return:
+ *    - items: product rows
+ *    - model_cards: model rows
+ * - Model cards render above product rows in search mode
+ * - Clicking "View all parts" enters a model-focused state with the model pinned at top
+ *   and matching parts shown below, without leaving the page
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-import { makePartTitle } from "@/lib/PartsTitle";
-import { useCart } from "@/context/CartContext";
-import PartImage from "@/components/PartImage";
+import ProductCard from "@/components/cards/ProductCard";
+import ModelCard from "@/components/cards/ModelCard";
 
 /* ================================
    CONFIG
    ================================ */
-const API_BASE = ""; // use relative
+const API_BASE = "";
 const DEFAULT_PER_PAGE = 30;
 
 type Condition = "both" | "new" | "refurb";
@@ -74,19 +73,18 @@ type GridInit = {
 };
 
 type PartsExplorerProps = {
-  // legacy seed (still supported)
   initial?: GridInit;
   initialItems?: any[];
+  initialModelCards?: any[];
   initialHasMore?: boolean;
   initialPageInventoryTotal?: number | null;
   initialFacets?: Facets;
   initialTotalCount?: number | null;
   initialError?: string | null;
-
-  // ✅ SSR seed (from app/grid/page.tsx)
   ssr?: {
     key: string;
     items: any[];
+    model_cards?: any[];
     has_more: boolean;
     page_inventory_total: number | null;
     facets: Facets | null;
@@ -94,7 +92,6 @@ type PartsExplorerProps = {
   };
 };
 
-// Landing defaults
 const DEFAULT_LANDING_Q = "";
 const DEFAULT_LANDING_CONDITION: Condition = "refurb";
 const DEFAULT_SORT = "inventory_desc";
@@ -103,8 +100,6 @@ const normalize = (s: any) => (s || "").toLowerCase().trim();
 
 /* ================================
    FACET DISPLAY HELPERS
-   - Keep raw facet values for filtering
-   - Render human labels for UI
    ================================ */
 
 const BRAND_LABELS: Record<string, string> = {
@@ -198,7 +193,6 @@ function splitCompound(raw: string) {
   if (!s) return "";
   if (s.includes(" ")) return titleCaseWords(s);
 
-  // greedy dictionary split (best-effort)
   const out: string[] = [];
   let i = 0;
 
@@ -216,7 +210,6 @@ function splitCompound(raw: string) {
       continue;
     }
 
-    // fallback: consume until next known token, or one char
     let j = i + 1;
     while (j < s.length) {
       const tail = s.slice(j);
@@ -237,19 +230,8 @@ function facetLabel(kind: "brand" | "appliance" | "part", value: string) {
 
   if (kind === "brand") return BRAND_LABELS[v] || titleCaseWords(v.replace(/[-_]+/g, " "));
   if (kind === "appliance") return titleCaseWords(v.replace(/[-_]+/g, " "));
-  // part
   return splitCompound(v);
 }
-
-const priceFmt = (n: any) => {
-  const x = typeof n === "number" ? n : Number(String(n ?? "").replace(/[^0-9.]/g, ""));
-  if (!Number.isFinite(x)) return "—";
-  try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(x);
-  } catch {
-    return `$${x.toFixed(2)}`;
-  }
-};
 
 const fmtCount = (num: any) => {
   const n = Number(num);
@@ -261,7 +243,6 @@ function uniq(arr: string[]) {
 }
 
 function parseCsvMulti(sp: URLSearchParams, key: string) {
-  // supports repeated params OR comma-separated
   const all = sp.getAll(key).flatMap((v) => v.split(","));
   return uniq(all.map((x) => x.trim()).filter(Boolean));
 }
@@ -273,31 +254,16 @@ function asBool(v: string | null) {
 }
 
 function parseAvailability(sp: URLSearchParams): Availability {
-  // New param
   const raw = normalize(sp.get("availability"));
   if (raw === "in_stock" || raw === "instock") return "in_stock";
   if (raw === "orderable") return "orderable";
   if (raw === "all") return "all";
 
-  // Legacy support
   if (asBool(sp.get("in_stock_only"))) return "in_stock";
 
   return DEFAULT_AVAILABILITY;
 }
 
-function isNlaishStatus(stockStatusCanon: any) {
-  const s = String(stockStatusCanon ?? "").toLowerCase();
-  if (!s) return false;
-  return (
-    s.includes("nla") ||
-    s.includes("no longer") ||
-    s.includes("discontinued") ||
-    s.includes("obsolete") ||
-    s.includes("not available")
-  );
-}
-
-// ✅ Match the server-side key behavior EXACTLY (including search override + defaults)
 function stableKeyFromSearchParamsString(spString: string) {
   const sp = new URLSearchParams(spString || "");
 
@@ -305,11 +271,8 @@ function stableKeyFromSearchParamsString(spString: string) {
   const searchMode = q.length > 0;
 
   if (searchMode) {
-    // Server forces these, even if URL omits them
     sp.set("condition", "both");
     sp.set("availability", "all");
-
-    // Server ignores filters in search mode -> remove from key
     sp.delete("appliance_type");
     sp.delete("brands");
     sp.delete("part_types");
@@ -344,321 +307,70 @@ async function readJsonSafeClient(res: Response) {
   }
 }
 
-/* ================================
-   PART ROW
-   ================================ */
-function PartRow({ p, addToCart }: any) {
-  const router = useRouter();
-
-  const mpn =
-    (p?.mpn && String(p.mpn).trim()) ||
-    (p?.mpn_display && String(p.mpn_display).trim()) ||
-    (p?.mpn_normalized && String(p.mpn_normalized).trim()) ||
-    "";
-
-  // ✅ authoritative refurb detection
-  const isRefurb =
-    p?.is_refurb === true ||
-    String(p?.source || "").toLowerCase() === "offers" ||
-    String(p?.condition || "").toLowerCase().includes("used") ||
-    String(p?.offer_type || "").toLowerCase().includes("refurb") ||
-    String(p?.source || "").toLowerCase().includes("refurb");
-
-  // ✅ injected by API OR inferred from status when availability=all
-  const isNla = p?.is_nla === true || (!isRefurb && isNlaishStatus(p?.stock_status_canon));
-
-  const replacedBy =
-    (p?.replaced_by && String(p.replaced_by).trim()) ||
-    (p?.replacement_mpn && String(p.replacement_mpn).trim()) ||
-    "";
-
-  const baseTitle =
-    makePartTitle(p, mpn) ||
-    p?.title ||
-    `${p?.brand || ""} ${p?.part_type || ""} ${p?.appliance_type || ""}`.trim() ||
-    mpn ||
-    "Part";
-
-  const displayTitle = isRefurb ? `Refurbished: ${baseTitle}` : baseTitle;
-
-  const priceNum =
-    typeof p?.price === "number" ? p.price : Number(String(p?.price ?? "").replace(/[^0-9.]/g, ""));
-
-  const img = p?.image_url || null;
-
-  const detailHref = (() => {
-    if (!mpn) return "#";
-    if (isRefurb) {
-      return `/offers/${encodeURIComponent(mpn)}`;
-    }
-    return `/parts/${encodeURIComponent(mpn)}`;
-  })();
-
-  const replacementHref = replacedBy ? `/parts/${encodeURIComponent(replacedBy)}` : "";
-
-  const [qty, setQty] = useState(1);
-
-  function handleAddToCart() {
-    if (!mpn) return;
-    if (isNla) return;
-
-    const payload = {
-      mpn,
-      qty: isRefurb ? 1 : qty,
-      quantity: isRefurb ? 1 : qty,
-      is_refurb: !!isRefurb,
-      name: displayTitle,
-      title: displayTitle,
-      price: priceNum,
-      image_url: img,
-      image: img,
-    };
-
-    try {
-      addToCart?.(payload);
-    } catch {
-      /* no-op */
-    }
-  }
-
-  function goToDetail(e: any) {
-    e?.preventDefault?.();
-    if (detailHref && detailHref !== "#") router.push(detailHref);
-  }
-
-  const cardBg = isNla
-    ? "bg-amber-50 border-amber-300"
-    : isRefurb
-    ? "bg-blue-50 border-blue-300"
-    : "bg-white border-gray-200";
-
-  return (
-    <div className={`border rounded-md shadow-sm px-4 py-3 flex flex-col lg:flex-row gap-4 ${cardBg}`}>
-      {/* image */}
-      <div className="relative flex-shrink-0 flex flex-col items-center" style={{ width: "110px" }}>
-        <div className="relative flex items-center justify-center overflow-visible">
-          <PartImage
-            imageUrl={img}
-            alt={mpn || "Part"}
-            disableHoverPreview
-            className="w-[100px] h-[100px] border border-gray-200 rounded bg-white flex items-center justify-center"
-          />
-        </div>
-      </div>
-
-      {/* middle */}
-      <div className="flex-1 min-w-0 flex flex-col gap-2 text-black">
-        <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
-          <a
-            href={detailHref}
-            onClick={goToDetail}
-            className="text-[15px] font-semibold text-blue-700 leading-snug hover:text-blue-900 hover:underline focus:underline focus:outline-none cursor-pointer"
-            aria-label={`View ${displayTitle}`}
-          >
-            {displayTitle}
-          </a>
-
-          {isNla && (
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-700 text-white leading-none">
-              No longer available
-            </span>
-          )}
-
-          {!isNla && !isRefurb && p?.stock_status_canon && (
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-green-600 text-white leading-none">
-              {p.stock_status_canon}
-            </span>
-          )}
-
-          {!isNla && isRefurb && Number.isFinite(Number(p?.inventory_total)) && (
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-700 text-white leading-none">
-              Qty: {fmtCount(p.inventory_total)}
-            </span>
-          )}
-
-          {mpn && (
-            <span className="text-[11px] font-mono text-gray-600 leading-none">Part #: {mpn}</span>
-          )}
-        </div>
-
-        <div className="text-[12px] text-gray-700 leading-snug break-words">
-          {p?.brand ? `${p.brand} ` : ""}
-          {p?.part_type ? `${p?.part_type} ` : ""}
-          {p?.appliance_type ? `for ${p.appliance_type}` : ""}
-        </div>
-
-        {isNla && (
-          <div className="text-[12px] text-amber-900 leading-snug">
-            We recognize this as a valid part number, but it is not currently available for purchase.
-            {replacedBy ? (
-              <>
-                {" "}
-                Replacement:{" "}
-                <a
-                  href={replacementHref}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    router.push(replacementHref);
-                  }}
-                  className="text-blue-700 underline font-semibold"
-                >
-                  {replacedBy}
-                </a>
-              </>
-            ) : null}
-          </div>
-        )}
-      </div>
-
-      <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-end text-right gap-2">
-        <div className={`text-lg font-bold leading-none ${isNla ? "text-amber-800" : "text-green-700"}`}>
-          {isNla ? "—" : priceFmt(priceNum)}
-        </div>
-
-        <div className="flex items-center w-full justify-end gap-2">
-          {!isRefurb && !isNla && (
-            <select
-              className="border border-gray-300 rounded px-2 py-1 text-[12px] text-black"
-              value={qty}
-              onChange={(e) => {
-                const parsed = parseInt(e.target.value, 10);
-                setQty(Number.isFinite(parsed) ? parsed : 1);
-              }}
-            >
-              {Array.from({ length: 10 }).map((_, i) => (
-                <option key={i} value={i + 1}>
-                  {i + 1}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <button
-            className={`${
-              isNla
-                ? "bg-gray-400 cursor-not-allowed"
-                : isRefurb
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-blue-700 hover:bg-blue-800"
-            } text-white text-[12px] font-semibold rounded px-3 py-2`}
-            onClick={handleAddToCart}
-            disabled={isNla}
-            title={isNla ? "This part is not available for purchase" : "Add to Cart"}
-          >
-            Add to Cart
-          </button>
-        </div>
-
-        <a
-          href={detailHref}
-          onClick={goToDetail}
-          className="underline text-blue-700 text-[11px] font-medium hover:text-blue-900"
-        >
-          View part
-        </a>
-      </div>
-    </div>
+function looksLikePartRow(x: any) {
+  return !!(
+    x &&
+    typeof x === "object" &&
+    (
+      "mpn" in x ||
+      "part_number" in x ||
+      "manufacturer_part_number" in x ||
+      "title" in x ||
+      "name" in x ||
+      "price" in x ||
+      "sequence" in x
+    )
   );
 }
 
-/* ================================
-   MODEL ROW
-   ================================ */
-function ModelRow({ m }: any) {
-  const router = useRouter();
+function findPartsArrayDeep(value: any, seen = new WeakSet<object>()): any[] {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return [];
+    if (value.some(looksLikePartRow)) return value;
+    for (const item of value) {
+      const found = findPartsArrayDeep(item, seen);
+      if (found.length) return found;
+    }
+    return [];
+  }
 
-  const modelNumber = String(m?.model_number || m?.model || "").trim();
-  const brand = String(m?.brand || "").trim();
-  const applianceType = String(m?.appliance_type || "").trim();
+  if (!value || typeof value !== "object") return [];
 
-  const title = [brand, modelNumber].filter(Boolean).join(" ") || modelNumber || "Model";
-  const href = modelNumber ? `/models/${encodeURIComponent(modelNumber)}` : "#";
+  if (seen.has(value)) return [];
+  seen.add(value);
 
-  const logo = m?.brand_logo_url || m?.image_url || null;
-  const totalParts = m?.total_parts;
-  const pricedParts = m?.priced_parts;
+  const preferredKeys = [
+    "items",
+    "parts",
+    "data",
+    "results",
+    "rows",
+    "available_parts",
+    "all_parts",
+    "model_parts",
+    "matched_parts",
+    "parts_list",
+    "model",
+  ];
 
-  return (
-    <div className="border rounded-md shadow-sm px-4 py-3 flex flex-col lg:flex-row gap-4 bg-white border-gray-200">
-      <div className="relative flex-shrink-0 flex flex-col items-center" style={{ width: "110px" }}>
-        <PartImage
-          imageUrl={logo}
-          alt={brand || "Model"}
-          disableHoverPreview
-          className="w-[100px] h-[100px] border border-gray-200 rounded bg-white flex items-center justify-center"
-        />
-      </div>
+  for (const key of preferredKeys) {
+    if (key in value) {
+      const found = findPartsArrayDeep((value as any)[key], seen);
+      if (found.length) return found;
+    }
+  }
 
-      <div className="flex-1 min-w-0 flex flex-col gap-2 text-black">
-        <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
-          <a
-            href={href}
-            onClick={(e) => {
-              e.preventDefault();
-              if (href !== "#") router.push(href);
-            }}
-            className="text-[15px] font-semibold text-blue-700 leading-snug hover:text-blue-900 hover:underline focus:underline focus:outline-none cursor-pointer"
-          >
-            {title}
-          </a>
+  for (const key of Object.keys(value)) {
+    const found = findPartsArrayDeep((value as any)[key], seen);
+    if (found.length) return found;
+  }
 
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-800 text-white leading-none">
-            Model
-          </span>
-
-          {modelNumber && (
-            <span className="text-[11px] font-mono text-gray-600 leading-none">Model #: {modelNumber}</span>
-          )}
-        </div>
-
-        <div className="text-[12px] text-gray-700 leading-snug">{applianceType ? `${applianceType}` : ""}</div>
-
-        {(Number.isFinite(Number(totalParts)) || Number.isFinite(Number(pricedParts))) && (
-          <div className="text-[12px] text-gray-600">
-            {Number.isFinite(Number(totalParts)) ? <>Total parts: {fmtCount(totalParts)}</> : null}
-            {Number.isFinite(Number(pricedParts)) ? (
-              <>
-                {Number.isFinite(Number(totalParts)) ? " • " : ""}
-                Priced parts: {fmtCount(pricedParts)}
-              </>
-            ) : null}
-          </div>
-        )}
-      </div>
-
-      <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-end text-right gap-2">
-        <button
-          className="bg-blue-700 hover:bg-blue-800 text-white text-[12px] font-semibold rounded px-3 py-2"
-          onClick={() => {
-            if (href !== "#") router.push(href);
-          }}
-          disabled={href === "#"}
-        >
-          View model
-        </button>
-      </div>
-    </div>
-  );
+  return [];
 }
 
 /* ================================
    MAIN EXPLORER
    ================================ */
-type Dataset = "parts" | "offers";
-
-type GridResp = {
-  ok: boolean;
-  error?: string;
-  dataset?: Dataset;
-  items?: any[];
-  has_more?: boolean;
-  page?: number;
-  per_page?: number;
-  facets?: Facets | null;
-  total_count?: number | null;
-  facets_source?: string;
-  page_inventory_total?: number | null;
-};
 
 function RadioDot({ checked }: { checked: boolean }) {
   return (
@@ -673,13 +385,10 @@ function RadioDot({ checked }: { checked: boolean }) {
 }
 
 export default function PartsExplorer(props: PartsExplorerProps) {
-  const { addToCart } = useCart();
   const router = useRouter();
-
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // ✅ SSR match check (prevents hydration double-fetch)
   const currentKey = useMemo(() => {
     return stableKeyFromSearchParamsString(searchParams?.toString() ?? "");
   }, [searchParams]);
@@ -687,19 +396,18 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   const canUseSsr = !!props?.ssr && props.ssr.key === currentKey;
 
   const init = useMemo(() => {
-    // ✅ legacy explicit seed wins (kept)
     if (props?.initial) return props.initial;
 
     const sp = new URLSearchParams(searchParams?.toString() ?? "");
     const hasAnyParam = sp.toString().length > 0;
 
     const conditionRaw = (sp.get("condition") || "").toLowerCase();
-    let condition: Condition =
+    const condition: Condition =
       conditionRaw === "new" || conditionRaw === "refurb" || conditionRaw === "both"
         ? (conditionRaw as Condition)
         : hasAnyParam
-        ? "both"
-        : DEFAULT_LANDING_CONDITION;
+          ? "both"
+          : DEFAULT_LANDING_CONDITION;
 
     const qFromUrl = (sp.get("q") || "").trim();
     const q = qFromUrl || (!hasAnyParam ? DEFAULT_LANDING_Q : "");
@@ -728,7 +436,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   const [perPage, setPerPage] = useState(init.perPage);
 
   const [loading, setLoading] = useState(false);
-
   const [err, setErr] = useState<string | null>(() => {
     if (canUseSsr) return null;
     return props?.initialError ? String(props.initialError) : null;
@@ -739,14 +446,20 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     return Array.isArray(props?.initialItems) ? props.initialItems : [];
   });
 
+  const [modelCards, setModelCards] = useState<any[]>(() => {
+    if (canUseSsr) return Array.isArray(props.ssr?.model_cards) ? props.ssr!.model_cards! : [];
+    return Array.isArray(props?.initialModelCards) ? props.initialModelCards : [];
+  });
+
   const [hasMore, setHasMore] = useState(() => {
     if (canUseSsr) return !!props.ssr?.has_more;
     return !!props?.initialHasMore;
   });
 
   const [pageInventoryTotal, setPageInventoryTotal] = useState<number | null>(() => {
-    if (canUseSsr)
+    if (canUseSsr) {
       return typeof props.ssr?.page_inventory_total === "number" ? props.ssr.page_inventory_total : null;
+    }
     return typeof props?.initialPageInventoryTotal === "number" ? props.initialPageInventoryTotal : null;
   });
 
@@ -757,34 +470,34 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     return props?.initialFacets ?? {};
   });
 
-  // exact total_count (only used in search mode)
   const [totalCount, setTotalCount] = useState<number | null>(() => {
     if (canUseSsr) return typeof props.ssr?.total_count === "number" ? props.ssr.total_count : null;
     return typeof props?.initialTotalCount === "number" ? props.initialTotalCount : null;
   });
 
-  // cached facets meta (estimated totals)
   const [facetsMeta, setFacetsMeta] = useState<FacetsMeta | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  // ✅ prevent immediate duplicate fetch on hydration when SSR seeded
-  const initialItemsProvided = typeof props?.initialItems !== "undefined";
   const initialMetaProvided =
     typeof props?.initialFacets !== "undefined" || typeof props?.initialTotalCount !== "undefined";
 
-  const skipFirstItemsFetch = useRef<boolean>(canUseSsr || initialItemsProvided);
-
-  // facets cache fetch skip (if SSR already provided facets)
   const skipFirstFacetsFetch = useRef<boolean>(!!props?.initialFacets || (canUseSsr && props.ssr?.facets != null));
-
-  // search total skip (if SSR already provided total_count)
   const skipFirstSearchTotalFetch = useRef<boolean>(
     initialMetaProvided || (canUseSsr && typeof props.ssr?.total_count === "number")
   );
 
-  // ---- Equal-height behavior (lg+): results card height == filters height ----
   const asideRef = useRef<HTMLDivElement | null>(null);
   const [asideHeight, setAsideHeight] = useState<number | null>(null);
   const [isLg, setIsLg] = useState(false);
+
+  const [activeModel, setActiveModel] = useState<any | null>(null);
+  const [activeModelParts, setActiveModelParts] = useState<any[]>([]);
+  const [activeModelLoading, setActiveModelLoading] = useState(false);
+  const [activeModelError, setActiveModelError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -823,7 +536,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     return () => ro.disconnect();
   }, []);
 
-  // debounce q
   const [qDebounced, setQDebounced] = useState(q);
   useEffect(() => {
     const t = setTimeout(() => setQDebounced(q), 250);
@@ -839,7 +551,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     return has ? list.filter((x) => normalize(x) !== n) : [...list, v];
   }
 
-  const filtersDisabled = searchMode;
+  const filtersDisabled = searchMode || !!activeModel;
 
   function doReset() {
     setCondition(DEFAULT_LANDING_CONDITION);
@@ -849,20 +561,72 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     setSelectedBrands([]);
     setSelectedPartTypes([]);
     setPage(1);
+    setModelCards([]);
+    closeModelParts();
   }
 
-  // keep URL in sync
+  function closeModelParts() {
+    setActiveModel(null);
+    setActiveModelParts([]);
+    setActiveModelLoading(false);
+    setActiveModelError(null);
+  }
+
+  async function openModelParts(model: any) {
+    const modelNumber = String(model?.model_number ?? model?.model ?? "").trim();
+    if (!modelNumber) return;
+
+    setActiveModel({
+      ...model,
+      href: model?.href || `/models/${encodeURIComponent(modelNumber)}`,
+    });
+    setActiveModelParts([]);
+    setActiveModelError(null);
+    setActiveModelLoading(true);
+
+    try {
+      const url = `https://api.appliancepartgeeks.com/api/parts/for-model/${encodeURIComponent(modelNumber)}`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { accept: "application/json" },
+        cache: "no-store",
+      });
+
+      const json = await readJsonSafeClient(res);
+
+      if (!res.ok || (json as any)?.__non_json || (json as any)?.__bad_json) {
+        const msg =
+          (json as any)?.error ||
+          ((json as any)?.__non_json
+            ? `Non-JSON response (HTTP ${(json as any)?.status ?? res.status})`
+            : `HTTP ${res.status}`);
+        throw new Error(msg);
+      }
+
+      const rows = findPartsArrayDeep(json);
+
+      console.log("for-model payload", json);
+      console.log("parsed rows length", rows.length);
+      console.log("parsed first row", rows[0]);
+
+      setActiveModelParts(rows);
+    } catch (e: any) {
+      setActiveModelError(e?.message || "Failed to load model parts");
+      setActiveModelParts([]);
+    } finally {
+      setActiveModelLoading(false);
+    }
+  }
+
   const didInitUrl = useRef(false);
   useEffect(() => {
     if (!pathname) return;
+    if (activeModel) return;
 
     const sp = new URLSearchParams();
 
-    // In search mode, keep URL clean & truthful: search overrides filters.
     if (!searchMode) {
       sp.set("condition", condition);
-
-      // ✅ always include availability in URL (even when "all")
       sp.set("availability", availability);
 
       if (applianceType) sp.set("appliance_type", applianceType);
@@ -876,7 +640,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
     const nextUrl = `${pathname}?${sp.toString()}`;
 
-    // first run: avoid replacing if already matches
     if (!didInitUrl.current) {
       didInitUrl.current = true;
       return;
@@ -895,31 +658,37 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     page,
     perPage,
     searchMode,
+    activeModel,
   ]);
 
-  // facets fetch (cached; global; fast) + estimated totals
   useEffect(() => {
+    if (!hydrated) return;
     if (skipFirstFacetsFetch.current) {
       skipFirstFacetsFetch.current = false;
       return;
     }
+    if (activeModel) return;
 
     const ctrl = new AbortController();
 
     async function runFacetsCache() {
       setMetaLoading(true);
 
-      // Search mode forces global truth for cache view
       const effectiveAvailability: Availability = searchMode ? "all" : availability;
       const effectiveCondition: Condition = searchMode ? "both" : condition;
 
       const sp = new URLSearchParams();
       sp.set("availability", effectiveAvailability);
       sp.set("condition", effectiveCondition);
-      sp.set("facet_limit", "300");
+      sp.set("facet_limit", "20");
 
-      // ✅ FIX: use trailing slash to avoid 308 redirect
-      const facetsUrl = `${API_BASE}/api/parts/facets/?${sp.toString()}`;
+      if (!searchMode) {
+        if (applianceType) sp.set("appliance_type", applianceType);
+        for (const b of selectedBrands) sp.append("brands", b);
+        for (const pt of selectedPartTypes) sp.append("part_types", pt);
+      }
+
+      const facetsUrl = `/api/parts/facets?${sp.toString()}`;
 
       try {
         const res = await fetch(facetsUrl, {
@@ -932,8 +701,8 @@ export default function PartsExplorer(props: PartsExplorerProps) {
         const json = (await readJsonSafeClient(res)) as any;
 
         if (!res.ok || json?.__non_json || json?.__bad_json || !json?.ok) {
-          setFacets({});
-          setFacetsMeta(null);
+          setFacets({ brands: [], parts: [], appliances: [] });
+          setFacetsMeta((json?.meta as any) || null);
           return;
         }
 
@@ -946,7 +715,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
         setFacetsMeta((json.meta as any) || null);
       } catch (e: any) {
         if (e?.name === "AbortError") return;
-        setFacets({});
+        setFacets({ brands: [], parts: [], appliances: [] });
         setFacetsMeta(null);
       } finally {
         setMetaLoading(false);
@@ -955,15 +724,16 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
     runFacetsCache();
     return () => ctrl.abort();
-  }, [availability, condition, searchMode]);
+  }, [hydrated, availability, condition, searchMode, applianceType, selectedBrands, selectedPartTypes, activeModel]);
 
-  // exact search total_count (only in search mode)
   useEffect(() => {
+    if (!hydrated) return;
+
     if (!searchMode) {
-      // non-search mode uses estimated totals from cache
       setTotalCount(null);
       return;
     }
+    if (activeModel) return;
 
     if (skipFirstSearchTotalFetch.current) {
       skipFirstSearchTotalFetch.current = false;
@@ -980,7 +750,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       sp.set("availability", "all");
       if (qDebounced) sp.set("q", qDebounced);
 
-      // ✅ FIX: use trailing slash to avoid 308 redirect
       const url = `${API_BASE}/api/grid/?${sp.toString()}`;
 
       try {
@@ -1007,14 +776,11 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
     runSearchTotal();
     return () => ctrl.abort();
-  }, [qDebounced, searchMode]);
+  }, [hydrated, qDebounced, searchMode, activeModel]);
 
-  // items fetch
   useEffect(() => {
-    if (skipFirstItemsFetch.current) {
-      skipFirstItemsFetch.current = false;
-      return;
-    }
+    if (!hydrated) return;
+    if (activeModel) return;
 
     const ctrl = new AbortController();
 
@@ -1023,8 +789,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       setErr(null);
 
       const sp = new URLSearchParams();
-
-      // ✅ always send availability to /api/grid (even when "all")
       sp.set("condition", searchMode ? "both" : condition);
       sp.set("availability", searchMode ? "all" : availability);
 
@@ -1040,7 +804,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       sp.set("per_page", String(perPage));
       sp.set("sort", DEFAULT_SORT);
 
-      // ✅ FIX: use trailing slash to avoid 308 redirect
       const itemsUrl = `${API_BASE}/api/grid/?${sp.toString()}`;
 
       try {
@@ -1061,18 +824,21 @@ export default function PartsExplorer(props: PartsExplorerProps) {
               : `HTTP ${res.status}`);
           setErr(msg);
           setItems([]);
+          setModelCards([]);
           setHasMore(false);
           setPageInventoryTotal(null);
           return;
         }
 
         setItems(Array.isArray(json.items) ? json.items : []);
+        setModelCards(Array.isArray(json.model_cards) ? json.model_cards : []);
         setHasMore(!!json.has_more);
         setPageInventoryTotal(typeof json.page_inventory_total === "number" ? json.page_inventory_total : null);
       } catch (e: any) {
         if (e?.name === "AbortError") return;
         setErr(e?.message || "Request failed");
         setItems([]);
+        setModelCards([]);
         setHasMore(false);
         setPageInventoryTotal(null);
       } finally {
@@ -1083,6 +849,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     runItems();
     return () => ctrl.abort();
   }, [
+    hydrated,
     condition,
     availability,
     qDebounced,
@@ -1092,18 +859,24 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     selectedPartTypes,
     page,
     perPage,
+    activeModel,
   ]);
 
-  // ---- facet slices ----
-  const brandFacet = useMemo(() => (Array.isArray(facets?.brands) ? facets!.brands! : []), [facets]);
-  const partFacetRaw = useMemo(() => (Array.isArray(facets?.parts) ? facets!.parts! : []), [facets]);
-  const applianceFacet = useMemo(() => (Array.isArray(facets?.appliances) ? facets!.appliances! : []), [facets]);
+  const brandFacet = useMemo(() => (Array.isArray(facets?.brands) ? facets.brands! : []), [facets]);
+  const partFacetRaw = useMemo(() => (Array.isArray(facets?.parts) ? facets.parts! : []), [facets]);
+  const applianceFacet = useMemo(() => (Array.isArray(facets?.appliances) ? facets.appliances! : []), [facets]);
 
   const [showAllBrands, setShowAllBrands] = useState(false);
   const [showAllParts, setShowAllParts] = useState(false);
 
-  const brandFacetShown = useMemo(() => (showAllBrands ? brandFacet : brandFacet.slice(0, 10)), [brandFacet, showAllBrands]);
-  const partFacetShown = useMemo(() => (showAllParts ? partFacetRaw : partFacetRaw.slice(0, 10)), [partFacetRaw, showAllParts]);
+  const brandFacetShown = useMemo(
+    () => (showAllBrands ? brandFacet : brandFacet.slice(0, 10)),
+    [brandFacet, showAllBrands]
+  );
+  const partFacetShown = useMemo(
+    () => (showAllParts ? partFacetRaw : partFacetRaw.slice(0, 10)),
+    [partFacetRaw, showAllParts]
+  );
 
   const estimatedTotal = useMemo(() => {
     if (!facetsMeta) return null;
@@ -1111,32 +884,46 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     return typeof x === "number" ? x : null;
   }, [facetsMeta]);
 
+  const isModelFocused = !!activeModel;
+  const hasAnyResults = modelCards.length > 0 || items.length > 0;
+
   return (
     <div className="max-w-[1250px] mx-auto px-4 py-8">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
         <div className="flex flex-col gap-2">
           <div className="text-[18px] font-bold text-gray-900">
-            Models and Parts Results{" "}
-            {searchMode ? (
-              typeof totalCount === "number" ? (
-                <span className="font-normal text-gray-500">
-                  (showing {fmtCount(items.length)} of {fmtCount(totalCount)})
-                </span>
-              ) : (
-                <span className="font-normal text-gray-500">(counting…)</span>
-              )
-            ) : typeof estimatedTotal === "number" ? (
-              <span className="font-normal text-gray-500">
-                (showing {fmtCount(items.length)} of ~{fmtCount(estimatedTotal)})
-              </span>
-            ) : metaLoading ? (
-              <span className="font-normal text-gray-500">(counting…)</span>
-            ) : null}
-            {(condition === "refurb" || condition === "both") && typeof pageInventoryTotal === "number" ? (
-              <span className="ml-2 text-gray-500 font-normal">
-                (page refurb qty total: {fmtCount(pageInventoryTotal)})
-              </span>
-            ) : null}
+            {isModelFocused ? (
+              <>
+                Model Parts View{" "}
+                {activeModel?.model_number ? (
+                  <span className="font-normal text-gray-500">({String(activeModel.model_number)})</span>
+                ) : null}
+              </>
+            ) : (
+              <>
+                Models and Parts Results{" "}
+                {searchMode ? (
+                  typeof totalCount === "number" ? (
+                    <span className="font-normal text-gray-500">
+                      (showing {fmtCount(modelCards.length + items.length)} of {fmtCount(totalCount)})
+                    </span>
+                  ) : (
+                    <span className="font-normal text-gray-500">(counting…)</span>
+                  )
+                ) : typeof estimatedTotal === "number" ? (
+                  <span className="font-normal text-gray-500">
+                    (showing {fmtCount(items.length)} of ~{fmtCount(estimatedTotal)})
+                  </span>
+                ) : metaLoading ? (
+                  <span className="font-normal text-gray-500">(counting…)</span>
+                ) : null}
+                {(condition === "refurb" || condition === "both") && typeof pageInventoryTotal === "number" ? (
+                  <span className="ml-2 text-gray-500 font-normal">
+                    (page refurb qty total: {fmtCount(pageInventoryTotal)})
+                  </span>
+                ) : null}
+              </>
+            )}
           </div>
 
           <div className="flex flex-col md:flex-row gap-2 md:items-center">
@@ -1150,56 +937,69 @@ export default function PartsExplorer(props: PartsExplorerProps) {
               inputMode="search"
               autoCapitalize="none"
               autoCorrect="off"
-              className="w-full md:w-[520px] border border-gray-300 rounded px-3 py-2 text-[13px] text-black"
+              disabled={isModelFocused}
+              className="w-full md:w-[520px] border border-gray-300 rounded px-3 py-2 text-[13px] text-black disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
             />
-            {searchMode && (
+            {searchMode && !isModelFocused && (
               <button
                 type="button"
                 className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold text-gray-800 hover:bg-gray-50"
                 onClick={() => {
                   setQ("");
                   setPage(1);
+                  setModelCards([]);
                 }}
               >
                 Clear search
               </button>
             )}
+
+            {isModelFocused && (
+              <button
+                type="button"
+                className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold text-gray-800 hover:bg-gray-50"
+                onClick={closeModelParts}
+              >
+                Back to results
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Pagination controls (top) */}
-        <div className="flex items-center gap-2">
-          <select
-            value={perPage}
-            onChange={(e) => {
-              setPerPage(parseInt(e.target.value, 10) || DEFAULT_PER_PAGE);
-              setPage(1);
-            }}
-            className="border border-gray-300 rounded px-2 py-2 text-[13px] text-black"
-          >
-            {[15, 30, 60, 100].map((n) => (
-              <option key={n} value={n}>
-                {n}/page
-              </option>
-            ))}
-          </select>
+        {!isModelFocused && (
+          <div className="flex items-center gap-2">
+            <select
+              value={perPage}
+              onChange={(e) => {
+                setPerPage(parseInt(e.target.value, 10) || DEFAULT_PER_PAGE);
+                setPage(1);
+              }}
+              className="border border-gray-300 rounded px-2 py-2 text-[13px] text-black"
+            >
+              {[15, 30, 60, 100].map((n) => (
+                <option key={n} value={n}>
+                  {n}/page
+                </option>
+              ))}
+            </select>
 
-          <button
-            className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
-            disabled={page <= 1 || loading}
-            onClick={() => setPage((p) => Math.max(p - 1, 1))}
-          >
-            Prev
-          </button>
-          <div className="text-[12px] text-gray-700 w-[70px] text-center">Page {page}</div>
-          <button
-            className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
-            disabled={!hasMore || loading}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </button>
-        </div>
+            <button
+              className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            >
+              Prev
+            </button>
+            <div className="text-[12px] text-gray-700 w-[70px] text-center">Page {page}</div>
+            <button
+              className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
+              disabled={!hasMore || loading}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
@@ -1207,14 +1007,13 @@ export default function PartsExplorer(props: PartsExplorerProps) {
           ref={asideRef}
           className={`border border-gray-200 rounded-lg bg-white p-4 ${filtersDisabled ? "opacity-60" : ""}`}
         >
-          {/* ✅ RESET MOVED TO TOP */}
           <div className="flex items-center justify-between mb-3">
             <div className="text-[13px] font-bold text-gray-800">Filters</div>
             <button
               className="px-3 py-1.5 rounded bg-gray-100 border border-gray-200 text-[12px] font-semibold text-gray-800 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={filtersDisabled}
               onClick={doReset}
-              title={filtersDisabled ? "Clear search to re-enable filters" : "Reset all filters"}
+              title={filtersDisabled ? "Exit focused/search state to re-enable filters" : "Reset all filters"}
             >
               Reset
             </button>
@@ -1222,7 +1021,9 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
           {filtersDisabled && (
             <div className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-[12px] text-amber-900">
-              Search overrides filters. Clear search to re-enable filtering.
+              {isModelFocused
+                ? "Model-focused view is active. Click Back to results to re-enable filtering."
+                : "Search overrides filters. Clear search to re-enable filtering."}
             </div>
           )}
 
@@ -1243,6 +1044,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                   onClick={() => {
                     if (filtersDisabled) return;
                     setCondition(opt.value);
+                    if (opt.value === "new") setAvailability("in_stock");
                     setPage(1);
                   }}
                   aria-pressed={checked}
@@ -1252,34 +1054,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                 </button>
               );
             })}
-
-            <div className="mt-3">
-              <div className="text-[12px] font-semibold text-gray-700 mb-2">Availability</div>
-              {[
-                { value: "in_stock" as const, label: "In stock" },
-                { value: "orderable" as const, label: "Orderable or In Stock" },
-                { value: "all" as const, label: "All (including no longer available parts)" },
-              ].map((opt) => {
-                const checked = availability === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    disabled={filtersDisabled}
-                    className="w-full flex items-center gap-2 py-1 text-[12px] text-gray-800 hover:bg-gray-50 disabled:hover:bg-transparent rounded px-1 disabled:cursor-not-allowed"
-                    onClick={() => {
-                      if (filtersDisabled) return;
-                      setAvailability(opt.value);
-                      setPage(1);
-                    }}
-                    aria-pressed={checked}
-                  >
-                    <RadioDot checked={checked} />
-                    <span>{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           <div className="mb-4">
@@ -1302,7 +1076,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
             </select>
           </div>
 
-          {/* Brands (multi) */}
           <div className="mb-4">
             <div className="text-[12px] font-semibold text-gray-700 mb-2">Brands</div>
             <div className="max-h-[240px] overflow-auto pr-1">
@@ -1345,7 +1118,6 @@ export default function PartsExplorer(props: PartsExplorerProps) {
             )}
           </div>
 
-          {/* Part types (multi) */}
           <div className="mb-2">
             <div className="text-[12px] font-semibold text-gray-700 mb-2">Part Types</div>
             <div className="max-h-[240px] overflow-auto pr-1">
@@ -1389,56 +1161,137 @@ export default function PartsExplorer(props: PartsExplorerProps) {
           </div>
         </aside>
 
-        {/* Main list */}
         <main className="min-w-0">
-          {loading && <div className="mb-3 text-[12px] text-gray-600">Loading…</div>}
+          {!isModelFocused && loading && <div className="mb-3 text-[12px] text-gray-600">Loading…</div>}
 
-          {err && (
+          {!isModelFocused && err && (
             <div className="mb-4 border border-red-300 bg-red-50 text-red-700 rounded p-3 text-[12px]">
               <div className="font-semibold mb-1">/api/grid error</div>
               <div className="font-mono break-all">{err}</div>
             </div>
           )}
 
-          {!loading && !err && items.length === 0 && <div className="text-[13px] text-gray-700">No results.</div>}
-
-          {items.length > 0 && (
+          {isModelFocused ? (
             <div
-              className="border border-gray-200 rounded-lg bg-white flex flex-col min-h-0"
+              className="border border-gray-200 rounded-lg bg-white flex flex-col min-h-0 overflow-hidden"
               style={isLg && asideHeight ? { height: asideHeight } : undefined}
             >
-              <div className="flex-1 min-h-0 overflow-y-auto p-4">
-                <div className="flex flex-col gap-3">
-                  {items.map((row, idx) => {
-                    const hasModel =
-                      !!row?.model_number && !row?.mpn && !row?.mpn_display && !row?.mpn_normalized;
-                    return hasModel ? (
-                      <ModelRow key={row?.rid ?? `model-${row?.model_number ?? idx}`} m={row} />
-                    ) : (
-                      <PartRow key={row?.rid ?? `${row?.mpn ?? "row"}-${idx}`} p={row} addToCart={addToCart} />
-                    );
-                  })}
-                </div>
+              <div className="shrink-0 p-4 border-b border-gray-200 bg-white">
+                {activeModel ? <ModelCard model={activeModel} onViewParts={openModelParts} /> : null}
               </div>
 
-              <div className="border-t border-gray-200 bg-white p-3 flex items-center justify-center gap-2">
-                <button
-                  className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
-                  disabled={page <= 1 || loading}
-                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                >
-                  Prev
-                </button>
-                <div className="text-[12px] text-gray-700 w-[80px] text-center">Page {page}</div>
-                <button
-                  className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
-                  disabled={!hasMore || loading}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </button>
+              <div className="flex-1 min-h-0 overflow-y-auto p-4">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-[15px] font-semibold text-gray-900">
+                      Matching parts{" "}
+                      {activeModelLoading ? (
+                        <span className="font-normal text-gray-500">(loading…)</span>
+                      ) : (
+                        <span className="font-normal text-gray-500">({fmtCount(activeModelParts.length)})</span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold text-gray-800 hover:bg-gray-50"
+                      onClick={closeModelParts}
+                    >
+                      Back to results
+                    </button>
+                  </div>
+
+                  {activeModelError && (
+                    <div className="border border-red-300 bg-red-50 text-red-700 rounded p-3 text-[12px]">
+                      <div className="font-semibold mb-1">Model parts error</div>
+                      <div className="font-mono break-all">{activeModelError}</div>
+                    </div>
+                  )}
+
+                  {!activeModelLoading && !activeModelError && activeModelParts.length === 0 && (
+                    <div className="text-[13px] text-gray-700">No parts found for this model.</div>
+                  )}
+
+                  {activeModelParts.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                      {activeModelParts.map((row, idx) => (
+                        <ProductCard
+                          key={row?.rid ?? row?.id ?? row?.mpn ?? `model-part-${idx}`}
+                          item={row}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+          ) : (
+            <>
+              {!loading && !err && !hasAnyResults && <div className="text-[13px] text-gray-700">No results.</div>}
+
+              {hasAnyResults && (
+                <div
+                  className="border border-gray-200 rounded-lg bg-white flex flex-col min-h-0"
+                  style={isLg && asideHeight ? { height: asideHeight } : undefined}
+                >
+                  <div className="flex-1 min-h-0 overflow-y-auto p-4">
+                    <div className="flex flex-col gap-3">
+                      {modelCards.length > 0 && (
+                        <>
+                          <div className="text-[13px] font-semibold text-gray-900">
+                            Matching models ({fmtCount(modelCards.length)})
+                          </div>
+                          {modelCards.map((row, idx) => (
+                            <ModelCard
+                              key={row?.rid ?? `model-${row?.model_number ?? idx}`}
+                              model={{
+                                ...row,
+                                href: row?.model_number
+                                  ? `/models/${encodeURIComponent(String(row.model_number))}`
+                                  : "#",
+                              }}
+                              onViewParts={openModelParts}
+                            />
+                          ))}
+                        </>
+                      )}
+
+                      {items.length > 0 && (
+                        <>
+                          {modelCards.length > 0 && (
+                            <div className="mt-2 pt-3 border-t border-gray-200 text-[13px] font-semibold text-gray-900">
+                              Matching parts ({fmtCount(items.length)})
+                            </div>
+                          )}
+
+                          {items.map((row, idx) => (
+                            <ProductCard key={row?.rid ?? `${row?.mpn ?? "row"}-${idx}`} item={row} />
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 bg-white p-3 flex items-center justify-center gap-2">
+                    <button
+                      className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
+                      disabled={page <= 1 || loading}
+                      onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                    >
+                      Prev
+                    </button>
+                    <div className="text-[12px] text-gray-700 w-[80px] text-center">Page {page}</div>
+                    <button
+                      className="px-3 py-2 rounded border border-gray-300 text-[12px] font-semibold disabled:opacity-50"
+                      disabled={!hasMore || loading}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>

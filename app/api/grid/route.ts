@@ -112,9 +112,7 @@ function isPartInStock(stock_status_canon: any, availability_rank: any) {
 }
 
 function applyPartsInStockOnly(qb: any) {
-  return qb.or(
-    "availability_rank.in.(1,2),stock_status_canon.eq.in_stock,stock_status_canon.eq.available"
-  );
+  return qb.eq("availability_rank", 1);
 }
 
 function applyPartsOrderableOnly(qb: any) {
@@ -144,11 +142,6 @@ function applyGridAllOrderableOnly(qb: any) {
   );
 }
 
-/**
- * IMPORTANT FIX:
- * - grid_facets_v1 supports p_limit
- * - grid_facets does NOT support p_limit
- */
 async function rpcFacets(supabase: any, params: any) {
   const paramsV1 = {
     p_condition: params.p_condition,
@@ -186,7 +179,12 @@ function normalizeFacetsAndTotal(raw: any) {
   const brandsRaw =
     froot.brands ?? froot.brand ?? froot.brand_counts ?? froot.brand_facet ?? froot.brandFacet;
   const partsRaw =
-    froot.parts ?? froot.part_types ?? froot.part_type ?? froot.partType ?? froot.part_counts;
+    froot.parts ??
+    froot.part_types ??
+    froot.canonical_part_type ??
+    froot.part_type ??
+    froot.partType ??
+    froot.part_counts;
   const appliancesRaw =
     froot.appliances ??
     froot.appliance_types ??
@@ -206,19 +204,13 @@ function normalizeFacetsAndTotal(raw: any) {
 
   const facets = {
     brands: normalizeFacetList(brandsRaw, ["brand"]),
-    parts: normalizeFacetList(partsRaw, ["part_type", "part", "type"]),
+    parts: normalizeFacetList(partsRaw, ["canonical_part_type", "part_type", "part", "type"]),
     appliances: normalizeFacetList(appliancesRaw, ["appliance_type", "appliance", "type"]),
   };
 
   return { facets, total_count: Number.isFinite(Number(total_count)) ? Number(total_count) : null };
 }
 
-function isMissingColumnError(err: any) {
-  const msg = String(err?.message || err || "").toLowerCase();
-  return msg.includes("column") && msg.includes("does not exist");
-}
-
-// ===== NEW: tolerant casing for facet filters =====
 function titleCaseWords(s: string) {
   return String(s || "")
     .split(/\s+/)
@@ -264,6 +256,81 @@ function normalizeFacetScalar(v: string) {
   return titleCaseWords(spaced);
 }
 
+function mapProductRow(row: any, source: "parts" | "offers") {
+  const isRefurb = source === "offers";
+  const inventoryTotal = isRefurb ? Number(row?.inventory_total ?? 0) || 0 : null;
+
+  return {
+    rid: source === "parts" ? `p:${row.id}` : `o:${row.id}`,
+    source,
+    is_refurb: isRefurb,
+    listing_id: isRefurb && row?.listing_id != null ? String(row.listing_id) : null,
+
+    mpn: row?.mpn ?? null,
+    title: row?.title ?? null,
+    price: row?.price ?? null,
+    image_url: row?.image_url ?? null,
+    brand: row?.brand ?? null,
+
+    part_type: row?.part_type ?? null,
+    canonical_part_type: row?.canonical_part_type ?? row?.part_type ?? null,
+    specific_part_type: !isRefurb ? row?.specific_part_type ?? null : null,
+    appliance_type: row?.appliance_type ?? null,
+
+    stock_status_canon: !isRefurb ? row?.stock_status_canon ?? null : null,
+    availability_rank: !isRefurb ? row?.availability_rank ?? null : null,
+
+    inventory_total: inventoryTotal,
+    in_stock: isRefurb
+      ? inventoryTotal > 0
+      : isPartInStock(row?.stock_status_canon, row?.availability_rank),
+
+    compatible_brands: row?.compatible_brands ?? null,
+    compatible_models: row?.compatible_models ?? null,
+    replaced_by: !isRefurb ? row?.replaced_by ?? null : null,
+    replaces_previous_parts: !isRefurb ? row?.replaces_previous_parts ?? null : null,
+
+    brand_logo_url: row?.brand_logo_url ?? null,
+    total_parts: row?.total_parts ?? null,
+    priced_parts: row?.priced_parts ?? null,
+  };
+}
+
+function mapModelRow(row: any) {
+  return {
+    rid: `m:${row?.id ?? row?.model_number ?? Math.random().toString(36).slice(2)}`,
+    source: "models",
+    is_refurb: false,
+    listing_id: null,
+
+    mpn: null,
+    title: row?.title ?? row?.model_number ?? null,
+    price: null,
+    image_url: null,
+    brand: row?.brand ?? null,
+
+    part_type: null,
+    canonical_part_type: null,
+    specific_part_type: null,
+    appliance_type: row?.appliance_type ?? null,
+
+    stock_status_canon: null,
+    availability_rank: null,
+    inventory_total: null,
+    in_stock: null,
+
+    compatible_brands: null,
+    compatible_models: null,
+    replaced_by: null,
+    replaces_previous_parts: null,
+
+    model_number: row?.model_number ?? null,
+    brand_logo_url: null,
+    total_parts: row?.total_links ?? null,
+    priced_parts: row?.priced_parts ?? null,
+  };
+}
+
 export async function GET(req: Request) {
   const t0 = Date.now();
   const url = new URL(req.url);
@@ -278,12 +345,9 @@ export async function GET(req: Request) {
 
   const qTrim = (url.searchParams.get("q") ?? "").trim();
   const q: string | null = qTrim ? qTrim : null;
-
-  // ✅ SEARCH OVERRIDE MODE (client contract):
-  // any non-empty q puts page into search mode -> filters do not apply
   const searchMode = !!qTrim;
 
-  const isExactMpn = !!qTrim && looksLikeExactMpn(qTrim);
+  const isExactMpn = !!qTrim && looksLikeExactMpn(qTrim) && /[-._]/.test(qTrim);
   const mpnNorm = isExactMpn ? normMpn(qTrim) : null;
 
   const applianceTypeIn = (url.searchParams.get("appliance_type") || "").trim();
@@ -302,17 +366,14 @@ export async function GET(req: Request) {
 
   const parsedSort = parseSort(url.searchParams.get("sort"));
   const mixRefurbsParam = clampInt(url.searchParams.get("mix_refurbs"), 0, 100, 0);
-
   const noDefaults = asBool(url.searchParams.get("no_defaults"));
 
-  // defaults baseline
   let defaultsApplied = false;
 
   let condition: Condition = parsedCondition ?? "both";
   let sort: SortKey = parsedSort;
   let mix_refurbs = mixRefurbsParam;
 
-  // ✅ apply search override immediately (FORCES: condition=both, availability=all, ignores filters)
   let itemsBrands = brandsIn;
   let itemsPartTypes = partTypesIn;
   let itemsApplianceType = applianceTypeIn;
@@ -331,7 +392,6 @@ export async function GET(req: Request) {
     !!q || !!itemsApplianceType || itemsBrands.length > 0 || itemsPartTypes.length > 0 || availability !== "all";
 
   const isUnboundedBrowse = !hasAnyFilter;
-
   const conditionWasProvided = parsedCondition != null;
 
   if (!noDefaults && isUnboundedBrowse && !conditionWasProvided) {
@@ -346,6 +406,7 @@ export async function GET(req: Request) {
         error:
           "Refusing unbounded browse (no q / brands / part_types / appliance_type / availability filter). Remove no_defaults or supply filters.",
         items: [],
+        model_cards: [],
         page,
         per_page: perPage,
       },
@@ -366,8 +427,7 @@ export async function GET(req: Request) {
 
   const scopeRaw = (url.searchParams.get("facets_scope") || "").toLowerCase();
   const facets_scope: FacetScope = scopeRaw === "global" ? "global" : "contextual";
-
-  const facetLimit = clampInt(url.searchParams.get("facet_limit"), 1, 5000, 300);
+  const facetLimit = clampInt(url.searchParams.get("facet_limit"), 1, 100, 20);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey =
@@ -387,7 +447,6 @@ export async function GET(req: Request) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // ===== facets / meta =====
   let facets: any = null;
   let facets_source: "db" | "none" | "error" = "none";
   let facets_error: string | null = null;
@@ -399,9 +458,8 @@ export async function GET(req: Request) {
     isUnboundedBrowse &&
     condition === "both";
 
-  // ✅ when searchMode, we ALWAYS compute facets globally from q only
   const facetsParams = {
-    p_condition: condition, // already forced "both" in searchMode
+    p_condition: condition,
     p_q: q,
     p_appliance_type:
       searchMode
@@ -455,27 +513,25 @@ export async function GET(req: Request) {
       "Refused global facets without filters for condition=both (use facets_scope=contextual or add filters).";
   }
 
-  // ===== count-only =====
   if (countOnly) {
     if (wantTotal) {
       let qCount: any = supabase.from("grid_all").select("rid", { head: true, count: "estimated" as any });
 
-      // ✅ in search mode, ignore filters and force both/all
       if (!searchMode) {
         if (condition === "new") qCount = qCount.eq("is_refurb", false);
         if (condition === "refurb") qCount = qCount.eq("is_refurb", true);
 
         if (itemsApplianceType) qCount = qCount.in("appliance_type", expandFilterValues([itemsApplianceType]));
         if (itemsBrands.length) qCount = qCount.in("brand", expandFilterValues(itemsBrands));
-        if (itemsPartTypes.length) qCount = qCount.in("part_type", expandFilterValues(itemsPartTypes));
+        if (itemsPartTypes.length) qCount = qCount.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
         if (availability === "in_stock") qCount = qCount.eq("in_stock", true);
         if (availability === "orderable") qCount = applyGridAllOrderableOnly(qCount);
       }
 
-      if (q && !isExactMpn) {
+      if (q) {
         const like = `%${q}%`;
-        qCount = qCount.or(`mpn.ilike.${like},compatible_models.ilike.${like}`);
+        qCount = qCount.or(`mpn.ilike.${like},title.ilike.${like},compatible_models.ilike.${like}`);
       }
 
       const { count } = await qCount;
@@ -492,27 +548,25 @@ export async function GET(req: Request) {
     });
   }
 
-  // ===== meta-only =====
   if (metaOnly) {
     if (wantTotal) {
       let qCount: any = supabase.from("grid_all").select("rid", { head: true, count: "estimated" as any });
 
-      // ✅ in search mode, ignore filters and force both/all
       if (!searchMode) {
         if (condition === "new") qCount = qCount.eq("is_refurb", false);
         if (condition === "refurb") qCount = qCount.eq("is_refurb", true);
 
         if (itemsApplianceType) qCount = qCount.in("appliance_type", expandFilterValues([itemsApplianceType]));
         if (itemsBrands.length) qCount = qCount.in("brand", expandFilterValues(itemsBrands));
-        if (itemsPartTypes.length) qCount = qCount.in("part_type", expandFilterValues(itemsPartTypes));
+        if (itemsPartTypes.length) qCount = qCount.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
         if (availability === "in_stock") qCount = qCount.eq("in_stock", true);
         if (availability === "orderable") qCount = applyGridAllOrderableOnly(qCount);
       }
 
-      if (q && !isExactMpn) {
+      if (q) {
         const like = `%${q}%`;
-        qCount = qCount.or(`mpn.ilike.${like},compatible_models.ilike.${like}`);
+        qCount = qCount.or(`mpn.ilike.${like},title.ilike.${like},compatible_models.ilike.${like}`);
       }
 
       const { count } = await qCount;
@@ -541,7 +595,6 @@ export async function GET(req: Request) {
     );
   }
 
-  // ===== items (page) =====
   const from = (page - 1) * perPage;
   const to = from + perPage;
 
@@ -568,16 +621,84 @@ export async function GET(req: Request) {
     );
   }
 
-  // --- Exact MPN path ---
+  async function runModelsSearch() {
+    if (!searchMode || !q) return { data: [], error: null };
+
+    const like = `%${q}%`;
+
+    const cols = [
+      "id",
+      "title",
+      "brand",
+      "appliance_type",
+      "model_number",
+      "total_links",
+      "priced_parts",
+      "refurb_count",
+    ].join(",");
+
+    let qb: any = supabase
+      .from("models")
+      .select(cols)
+      .or(`model_number.ilike.${like},title.ilike.${like},brand.ilike.${like},appliance_type.ilike.${like}`);
+
+    if (itemsApplianceType) {
+      qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
+    }
+
+    if (itemsBrands.length) {
+      qb = qb.in("brand", expandFilterValues(itemsBrands));
+    }
+
+    qb = qb
+      .order("priced_parts", { ascending: false, nullsFirst: false })
+      .order("total_links", { ascending: false, nullsFirst: false })
+      .order("model_number", { ascending: true, nullsFirst: false })
+      .limit(12);
+
+    return await qb;
+  }
+
+  let model_cards: any[] = [];
+  if (searchMode) {
+    const modelsRes = await runModelsSearch();
+    if (!modelsRes?.error && Array.isArray(modelsRes.data)) {
+      model_cards = modelsRes.data.map(mapModelRow);
+    }
+  }
+    // Fast path: if this looks like a model-number/style search and we found model cards,
+  // do not also run the heavy grid_all search. That is what is timing out.
+  if (searchMode && model_cards.length > 0 && !isExactMpn) {
+    return NextResponse.json({
+      ok: true,
+      condition,
+      availability,
+      items: [],
+      model_cards,
+      has_more: false,
+      page,
+      per_page: perPage,
+      total_count: model_cards.length,
+      facets,
+      facets_source,
+      facets_scope,
+      facets_rpc,
+      facets_error,
+      defaults_applied: defaultsApplied,
+      page_inventory_total: null,
+      took_ms: Date.now() - t0,
+    });
+  }
+
   if (isExactMpn && mpnNorm) {
-    // ✅ search mode already forces these to true, but keep logic correct
     const wantsOffers = condition === "both" || condition === "refurb";
     const wantsParts = condition === "both" || condition === "new";
 
     const offerCols =
-      "id,listing_id,mpn,title,price,image_url,brand,part_type,appliance_type,inventory_total,compatible_models";
+      "id,listing_id,mpn,title,price,image_url,brand,part_type,canonical_part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
+
     const partCols =
-      "id,mpn,title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank,replaced_by,replaces_previous_parts";
+      "id,mpn,title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts";
 
     const [offersRes, partsItemsRes, exactPartRes] = await Promise.all([
       wantsOffers
@@ -589,11 +710,10 @@ export async function GET(req: Request) {
               .gt("price", 0)
               .gt("inventory_total", 0);
 
-            // ✅ search override: do NOT apply filters
             if (!searchMode) {
               if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
               if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
-              if (itemsPartTypes.length) qb = qb.in("part_type", expandFilterValues(itemsPartTypes));
+              if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
             }
 
             return qb;
@@ -608,11 +728,10 @@ export async function GET(req: Request) {
               .eq("mpn_normalized", mpnNorm)
               .gt("price", 0);
 
-            // ✅ search override: do NOT apply filters (and availability forced all)
             if (!searchMode) {
               if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
               if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
-              if (itemsPartTypes.length) qb = qb.in("part_type", expandFilterValues(itemsPartTypes));
+              if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
               if (availability === "in_stock") qb = applyPartsInStockOnly(qb);
               if (availability === "orderable") qb = applyPartsOrderableOnly(qb);
@@ -629,43 +748,8 @@ export async function GET(req: Request) {
     const partsRows = Array.isArray(partsItemsRes?.data) ? partsItemsRes.data : [];
     const exact_part = exactPartRes?.data ?? null;
 
-    const mappedOffers = offersRows.map((o: any) => ({
-      rid: `o:${o.id}`,
-      source: "offers",
-      is_refurb: true,
-      listing_id: o?.listing_id != null ? String(o.listing_id) : null,
-      mpn: o?.mpn ?? null,
-      title: o?.title ?? null,
-      price: o?.price ?? null,
-      image_url: o?.image_url ?? null,
-      brand: o?.brand ?? null,
-      part_type: o?.part_type ?? null,
-      appliance_type: o?.appliance_type ?? null,
-      stock_status_canon: null,
-      inventory_total: Number(o?.inventory_total ?? 0) || 0,
-      in_stock: (Number(o?.inventory_total ?? 0) || 0) > 0,
-      compatible_models: o?.compatible_models ?? null,
-    }));
-
-    const mappedParts = partsRows.map((p: any) => ({
-      rid: `p:${p.id}`,
-      source: "parts",
-      is_refurb: false,
-      listing_id: null,
-      mpn: p?.mpn ?? null,
-      title: p?.title ?? null,
-      price: p?.price ?? null,
-      image_url: p?.image_url ?? null,
-      brand: p?.brand ?? null,
-      part_type: p?.part_type ?? null,
-      appliance_type: p?.appliance_type ?? null,
-      stock_status_canon: p?.stock_status_canon ?? null,
-      inventory_total: null,
-      in_stock: isPartInStock(p?.stock_status_canon, p?.availability_rank),
-      availability_rank: p?.availability_rank ?? null,
-      replaced_by: p?.replaced_by ?? null,
-      replaces_previous_parts: p?.replaces_previous_parts ?? null,
-    }));
+    const mappedOffers = offersRows.map((o: any) => mapProductRow(o, "offers"));
+    const mappedParts = partsRows.map((p: any) => mapProductRow(p, "parts"));
 
     function isSellableNewPart(p: any) {
       const price = Number(p?.price ?? 0) || 0;
@@ -673,29 +757,13 @@ export async function GET(req: Request) {
       return price > 0 && inStock;
     }
 
-    const exactItem =
-      exact_part
-        ? {
-            rid: `p:${exact_part.id}`,
-            source: "parts",
-            is_refurb: false,
-            listing_id: null,
-            mpn: exact_part?.mpn ?? qTrim ?? null,
-            title: exact_part?.title ?? null,
-            price: exact_part?.price ?? null,
-            image_url: exact_part?.image_url ?? null,
-            brand: exact_part?.brand ?? null,
-            part_type: exact_part?.part_type ?? null,
-            appliance_type: exact_part?.appliance_type ?? null,
-            stock_status_canon: exact_part?.stock_status_canon ?? null,
-            inventory_total: null,
-            in_stock: isPartInStock(exact_part?.stock_status_canon, exact_part?.availability_rank),
-            availability_rank: exact_part?.availability_rank ?? null,
-            replaced_by: exact_part?.replaced_by ?? null,
-            replaces_previous_parts: exact_part?.replaces_previous_parts ?? null,
-            is_nla: !isSellableNewPart(exact_part),
-          }
-        : null;
+    const exactItem = exact_part
+      ? {
+          ...mapProductRow(exact_part, "parts"),
+          mpn: exact_part?.mpn ?? qTrim ?? null,
+          is_nla: !isSellableNewPart(exact_part),
+        }
+      : null;
 
     let combined = sortItems([...mappedOffers, ...mappedParts]);
 
@@ -735,6 +803,7 @@ export async function GET(req: Request) {
       condition,
       availability,
       items,
+      model_cards,
       has_more,
       page,
       per_page: perPage,
@@ -753,15 +822,15 @@ export async function GET(req: Request) {
     });
   }
 
-  // --- Normal browse path (mix landing) ---
   if (mix_refurbs > 0 && condition === "both" && isUnboundedBrowse && page === 1) {
     const takeOffers = Math.min(mix_refurbs, perPage);
     const takeParts = Math.max(perPage - takeOffers, 0);
 
     const offerCols =
-      "id,listing_id,mpn,title,price,image_url,brand,part_type,appliance_type,inventory_total,compatible_models";
+      "id,listing_id,mpn,title,price,image_url,brand,part_type,canonical_part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
+
     const partCols =
-      "id,mpn,title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank";
+      "id,mpn,title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts";
 
     const [offersRes, partsRes] = await Promise.all([
       (async () => {
@@ -773,7 +842,7 @@ export async function GET(req: Request) {
 
         if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
         if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
-        if (itemsPartTypes.length) qb = qb.in("part_type", expandFilterValues(itemsPartTypes));
+        if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
         qb = qb
           .order("inventory_total", { ascending: false, nullsFirst: false })
@@ -787,7 +856,7 @@ export async function GET(req: Request) {
 
         if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
         if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
-        if (itemsPartTypes.length) qb = qb.in("part_type", expandFilterValues(itemsPartTypes));
+        if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
         if (availability === "in_stock") qb = applyPartsInStockOnly(qb);
         if (availability === "orderable") qb = applyPartsOrderableOnly(qb);
@@ -807,39 +876,8 @@ export async function GET(req: Request) {
     const offersHasMore = offersRows.length > takeOffers;
     const partsHasMore = partsRows.length > takeParts;
 
-    const mappedOffers = offersRows.slice(0, takeOffers).map((o: any) => ({
-      rid: `o:${o.id}`,
-      source: "offers",
-      is_refurb: true,
-      listing_id: o?.listing_id != null ? String(o.listing_id) : null,
-      mpn: o?.mpn ?? null,
-      title: o?.title ?? null,
-      price: o?.price ?? null,
-      image_url: o?.image_url ?? null,
-      brand: o?.brand ?? null,
-      part_type: o?.part_type ?? null,
-      appliance_type: o?.appliance_type ?? null,
-      stock_status_canon: null,
-      inventory_total: Number(o?.inventory_total ?? 0) || 0,
-      in_stock: true,
-    }));
-
-    const mappedParts = partsRows.slice(0, takeParts).map((p: any) => ({
-      rid: `p:${p.id}`,
-      source: "parts",
-      is_refurb: false,
-      listing_id: null,
-      mpn: p?.mpn ?? null,
-      title: p?.title ?? null,
-      price: p?.price ?? null,
-      image_url: p?.image_url ?? null,
-      brand: p?.brand ?? null,
-      part_type: p?.part_type ?? null,
-      appliance_type: p?.appliance_type ?? null,
-      stock_status_canon: p?.stock_status_canon ?? null,
-      inventory_total: null,
-      in_stock: isPartInStock(p?.stock_status_canon, p?.availability_rank),
-    }));
+    const mappedOffers = offersRows.slice(0, takeOffers).map((o: any) => mapProductRow(o, "offers"));
+    const mappedParts = partsRows.slice(0, takeParts).map((p: any) => mapProductRow(p, "parts"));
 
     const items = sortItems([...mappedOffers, ...mappedParts]);
     const has_more = offersHasMore || partsHasMore;
@@ -867,6 +905,7 @@ export async function GET(req: Request) {
       condition,
       availability,
       items,
+      model_cards: [],
       has_more,
       page,
       per_page: perPage,
@@ -882,19 +921,16 @@ export async function GET(req: Request) {
     });
   }
 
-  // NEW-only browse: hit parts directly
   if (condition === "new") {
     const partCols =
-      "id,mpn,title,price,image_url,brand,part_type,appliance_type,stock_status_canon,availability_rank";
+      "id,mpn,title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts";
 
     let qb: any = supabase.from("parts").select(partCols).gt("price", 0);
 
-    // ✅ search override already prevented reaching here with condition=new,
-    // but keep it robust: only apply filters when not in search mode
     if (!searchMode) {
       if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
       if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
-      if (itemsPartTypes.length) qb = qb.in("part_type", expandFilterValues(itemsPartTypes));
+      if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
       if (availability === "in_stock") qb = applyPartsInStockOnly(qb);
       if (availability === "orderable") qb = applyPartsOrderableOnly(qb);
@@ -902,7 +938,7 @@ export async function GET(req: Request) {
 
     if (q) {
       const like = `%${q}%`;
-      qb = qb.or(`mpn.ilike.${like}`);
+      qb = qb.or(`mpn.ilike.${like},title.ilike.${like},compatible_models.ilike.${like}`);
     }
 
     const s = sort || "";
@@ -924,6 +960,7 @@ export async function GET(req: Request) {
           ok: false,
           error: error.message,
           items: [],
+          model_cards: [],
           has_more: false,
           page,
           per_page: perPage,
@@ -944,29 +981,14 @@ export async function GET(req: Request) {
     const rows = Array.isArray(data) ? data : [];
     const has_more = rows.length > perPage;
     const slice = has_more ? rows.slice(0, perPage) : rows;
-
-    const items = slice.map((p: any) => ({
-      rid: `p:${p.id}`,
-      source: "parts",
-      is_refurb: false,
-      listing_id: null,
-      mpn: p?.mpn ?? null,
-      title: p?.title ?? null,
-      price: p?.price ?? null,
-      image_url: p?.image_url ?? null,
-      brand: p?.brand ?? null,
-      part_type: p?.part_type ?? null,
-      appliance_type: p?.appliance_type ?? null,
-      stock_status_canon: p?.stock_status_canon ?? null,
-      inventory_total: null,
-      in_stock: isPartInStock(p?.stock_status_canon, p?.availability_rank),
-    }));
+    const items = slice.map((p: any) => mapProductRow(p, "parts"));
 
     return NextResponse.json({
       ok: true,
       condition,
       availability,
       items,
+      model_cards,
       has_more,
       page,
       per_page: perPage,
@@ -982,7 +1004,6 @@ export async function GET(req: Request) {
     });
   }
 
-  // --- Default: query grid_all view for refurb/both ---
   const selectColsBase = [
     "rid",
     "source",
@@ -994,17 +1015,20 @@ export async function GET(req: Request) {
     "image_url",
     "brand",
     "part_type",
+    "canonical_part_type",
     "appliance_type",
     "stock_status_canon",
     "inventory_total",
     "compatible_models",
     "in_stock",
+    "compatible_brands",
+    "replaced_by",
+    "replaces_previous_parts",
+    "specific_part_type",
   ].join(",");
 
-  // Optional model-card fields (if present in your view). If missing, we auto-fallback.
   const selectColsExtended = [
     selectColsBase,
-    "model_number",
     "brand_logo_url",
     "total_parts",
     "priced_parts",
@@ -1013,7 +1037,6 @@ export async function GET(req: Request) {
   function applyCommonFilters(query: any) {
     query = query.gt("price", 0);
 
-    // ✅ search mode: do NOT apply condition/availability/brands/part_types/appliance_type filters
     if (!searchMode) {
       if (condition === "new") query = query.eq("is_refurb", false);
       if (condition === "refurb") query = query.eq("is_refurb", true);
@@ -1024,7 +1047,7 @@ export async function GET(req: Request) {
 
       if (itemsApplianceType) query = query.in("appliance_type", expandFilterValues([itemsApplianceType]));
       if (itemsBrands.length) query = query.in("brand", expandFilterValues(itemsBrands));
-      if (itemsPartTypes.length) query = query.in("part_type", expandFilterValues(itemsPartTypes));
+      if (itemsPartTypes.length) query = query.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
       if (availability === "in_stock") query = query.eq("in_stock", true);
       if (availability === "orderable") query = applyGridAllOrderableOnly(query);
@@ -1032,7 +1055,7 @@ export async function GET(req: Request) {
 
     if (q) {
       const like = `%${q}%`;
-      query = query.or(`mpn.ilike.${like},compatible_models.ilike.${like}`);
+      query = query.or(`mpn.ilike.${like},title.ilike.${like},compatible_models.ilike.${like}`);
     }
 
     return query;
@@ -1070,17 +1093,14 @@ export async function GET(req: Request) {
   let data: any[] = [];
   let error: any = null;
 
-  // Try extended cols first (enables model cards), fallback to base if view lacks those columns.
   {
     const r1 = await runGridAll(selectColsExtended);
     if (!r1.error) {
       data = Array.isArray(r1.data) ? r1.data : [];
-    } else if (isMissingColumnError(r1.error)) {
+    } else {
       const r2 = await runGridAll(selectColsBase);
       error = r2.error;
       data = Array.isArray(r2.data) ? r2.data : [];
-    } else {
-      error = r1.error;
     }
   }
 
@@ -1090,6 +1110,7 @@ export async function GET(req: Request) {
         ok: false,
         error: error.message,
         items: [],
+        model_cards,
         has_more: false,
         page,
         per_page: perPage,
@@ -1134,6 +1155,7 @@ export async function GET(req: Request) {
     condition,
     availability,
     items,
+    model_cards,
     has_more,
     page,
     per_page: perPage,
