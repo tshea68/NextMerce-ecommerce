@@ -1,0 +1,219 @@
+
+> merce@0.1.0 build /workspaces/NextMerce-ecommerce/merce
+> next build --turbopack
+
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+   ▲ Next.js 15.5.6 (Turbopack)
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Finished writing to disk in 93ms
+
+> Build error occurred
+Error: Turbopack build failed with 12 errors:
+./app/grid/PartsExplorer.client.tsx:18:1
+Module not found: Can't resolve '@/components/PartImage'
+[0m [90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 19 |[39m
+ [90m 20 |[39m [90m/* ================================[39m
+ [90m 21 |[39m [90m   CONFIG[39m[0m
+
+Import map: aliased to relative './components/PartImage' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:18:1
+Module not found: Can't resolve '@/components/PartImage'
+[0m [90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 19 |[39m
+ [90m 20 |[39m [90m/* ================================[39m
+ [90m 21 |[39m [90m   CONFIG[39m[0m
+
+Import map: aliased to relative './components/PartImage' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:18:1
+Module not found: Can't resolve '@/components/PartImage'
+[0m [90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 19 |[39m
+ [90m 20 |[39m [90m/* ================================[39m
+ [90m 21 |[39m [90m   CONFIG[39m[0m
+
+Import map: aliased to relative './components/PartImage' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:18:1
+Module not found: Can't resolve '@/components/PartImage'
+[0m [90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 19 |[39m
+ [90m 20 |[39m [90m/* ================================[39m
+ [90m 21 |[39m [90m   CONFIG[39m[0m
+
+Import map: aliased to relative './components/PartImage' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:17:1
+Module not found: Can't resolve '@/context/CartContext'
+[0m [90m 15 |[39m
+ [90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m 19 |[39m
+ [90m 20 |[39m [90m/* ================================[39m[0m
+
+Import map: aliased to relative './context/CartContext' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:17:1
+Module not found: Can't resolve '@/context/CartContext'
+[0m [90m 15 |[39m
+ [90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m 19 |[39m
+ [90m 20 |[39m [90m/* ================================[39m[0m
+
+Import map: aliased to relative './context/CartContext' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:17:1
+Module not found: Can't resolve '@/context/CartContext'
+[0m [90m 15 |[39m
+ [90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m 19 |[39m
+ [90m 20 |[39m [90m/* ================================[39m[0m
+
+Import map: aliased to relative './context/CartContext' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:17:1
+Module not found: Can't resolve '@/context/CartContext'
+[0m [90m 15 |[39m
+ [90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m 19 |[39m
+ [90m 20 |[39m [90m/* ================================[39m[0m
+
+Import map: aliased to relative './context/CartContext' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:16:1
+Module not found: Can't resolve '@/lib/PartsTitle'
+[0m [90m 14 |[39m [90m// import SEO from "../seo/SEO";[39m
+ [90m 15 |[39m
+[31m[1m>[22m[39m[90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m 19 |[39m[0m
+
+Import map: aliased to relative './lib/PartsTitle' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:16:1
+Module not found: Can't resolve '@/lib/PartsTitle'
+[0m [90m 14 |[39m [90m// import SEO from "../seo/SEO";[39m
+ [90m 15 |[39m
+[31m[1m>[22m[39m[90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m 19 |[39m[0m
+
+Import map: aliased to relative './lib/PartsTitle' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:16:1
+Module not found: Can't resolve '@/lib/PartsTitle'
+[0m [90m 14 |[39m [90m// import SEO from "../seo/SEO";[39m
+ [90m 15 |[39m
+[31m[1m>[22m[39m[90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m 19 |[39m[0m
+
+Import map: aliased to relative './lib/PartsTitle' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/grid/PartsExplorer.client.tsx:16:1
+Module not found: Can't resolve '@/lib/PartsTitle'
+[0m [90m 14 |[39m [90m// import SEO from "../seo/SEO";[39m
+ [90m 15 |[39m
+[31m[1m>[22m[39m[90m 16 |[39m [36mimport[39m { makePartTitle } [36mfrom[39m [32m"@/lib/PartsTitle"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 17 |[39m [36mimport[39m { useCart } [36mfrom[39m [32m"@/context/CartContext"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m [33mPartImage[39m [36mfrom[39m [32m"@/components/PartImage"[39m[33m;[39m
+ [90m 19 |[39m[0m
+
+Import map: aliased to relative './lib/PartsTitle' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./app/grid/PartsExplorer.client.tsx:18:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    ... collapsed 6 duplicate lines matching above 2 lines 3 times...
+    at <unknown> (./app/grid/PartsExplorer.client.tsx:17:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    ... collapsed 6 duplicate lines matching above 2 lines 3 times...
+    at <unknown> (./app/grid/PartsExplorer.client.tsx:16:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    ... collapsed 6 duplicate lines matching above 2 lines 3 times...
+ ELIFECYCLE  Command failed with exit code 1.

@@ -1,0 +1,28 @@
+# env
+.env.local
+.env*.local
+
+# deps / build
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# your existing
+_legacy/
+*.bak.*
+
+# local artifacts
+repo-snapshot.zip
