@@ -950,7 +950,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                   setModelCards([]);
                 }}
               >
-                Clear search
+                Return to Browsing
               </button>
             )}
 

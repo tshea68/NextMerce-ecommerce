@@ -15,7 +15,7 @@ export function makePartTitle(part: any, forcedMpn?: string): string {
   const appliance = (part?.appliance_type ?? "").toString().trim();
   const partType = (part?.specific_part_type ?? part?.part_type ?? "").toString().trim();
 
-  const structured = [brand, mpn, appliance, partType].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  const structured = [mpn, brand, appliance, partType].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 
   if (structured) return structured;
 

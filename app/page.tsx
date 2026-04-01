@@ -1,3 +1,110 @@
-export { default } from "./grid/page";
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+import { Suspense } from "react";
+import BrandLogoSliderVertical from "@/components/BrandLogoSliderVertical";
+import PartsExplorer from "@/app/grid/PartsExplorer.client";
+
+export const metadata = {
+  title: "Appliance Part Geeks",
+  description:
+    "The largest selection of new and refurbished OEM appliance parts anywhere.",
+};
+
+export default function HomePage() {
+  return (
+    <div className="min-h-screen flex flex-col bg-white">
+      <main className="flex-grow">
+        <section
+          className="relative text-white"
+          style={{
+            backgroundImage:
+              'url("https://appliancepartgeeks.batterypointcapital.co/wp-content/uploads/2025/05/adrian-sulyok-sczNLg6rrhQ-unsplash-scaled.jpg")',
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/70" />
+
+          <div className="relative z-10">
+            <div className="w-[90%] max-w-[1400px] mx-auto px-4 lg:pr-[280px]">
+              <div
+                className="grid grid-cols-1 lg:grid-cols-2 gap-10"
+                style={{ alignItems: "stretch" }}
+              >
+                <div className="flex items-center py-8 lg:py-10">
+                  <div>
+                    <p className="text-sm uppercase tracking-wide text-gray-300 mb-4">
+                      NEW AND REFURBISHED HOME APPLIANCE PARTS
+                    </p>
+
+                    <h1 className="font-bold leading-tight mb-6 text-3xl md:text-5xl xl:text-6xl">
+                      If We Don’t
+                      <br />
+                      Have Your Part
+                      <br />
+                      ....It Doesn’t Exist.
+                    </h1>
+
+                    <p className="text-lg md:text-xl text-white/95">
+                      The largest selection of new and refurbished OEM appliance
+                      parts anywhere.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hidden lg:flex items-end pt-8 lg:pt-10 pb-0">
+                  <div
+                    className="text-base leading-relaxed"
+                    style={{
+                      maxWidth: "520px",
+                      lineHeight: 1.4,
+                      fontSize: "16px",
+                      color: "#fff",
+                    }}
+                  >
+                    <p style={{ marginBottom: "1rem" }}>
+                      "Appliances didn’t start failing faster by accident — they
+                      became more electronic. I’ve been repairing them since I
+                      was 15. Over the years, I’ve watched simple mechanical
+                      machines turn into complex electronic systems that
+                      manufacturers often stop supporting long before they
+                      should. We can support what they won't or can't"
+                      <img
+                        src="https://appliancepartgeeks.batterypointcapital.co/wp-content/uploads/2025/05/founder2-200x300.webp"
+                        alt="Derek Gould"
+                        width="200"
+                        height="300"
+                        style={{
+                          float: "right",
+                          margin: "0 0 0px 20px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    </p>
+
+                    <p style={{ fontWeight: 700, marginTop: "1rem" }}>
+                      Derek Gould, Head Appliance Geek &amp; CEO
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden lg:block absolute right-8 top-0 bottom-0 w-[220px]">
+              <BrandLogoSliderVertical />
+            </div>
+          </div>
+        </section>
+
+        <section className="relative">
+          <div className="h-6" />
+          <div className="w-[90%] max-w-[1200px] mx-auto">
+            <div className="border-t border-white/10 mb-4" />
+            <Suspense fallback={null}>
+              <PartsExplorer />
+            </Suspense>
+          </div>
+          <div className="pb-10" />
+        </section>
+      </main>
+    </div>
+  );
+}

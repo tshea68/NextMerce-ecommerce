@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-const AVAIL_URL = "https://inventorychecker.timothyshea.workers.dev/availability";
+const AVAIL_URL = "https://inventorychecker.timothyshea.workers.dev";
 const DEFAULT_ZIP = "10001";
 
 type AvailStatus =
@@ -39,7 +39,6 @@ function deriveStatus(payload: any): {
   const statusNorm = safeLower(apiStatus);
   const errNorm = safeLower(errMsg);
 
-  // Direct API status first
   if (statusNorm === "in_stock") {
     return {
       status: "in_stock",
@@ -75,9 +74,6 @@ function deriveStatus(payload: any): {
     };
   }
 
-  // Success + total means:
-  // > 0 => in stock
-  // 0 => special order
   if (errMsg === "Success" && total !== null) {
     if (total > 0) {
       return {
@@ -94,7 +90,6 @@ function deriveStatus(payload: any): {
     };
   }
 
-  // Treat unavailable-ish messages as NLA for customer-facing UI
   if (
     errNorm.includes("no longer available") ||
     errNorm.includes("discontinued") ||
@@ -110,7 +105,6 @@ function deriveStatus(payload: any): {
     };
   }
 
-  // Fallback on totals if present
   if (total !== null) {
     if (total > 0) {
       return {
@@ -166,7 +160,7 @@ export default function ReliableAvailabilityPill(props: {
       setLoading(true);
       setErr(null);
       try {
-        const res = await fetch(AVAIL_URL, {
+        const res = await fetch(`${AVAIL_URL}/availability`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: ctrl.signal,
@@ -196,7 +190,7 @@ export default function ReliableAvailabilityPill(props: {
 
   if (loading) {
     return (
-      <span className="inline-flex items-center gap-2 rounded border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">
+      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-[11px] font-semibold text-gray-700">
         Checking availability…
       </span>
     );
@@ -204,7 +198,7 @@ export default function ReliableAvailabilityPill(props: {
 
   if (err) {
     return (
-      <span className="inline-flex items-center gap-2 rounded border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">
+      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-[11px] font-semibold text-gray-700">
         Availability unknown
       </span>
     );
@@ -215,19 +209,18 @@ export default function ReliableAvailabilityPill(props: {
 
   const cls =
     derived.status === "in_stock"
-      ? "bg-emerald-600 text-white border-emerald-700"
+      ? "border-emerald-700 bg-emerald-600 text-white"
       : derived.status === "special_order"
-        ? "bg-red-600 text-white border-red-700"
+        ? "border-red-700 bg-red-600 text-white"
         : derived.status === "discontinued" || derived.status === "unavailable"
-          ? "bg-black text-white border-black"
-          : "bg-gray-100 text-gray-700 border-gray-200";
+          ? "border-black bg-black text-white"
+          : "border-gray-200 bg-gray-100 text-gray-700";
 
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded border px-3 py-2 text-sm font-semibold ${cls}`}
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${cls}`}
     >
       <span>{derived.label}</span>
-      <span className="opacity-80 text-xs font-normal">ZIP {zip}</span>
     </span>
   );
 }

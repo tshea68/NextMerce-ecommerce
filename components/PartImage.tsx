@@ -13,10 +13,12 @@ function cleanUrl(u: unknown) {
 
 type PartImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   imageUrl?: string | null;
+  disableHoverPreview?: boolean;
 };
 
 export default function PartImage({
   imageUrl,
+  disableHoverPreview,
   alt = "",
   className = "",
   ...rest
@@ -46,7 +48,7 @@ export default function PartImage({
   return (
     <>
       <div
-        className={`relative inline-flex items-center justify-center ${className}`}
+        className={`relative inline-flex h-full w-full items-center justify-center overflow-hidden ${className}`}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
         onClick={() => setModalOpen(true)}
@@ -54,48 +56,54 @@ export default function PartImage({
         <img
           src={src}
           alt={alt}
-          className="w-full h-full object-contain"
+          className="h-full w-full object-cover"
           onError={handleImgError}
           {...rest}
         />
 
-        <div
-          className={[
-            "pointer-events-none absolute inset-0 flex items-center justify-center",
-            "bg-black/55 text-white text-[11px] font-semibold uppercase tracking-wide",
-            "rounded transition-opacity duration-300 ease-out",
-            isHovering ? "opacity-100" : "opacity-0",
-          ].join(" ")}
-        >
-          <span className="px-2 text-center leading-tight">
-            Click for Full Screen View
-          </span>
-        </div>
+        {!disableHoverPreview && (
+          <div
+            className={[
+              "pointer-events-none absolute inset-0 flex items-center justify-center",
+              "bg-black/55 text-white text-[11px] font-semibold uppercase tracking-wide",
+              "rounded transition-opacity duration-300 ease-out",
+              isHovering ? "opacity-100" : "opacity-0",
+            ].join(" ")}
+          >
+            <span className="px-2 text-center leading-tight">
+              Click for Full Screen View
+            </span>
+          </div>
+        )}
       </div>
 
       {modalOpen &&
         portalRoot &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
             onClick={() => setModalOpen(false)}
           >
-            <div className="relative max-w-4xl w-[min(90vw,900px)] max-h-[90vh]">
+            <div
+              className="relative w-[min(92vw,1100px)]"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 type="button"
-                className="absolute -top-3 -right-3 h-8 w-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold shadow-lg border border-white/60"
+                className="absolute -top-3 -right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-black text-sm font-bold text-white shadow-lg"
                 onClick={() => setModalOpen(false)}
               >
                 ×
               </button>
 
-              <img
-                src={src}
-                alt={alt}
-                className="w-full h-auto max-h-[90vh] object-contain bg-white rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-                onError={handleImgError}
-              />
+              <div className="flex h-[min(85vh,800px)] w-full items-center justify-center overflow-hidden rounded-lg bg-white">
+                <img
+                  src={src}
+                  alt={alt}
+                  className="max-h-full max-w-full object-contain"
+                  onError={handleImgError}
+                />
+              </div>
             </div>
           </div>,
           portalRoot

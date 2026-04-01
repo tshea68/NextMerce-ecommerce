@@ -4,8 +4,21 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
+type CartItemInput = {
+  mpn: string;
+  name: string;
+  price: number;
+  qty: number;
+  image?: string;
+  condition?: string;
+  is_refurb: boolean;
+};
+
 export default function AddToCartBox({ item }: { item: any }) {
-  const { addToCart } = useCart() as any;
+  const { addToCart } = useCart() as {
+    addToCart: (item: CartItemInput) => void;
+  };
+
   const [adding, setAdding] = useState(false);
 
   const mpn = useMemo(() => {
@@ -27,42 +40,41 @@ export default function AddToCartBox({ item }: { item: any }) {
   const priceNum = useMemo(() => {
     const v = item?.price_value ?? item?.price;
     if (typeof v === "number") return v;
+
     const n = Number(String(v ?? "").replace(/[^0-9.]/g, ""));
-    return Number.isFinite(n) ? n : null;
+    return Number.isFinite(n) ? n : 0;
   }, [item]);
 
-  const imageUrl =
-    item?.srp_image ||
-    item?.image_url ||
-    item?.image ||
-    null;
+  const imageUrl = useMemo(() => {
+    return item?.srp_image || item?.image_url || item?.image || null;
+  }, [item]);
 
-  // you don't have inventory in ebay_items_current, so we treat as in-stock unless provided
   const inv = useMemo(() => {
-    const n = Number(item?.inventory_total ?? item?.qty ?? item?.available ?? item?.inventory ?? NaN);
+    const n = Number(
+      item?.inventory_total ??
+        item?.qty ??
+        item?.available ??
+        item?.inventory ??
+        NaN
+    );
     return Number.isFinite(n) ? n : null;
   }, [item]);
 
   const inStock = inv == null ? true : inv > 0;
 
   function onAdd() {
-    if (!mpn || !addToCart || !inStock) return;
+    if (!mpn || !inStock) return;
 
     setAdding(true);
     try {
       addToCart({
         mpn,
-        qty: 1,
-        quantity: 1,
-        is_refurb: true,
-        offer_id: item?.item_id || item?.offer_id || item?.listing_id || item?.id || null,
         name: title,
-        title,
-        price: priceNum ?? undefined,
-        image_url: imageUrl,
-        image: imageUrl,
-        url: item?.url || undefined,
-        seller: item?.seller || undefined,
+        price: priceNum,
+        qty: 1,
+        image: imageUrl || undefined,
+        condition: "refurbished",
+        is_refurb: true,
       });
     } finally {
       setAdding(false);
@@ -72,8 +84,11 @@ export default function AddToCartBox({ item }: { item: any }) {
   return (
     <div className="flex items-center gap-3">
       <button
-        className={`px-4 py-2 rounded text-[12px] font-semibold text-white ${
-          !inStock ? "bg-gray-400 cursor-not-allowed" : "bg-blue-700 hover:bg-blue-800"
+        type="button"
+        className={`rounded px-4 py-2 text-[12px] font-semibold text-white ${
+          !inStock
+            ? "cursor-not-allowed bg-gray-400"
+            : "bg-blue-700 hover:bg-blue-800"
         }`}
         onClick={onAdd}
         disabled={!inStock || adding}

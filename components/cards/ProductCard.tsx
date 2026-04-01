@@ -4,13 +4,19 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { makePartTitle } from "@/lib/PartsTitle";
 import PartImage from "@/components/PartImage";
+import ComparisonBadge from "@/components/ComparisonBadge.client";
 
 function priceFmt(n: any) {
-  const x = typeof n === "number" ? n : Number(String(n ?? "").replace(/[^0-9.]/g, ""));
+  const x =
+    typeof n === "number" ? n : Number(String(n ?? "").replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(x)) return "—";
   try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(x);
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: "USD",
+    }).format(x);
   } catch {
     return `$${x.toFixed(2)}`;
   }
@@ -18,7 +24,9 @@ function priceFmt(n: any) {
 
 function fmtCount(num: any) {
   const n = Number(num);
-  return Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : String(num || "");
+  return Number.isFinite(n)
+    ? n.toLocaleString(undefined, { maximumFractionDigits: 0 })
+    : String(num || "");
 }
 
 function normalize(s: any) {
@@ -98,7 +106,9 @@ function parseMaybeArray(value: any): string[] {
   if (!value) return [];
 
   if (Array.isArray(value)) {
-    return dedupePreserveOrder(value.map((x) => String(x ?? "").trim()).filter(Boolean));
+    return dedupePreserveOrder(
+      value.map((x) => String(x ?? "").trim()).filter(Boolean)
+    );
   }
 
   const s = String(value).trim();
@@ -107,7 +117,9 @@ function parseMaybeArray(value: any): string[] {
   try {
     const parsed = JSON.parse(s);
     if (Array.isArray(parsed)) {
-      return dedupePreserveOrder(parsed.map((x) => String(x ?? "").trim()).filter(Boolean));
+      return dedupePreserveOrder(
+        parsed.map((x) => String(x ?? "").trim()).filter(Boolean)
+      );
     }
   } catch {}
 
@@ -132,47 +144,67 @@ function bestApplianceType(p: any) {
   return String(p?.appliance_type ?? "").trim();
 }
 
-function buildHeadline(p: any, mpn: string) {
-  const brand = formatBrandLabel(String(p?.brand ?? "").trim());
-  const partType = bestPartType(p);
-  const applianceType = bestApplianceType(p);
+function asStatusForBadge(
+  item: any,
+  isOfferLike: boolean
+): "in_stock" | "special_order" | "discontinued" | "unavailable" | "unknown" {
+  if (isOfferLike) return "unknown";
 
-  const parts = [brand, mpn, partType, applianceType].filter(Boolean);
-  return parts.length ? parts.join(" • ") : "Part";
-}
-
-function alternativesBadgeText(p: any) {
-  const count = Number(p?.alternatives_count ?? p?.refurb_count ?? 0);
-  if (!Number.isFinite(count) || count <= 0) return "";
-  return count === 1 ? "1 comparison option" : `${fmtCount(count)} comparison options`;
-}
-
-function availabilityBadgeText(item: any, isOfferLike: boolean, isNla: boolean) {
-  if (isNla) return "No longer available";
-
-  if (isOfferLike) {
-    if (Number.isFinite(Number(item?.inventory_total))) {
-      return `Qty: ${fmtCount(item.inventory_total)}`;
-    }
-    return "Refurbished";
+  if (item?.is_nla === true || isNlaishStatus(item?.stock_status_canon)) {
+    return "discontinued";
   }
 
-  const canon = String(item?.stock_status_canon ?? "").trim();
-  if (canon) return canon.replace(/_/g, " ");
+  const rank = Number(item?.availability_rank);
+  if (rank === 1) return "in_stock";
+  if (rank === 2) return "special_order";
 
-  const raw = String(item?.stock_status ?? "").trim();
-  if (raw) return raw;
+  const canon = normalize(item?.stock_status_canon);
+  if (
+    canon.includes("discontinued") ||
+    canon.includes("unavailable") ||
+    canon.includes("nla") ||
+    canon.includes("no longer")
+  ) {
+    return "discontinued";
+  }
+  if (
+    canon.includes("special") ||
+    canon.includes("order") ||
+    canon.includes("backorder") ||
+    canon.includes("preorder")
+  ) {
+    return "special_order";
+  }
+  if (
+    canon.includes("in stock") ||
+    canon.includes("instock") ||
+    canon.includes("available")
+  ) {
+    return "in_stock";
+  }
 
-  return "";
+  return "unknown";
 }
 
 type ProductCardProps = {
   item: any;
 };
 
+type CartItemInput = {
+  mpn: string;
+  name: string;
+  price: number;
+  qty: number;
+  image?: string;
+  condition?: string;
+  is_refurb: boolean;
+};
+
 export default function ProductCard({ item }: ProductCardProps) {
   const router = useRouter();
-  const { addToCart } = useCart();
+  const { addToCart } = useCart() as {
+    addToCart: (item: CartItemInput) => void;
+  };
 
   const mpn =
     (item?.mpn && String(item.mpn).trim()) ||
@@ -187,7 +219,8 @@ export default function ProductCard({ item }: ProductCardProps) {
     normalize(item?.offer_type).includes("refurb") ||
     normalize(item?.condition).includes("used");
 
-  const isNla = item?.is_nla === true || (!isOfferLike && isNlaishStatus(item?.stock_status_canon));
+  const isNla =
+    item?.is_nla === true || (!isOfferLike && isNlaishStatus(item?.stock_status_canon));
 
   const replacedBy =
     (item?.replaced_by && String(item.replaced_by).trim()) ||
@@ -198,23 +231,29 @@ export default function ProductCard({ item }: ProductCardProps) {
   const compatibleModels = parseMaybeArray(item?.compatible_models);
 
   const compatibleBrands = useMemo(() => {
-    return parseMaybeArray(item?.compatible_brands).map(formatBrandLabel).filter(Boolean);
+    return parseMaybeArray(item?.compatible_brands)
+      .map(formatBrandLabel)
+      .filter(Boolean);
   }, [item?.compatible_brands]);
 
-  const headline = buildHeadline(item, mpn);
-  const comparisonBadge = alternativesBadgeText(item);
-  const availabilityBadge = availabilityBadgeText(item, isOfferLike, isNla);
+  const headline = useMemo(() => {
+    return makePartTitle(item, mpn);
+  }, [item, mpn]);
 
-  const priceNum =
-    typeof item?.price === "number" ? item.price : Number(String(item?.price ?? "").replace(/[^0-9.]/g, ""));
+  const priceNum = useMemo(() => {
+    const raw = item?.price_value ?? item?.price;
+    if (typeof raw === "number") return raw;
+    const n = Number(String(raw ?? "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  }, [item]);
 
-  const img = item?.image_url || null;
+  const img = item?.image_url || item?.image || null;
 
-  const detailHref = (() => {
-    if (!mpn) return "#";
-    if (isOfferLike) return `/offers/${encodeURIComponent(mpn)}`;
-    return `/parts/${encodeURIComponent(mpn)}`;
-  })();
+  const detailHref = mpn
+    ? isOfferLike
+      ? `/offers/${encodeURIComponent(mpn)}`
+      : `/parts/${encodeURIComponent(mpn)}`
+    : "#";
 
   const replacementHref = replacedBy ? `/parts/${encodeURIComponent(replacedBy)}` : "";
 
@@ -223,20 +262,16 @@ export default function ProductCard({ item }: ProductCardProps) {
   function handleAddToCart() {
     if (!mpn || isNla) return;
 
-    const payload = {
-      mpn,
-      qty: isOfferLike ? 1 : qty,
-      quantity: isOfferLike ? 1 : qty,
-      is_refurb: !!isOfferLike,
-      name: headline,
-      title: headline,
-      price: priceNum,
-      image_url: img,
-      image: img,
-    };
-
     try {
-      addToCart?.(payload);
+      addToCart({
+        mpn,
+        name: headline,
+        price: priceNum,
+        qty: isOfferLike ? 1 : qty,
+        image: img || undefined,
+        condition: isOfferLike ? "refurbished" : "new",
+        is_refurb: !!isOfferLike,
+      });
     } catch {}
   }
 
@@ -251,147 +286,210 @@ export default function ProductCard({ item }: ProductCardProps) {
       ? "bg-blue-50 border-blue-300"
       : "bg-white border-gray-200";
 
-  const availabilityBadgeClass = isNla
-    ? "bg-amber-700 text-white"
-    : isOfferLike
-      ? "bg-blue-700 text-white"
-      : "bg-green-600 text-white";
+  const badgeProps = useMemo(() => {
+    if (isOfferLike) {
+      return {
+        mode: "offer" as const,
+        refurbSummary: {
+          price: item?.price ?? null,
+          totalQty: Number.isFinite(Number(item?.inventory_total))
+            ? Number(item.inventory_total)
+            : null,
+          totalOffers:
+            Number.isFinite(Number(item?.inventory_total))
+              ? 1
+              : Number.isFinite(Number(item?.offer_count))
+              ? Number(item.offer_count)
+              : null,
+          url: mpn ? `/offers/${encodeURIComponent(mpn)}` : null,
+        },
+        newSummary: {
+          price: item?.new_part_price ?? null,
+          status: item?.has_new_part === true ? "in_stock" : "unknown",
+          qty: null,
+          url: mpn ? `/parts/${encodeURIComponent(mpn)}` : null,
+        },
+        savings: {
+          amount: item?.savings_amount ?? null,
+          percent: item?.savings_percent ?? null,
+        },
+      };
+    }
+
+    return {
+      mode: "part" as const,
+      refurbSummary: {
+        price: item?.best_refurb_price ?? null,
+        totalQty:
+          Number.isFinite(Number(item?.refurb_count))
+            ? Number(item.refurb_count)
+            : Number.isFinite(Number(item?.alternatives_count))
+            ? Number(item.alternatives_count)
+            : null,
+        totalOffers:
+          Number.isFinite(Number(item?.refurb_count))
+            ? Number(item.refurb_count)
+            : Number.isFinite(Number(item?.alternatives_count))
+            ? Number(item.alternatives_count)
+            : null,
+        url: mpn ? `/offers/${encodeURIComponent(mpn)}` : null,
+      },
+      newSummary: {
+        price: item?.price ?? null,
+        status: asStatusForBadge(item, isOfferLike),
+        qty:
+          Number(item?.availability_rank) === 1 &&
+          Number.isFinite(Number(item?.inventory_total))
+            ? Number(item.inventory_total)
+            : null,
+        url: mpn ? `/parts/${encodeURIComponent(mpn)}` : null,
+      },
+      savings: {
+        amount: item?.savings_amount ?? null,
+        percent: item?.savings_percent ?? null,
+      },
+    };
+  }, [isOfferLike, item, mpn]);
 
   return (
-    <div className={`border rounded-md shadow-sm px-4 py-3 flex flex-col lg:flex-row gap-4 ${cardBg}`}>
-      <div className="relative flex-shrink-0 flex flex-col items-center" style={{ width: "110px" }}>
-        <div className="relative flex items-center justify-center overflow-visible">
-          <PartImage
-            imageUrl={img}
-            alt={headline}
-            disableHoverPreview
-            className="w-[100px] h-[100px] border border-gray-200 rounded bg-white flex items-center justify-center"
-          />
-        </div>
-      </div>
+    <div className={`border shadow-sm overflow-hidden ${cardBg}`}>
+      <ComparisonBadge
+        mode={badgeProps.mode}
+        variant="card"
+        mpn={mpn}
+        refurbSummary={badgeProps.refurbSummary}
+        newSummary={badgeProps.newSummary}
+        savings={badgeProps.savings}
+      />
 
-      <div className="flex-1 min-w-0 flex flex-col gap-2 text-black">
-        <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+      <div className="px-4 py-3 flex flex-col lg:flex-row gap-4">
+        <div
+          className="relative flex-shrink-0 flex flex-col items-center"
+          style={{ width: "110px" }}
+        >
+          <div className="relative flex items-center justify-center overflow-visible">
+            <PartImage
+              imageUrl={img}
+              alt={headline}
+              disableHoverPreview
+              className="w-[100px] h-[100px] border border-gray-200 rounded bg-white flex items-center justify-center"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0 flex flex-col gap-2 text-black">
+          <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+            <a
+              href={detailHref}
+              onClick={goToDetail}
+              className="text-[15px] font-semibold text-blue-700 leading-snug hover:text-blue-900 hover:underline focus:underline focus:outline-none cursor-pointer"
+              aria-label={`View ${headline}`}
+            >
+              {headline}
+            </a>
+          </div>
+
+          {compatibleBrands.length > 0 && (
+            <div className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
+              Compatible brands: {compatibleBrands.join(", ")}
+            </div>
+          )}
+
+          {replaces.length > 0 && (
+            <div className="text-[12px] text-gray-700 leading-snug break-words">
+              <span className="font-semibold text-gray-900">Replaces:</span>{" "}
+              {replaces.join(", ")}
+            </div>
+          )}
+
+          {replacedBy && (
+            <div className="text-[12px] text-gray-700 leading-snug break-words">
+              <span className="font-semibold text-gray-900">Replaced by:</span>{" "}
+              <Link href={replacementHref} className="text-blue-700 underline font-semibold">
+                {replacedBy}
+              </Link>
+            </div>
+          )}
+
+          {compatibleModels.length > 0 && (
+            <div className="rounded border border-gray-200 bg-gray-50 p-2">
+              <div className="text-[12px] font-semibold text-gray-900 mb-1">
+                Compatible models ({fmtCount(compatibleModels.length)})
+              </div>
+              <div className="max-h-[84px] overflow-y-auto pr-1">
+                <div className="flex flex-wrap gap-1">
+                  {compatibleModels.map((model) => (
+                    <span
+                      key={model}
+                      className="inline-flex rounded border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700"
+                    >
+                      {model}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isNla && (
+            <div className="text-[12px] text-amber-900 leading-snug">
+              We recognize this as a valid part number, but it is not currently available
+              for purchase.
+            </div>
+          )}
+        </div>
+
+        <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-end text-right gap-2">
+          <div
+            className={`text-lg font-bold leading-none ${
+              isNla ? "text-amber-800" : "text-green-700"
+            }`}
+          >
+            {isNla ? "—" : priceFmt(priceNum)}
+          </div>
+
+          <div className="flex items-center w-full justify-end gap-2">
+            {!isOfferLike && !isNla && (
+              <select
+                className="border border-gray-300 rounded px-2 py-1 text-[12px] text-black"
+                value={qty}
+                onChange={(e) => {
+                  const parsed = parseInt(e.target.value, 10);
+                  setQty(Number.isFinite(parsed) ? parsed : 1);
+                }}
+              >
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <option key={i} value={i + 1}>
+                    {i + 1}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <button
+              className={`${
+                isNla
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : isOfferLike
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-blue-700 hover:bg-blue-800"
+              } text-white text-[12px] font-semibold rounded px-3 py-2`}
+              onClick={handleAddToCart}
+              disabled={isNla}
+              title={isNla ? "This part is not available for purchase" : "Add to Cart"}
+            >
+              Add to Cart
+            </button>
+          </div>
+
           <a
             href={detailHref}
             onClick={goToDetail}
-            className="text-[15px] font-semibold text-blue-700 leading-snug hover:text-blue-900 hover:underline focus:underline focus:outline-none cursor-pointer"
-            aria-label={`View ${headline}`}
+            className="underline text-blue-700 text-[11px] font-medium hover:text-blue-900"
           >
-            {headline}
+            View part
           </a>
         </div>
-
-        {compatibleBrands.length > 0 && (
-          <div className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
-            Compatible brands: {compatibleBrands.join(", ")}
-          </div>
-        )}
-
-        {(availabilityBadge || comparisonBadge) && (
-          <div className="flex flex-wrap items-center gap-2">
-            {availabilityBadge && (
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded leading-none ${availabilityBadgeClass}`}>
-                {availabilityBadge}
-              </span>
-            )}
-
-            {comparisonBadge && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 leading-none">
-                {comparisonBadge}
-              </span>
-            )}
-          </div>
-        )}
-
-        {replaces.length > 0 && (
-          <div className="text-[12px] text-gray-700 leading-snug break-words">
-            <span className="font-semibold text-gray-900">Replaces:</span> {replaces.join(", ")}
-          </div>
-        )}
-
-        {replacedBy && (
-          <div className="text-[12px] text-gray-700 leading-snug break-words">
-            <span className="font-semibold text-gray-900">Replaced by:</span>{" "}
-            <Link href={replacementHref} className="text-blue-700 underline font-semibold">
-              {replacedBy}
-            </Link>
-          </div>
-        )}
-
-        {compatibleModels.length > 0 && (
-          <div className="rounded border border-gray-200 bg-gray-50 p-2">
-            <div className="text-[12px] font-semibold text-gray-900 mb-1">
-              Compatible models ({fmtCount(compatibleModels.length)})
-            </div>
-            <div className="max-h-[84px] overflow-y-auto pr-1">
-              <div className="flex flex-wrap gap-1">
-                {compatibleModels.map((model) => (
-                  <span
-                    key={model}
-                    className="inline-flex rounded border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700"
-                  >
-                    {model}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isNla && (
-          <div className="text-[12px] text-amber-900 leading-snug">
-            We recognize this as a valid part number, but it is not currently available for purchase.
-          </div>
-        )}
-      </div>
-
-      <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-end text-right gap-2">
-        <div className={`text-lg font-bold leading-none ${isNla ? "text-amber-800" : "text-green-700"}`}>
-          {isNla ? "—" : priceFmt(priceNum)}
-        </div>
-
-        <div className="flex items-center w-full justify-end gap-2">
-          {!isOfferLike && !isNla && (
-            <select
-              className="border border-gray-300 rounded px-2 py-1 text-[12px] text-black"
-              value={qty}
-              onChange={(e) => {
-                const parsed = parseInt(e.target.value, 10);
-                setQty(Number.isFinite(parsed) ? parsed : 1);
-              }}
-            >
-              {Array.from({ length: 10 }).map((_, i) => (
-                <option key={i} value={i + 1}>
-                  {i + 1}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <button
-            className={`${
-              isNla
-                ? "bg-gray-400 cursor-not-allowed"
-                : isOfferLike
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-blue-700 hover:bg-blue-800"
-            } text-white text-[12px] font-semibold rounded px-3 py-2`}
-            onClick={handleAddToCart}
-            disabled={isNla}
-            title={isNla ? "This part is not available for purchase" : "Add to Cart"}
-          >
-            Add to Cart
-          </button>
-        </div>
-
-        <a
-          href={detailHref}
-          onClick={goToDetail}
-          className="underline text-blue-700 text-[11px] font-medium hover:text-blue-900"
-        >
-          View part
-        </a>
       </div>
     </div>
   );

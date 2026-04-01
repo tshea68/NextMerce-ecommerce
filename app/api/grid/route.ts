@@ -3,6 +3,11 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  enrichProductItemsFromTables,
+  enrichComparisonCounts,
+  groupItemsToCanonicalProducts,
+} from "@/lib/grid";
 
 type Condition = "both" | "new" | "refurb";
 type FacetScope = "global" | "contextual";
@@ -143,6 +148,20 @@ function applyGridAllOrderableOnly(qb: any) {
 }
 
 async function rpcFacets(supabase: any, params: any) {
+  if (params.p_condition === "new") {
+    const partsPayload = {
+      p_q: params.p_q ?? null,
+      p_availability: params.p_availability ?? "all",
+      p_appliance_type: params.p_appliance_type ?? null,
+      p_brands: params.p_brands ?? null,
+      p_part_types: params.p_part_types ?? null,
+      p_facet_limit: params.p_limit ?? 20,
+    };
+
+    const r = await supabase.rpc("grid_facets_parts", partsPayload);
+    return { ...r, rpc: "grid_facets_parts" as const };
+  }
+
   const paramsV1 = {
     p_condition: params.p_condition,
     p_q: params.p_q,
@@ -256,6 +275,19 @@ function normalizeFacetScalar(v: string) {
   return titleCaseWords(spaced);
 }
 
+function pickBestTitle(row: any) {
+  const titleDisplay = String(row?.title_display ?? "").trim();
+  if (titleDisplay) return titleDisplay;
+
+  const feedTitle = String(row?.feed_title ?? "").trim();
+  if (feedTitle) return feedTitle;
+
+  const title = String(row?.title ?? "").trim();
+  if (title) return title;
+
+  return null;
+}
+
 function mapProductRow(row: any, source: "parts" | "offers") {
   const isRefurb = source === "offers";
   const inventoryTotal = isRefurb ? Number(row?.inventory_total ?? 0) || 0 : null;
@@ -267,7 +299,9 @@ function mapProductRow(row: any, source: "parts" | "offers") {
     listing_id: isRefurb && row?.listing_id != null ? String(row.listing_id) : null,
 
     mpn: row?.mpn ?? null,
-    title: row?.title ?? null,
+    title: pickBestTitle(row),
+    title_display: row?.title_display ?? null,
+    feed_title: row?.feed_title ?? null,
     price: row?.price ?? null,
     image_url: row?.image_url ?? null,
     brand: row?.brand ?? null,
@@ -293,6 +327,8 @@ function mapProductRow(row: any, source: "parts" | "offers") {
     brand_logo_url: row?.brand_logo_url ?? null,
     total_parts: row?.total_parts ?? null,
     priced_parts: row?.priced_parts ?? null,
+    refurb_count: row?.refurb_count ?? null,
+    alternatives_count: row?.alternatives_count ?? null,
   };
 }
 
@@ -326,9 +362,152 @@ function mapModelRow(row: any) {
 
     model_number: row?.model_number ?? null,
     brand_logo_url: null,
+
+    refurb_count: row?.refurb_count ?? null,
+    new_count: row?.new_count ?? null,
+    available_count: row?.available_count ?? null,
+    orderable_count: row?.orderable_count ?? null,
+    all_known_parts: row?.total_links ?? null,
+
     total_parts: row?.total_links ?? null,
     priced_parts: row?.priced_parts ?? null,
+
+    exploded_views: Array.isArray(row?.exploded_views) ? row.exploded_views : [],
+
+    href: row?.model_number ? `/models/${encodeURIComponent(String(row.model_number))}` : null,
   };
+}
+
+async function enrichModelCardsWithPartCountsAndDiagrams(supabase: any, rows: any[]) {
+  if (!Array.isArray(rows) || rows.length === 0) return rows;
+
+  const modelNumbers = Array.from(
+    new Set(
+      rows
+        .map((r) => String(r?.model_number ?? "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  if (!modelNumbers.length) return rows;
+
+  const [mplRes, evRes] = await Promise.all([
+    supabase
+      .from("model_part_links")
+      .select("model_number, mpn")
+      .in("model_number", modelNumbers),
+    supabase
+      .from("exploded_views")
+      .select("model_number, label, image_url")
+      .in("model_number", modelNumbers),
+  ]);
+
+  const mplRows = Array.isArray(mplRes?.data) ? mplRes.data : [];
+  const evRows = Array.isArray(evRes?.data) ? evRes.data : [];
+
+  const modelToMpns = new Map<string, Set<string>>();
+  const allMpns = new Set<string>();
+
+  for (const row of mplRows) {
+    const modelNumber = String(row?.model_number ?? "").trim();
+    const mpn = String(row?.mpn ?? "").trim();
+
+    if (!modelNumber || !mpn) continue;
+
+    if (!modelToMpns.has(modelNumber)) modelToMpns.set(modelNumber, new Set<string>());
+    modelToMpns.get(modelNumber)!.add(mpn);
+    allMpns.add(mpn);
+  }
+
+  const modelToExplodedViews = new Map<string, Array<{ label: string | null; image_url: string | null }>>();
+
+  for (const row of evRows) {
+    const modelNumber = String(row?.model_number ?? "").trim();
+    const label = row?.label != null ? String(row.label) : null;
+    const image_url = row?.image_url != null ? String(row.image_url) : null;
+
+    if (!modelNumber || !image_url) continue;
+
+    if (!modelToExplodedViews.has(modelNumber)) modelToExplodedViews.set(modelNumber, []);
+    modelToExplodedViews.get(modelNumber)!.push({ label, image_url });
+  }
+
+  const rawMpns = Array.from(allMpns);
+
+  if (!rawMpns.length) {
+    return rows.map((r) => ({
+      ...r,
+      new_count: 0,
+      available_count: 0,
+      orderable_count: 0,
+      exploded_views: modelToExplodedViews.get(String(r?.model_number ?? "").trim()) ?? [],
+    }));
+  }
+
+  const partsRes = await supabase
+    .from("parts")
+    .select("mpn, availability_rank, stock_status_canon")
+    .in("mpn", rawMpns);
+
+  const partsRows = Array.isArray(partsRes?.data) ? partsRes.data : [];
+
+  const partStatusByMpn = new Map<string, { available: boolean; orderable: boolean }>();
+
+  for (const row of partsRows) {
+    const mpn = String(row?.mpn ?? "").trim();
+    if (!mpn) continue;
+
+    const rank = Number(row?.availability_rank);
+    const status = String(row?.stock_status_canon ?? "").trim().toLowerCase();
+
+    const available =
+      rank === 1 ||
+      rank === 2 ||
+      status === "in_stock" ||
+      status === "instock" ||
+      status === "available";
+
+    const orderable =
+      !status ||
+      (!status.includes("nla") &&
+        !status.includes("no longer") &&
+        !status.includes("discontinued") &&
+        !status.includes("obsolete") &&
+        !status.includes("not available"));
+
+    const prev = partStatusByMpn.get(mpn);
+
+    partStatusByMpn.set(mpn, {
+      available: Boolean(prev?.available || available),
+      orderable: Boolean(prev?.orderable || orderable),
+    });
+  }
+
+  return rows.map((r) => {
+    const modelNumber = String(r?.model_number ?? "").trim();
+    const mpns = modelToMpns.get(modelNumber) ?? new Set<string>();
+
+    let new_count = 0;
+    let available_count = 0;
+    let orderable_count = 0;
+
+    for (const mpn of mpns) {
+      const part = partStatusByMpn.get(mpn);
+      if (!part) continue;
+
+      new_count += 1;
+      if (part.available) available_count += 1;
+      if (part.orderable) orderable_count += 1;
+    }
+
+    return {
+      ...r,
+      new_count,
+      available_count,
+      orderable_count,
+      exploded_views: modelToExplodedViews.get(modelNumber) ?? [],
+    };
+  });
 }
 
 export async function GET(req: Request) {
@@ -347,7 +526,7 @@ export async function GET(req: Request) {
   const q: string | null = qTrim ? qTrim : null;
   const searchMode = !!qTrim;
 
-  const isExactMpn = !!qTrim && looksLikeExactMpn(qTrim) && /[-._]/.test(qTrim);
+  const isExactMpn = !!qTrim && looksLikeExactMpn(qTrim);
   const mpnNorm = isExactMpn ? normMpn(qTrim) : null;
 
   const applianceTypeIn = (url.searchParams.get("appliance_type") || "").trim();
@@ -479,6 +658,7 @@ export async function GET(req: Request) {
         : facets_scope === "contextual"
           ? (itemsPartTypes.length ? expandFilterValues(itemsPartTypes) : null)
           : null,
+    p_availability: searchMode ? "all" : availability,
     p_in_stock_only: searchMode ? false : inStockOnly,
     p_model: null,
     p_limit: facetLimit,
@@ -663,11 +843,11 @@ export async function GET(req: Request) {
   if (searchMode) {
     const modelsRes = await runModelsSearch();
     if (!modelsRes?.error && Array.isArray(modelsRes.data)) {
-      model_cards = modelsRes.data.map(mapModelRow);
+      const enrichedModels = await enrichModelCardsWithPartCountsAndDiagrams(supabase, modelsRes.data);
+      model_cards = enrichedModels.map(mapModelRow);
     }
   }
-    // Fast path: if this looks like a model-number/style search and we found model cards,
-  // do not also run the heavy grid_all search. That is what is timing out.
+
   if (searchMode && model_cards.length > 0 && !isExactMpn) {
     return NextResponse.json({
       ok: true,
@@ -695,10 +875,10 @@ export async function GET(req: Request) {
     const wantsParts = condition === "both" || condition === "new";
 
     const offerCols =
-      "id,listing_id,mpn,title,price,image_url,brand,part_type,canonical_part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
+      "id,listing_id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,canonical_part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
 
     const partCols =
-      "id,mpn,title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts";
+      "id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts,reliable_part_url";
 
     const [offersRes, partsItemsRes, exactPartRes] = await Promise.all([
       wantsOffers
@@ -772,6 +952,10 @@ export async function GET(req: Request) {
       if (!alreadyIncluded) combined = [exactItem, ...combined];
     }
 
+    combined = await enrichProductItemsFromTables(supabase, combined);
+    combined = await enrichComparisonCounts(supabase, combined);
+    combined = groupItemsToCanonicalProducts(combined);
+
     const pageSlice = combined.slice(from, to + 1);
     const has_more = pageSlice.length > perPage;
     const items = has_more ? pageSlice.slice(0, perPage) : pageSlice;
@@ -827,10 +1011,10 @@ export async function GET(req: Request) {
     const takeParts = Math.max(perPage - takeOffers, 0);
 
     const offerCols =
-      "id,listing_id,mpn,title,price,image_url,brand,part_type,canonical_part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
+      "id,listing_id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,canonical_part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
 
     const partCols =
-      "id,mpn,title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts";
+      "id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts,reliable_part_url";
 
     const [offersRes, partsRes] = await Promise.all([
       (async () => {
@@ -879,7 +1063,11 @@ export async function GET(req: Request) {
     const mappedOffers = offersRows.slice(0, takeOffers).map((o: any) => mapProductRow(o, "offers"));
     const mappedParts = partsRows.slice(0, takeParts).map((p: any) => mapProductRow(p, "parts"));
 
-    const items = sortItems([...mappedOffers, ...mappedParts]);
+    let items = sortItems([...mappedOffers, ...mappedParts]);
+    items = await enrichProductItemsFromTables(supabase, items);
+    items = await enrichComparisonCounts(supabase, items);
+    items = groupItemsToCanonicalProducts(items);
+
     const has_more = offersHasMore || partsHasMore;
 
     let page_inventory_total: number | null = null;
@@ -923,7 +1111,7 @@ export async function GET(req: Request) {
 
   if (condition === "new") {
     const partCols =
-      "id,mpn,title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts";
+      "id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts,reliable_part_url";
 
     let qb: any = supabase.from("parts").select(partCols).gt("price", 0);
 
@@ -981,7 +1169,10 @@ export async function GET(req: Request) {
     const rows = Array.isArray(data) ? data : [];
     const has_more = rows.length > perPage;
     const slice = has_more ? rows.slice(0, perPage) : rows;
-    const items = slice.map((p: any) => mapProductRow(p, "parts"));
+    let items = slice.map((p: any) => mapProductRow(p, "parts"));
+    items = await enrichProductItemsFromTables(supabase, items);
+    items = await enrichComparisonCounts(supabase, items);
+    items = groupItemsToCanonicalProducts(items);
 
     return NextResponse.json({
       ok: true,
@@ -1130,7 +1321,10 @@ export async function GET(req: Request) {
 
   const rows = Array.isArray(data) ? data : [];
   const has_more = rows.length > perPage;
-  const items = has_more ? rows.slice(0, perPage) : rows;
+  let items = has_more ? rows.slice(0, perPage) : rows;
+  items = await enrichProductItemsFromTables(supabase, items);
+  items = await enrichComparisonCounts(supabase, items);
+  items = groupItemsToCanonicalProducts(items);
 
   let page_inventory_total: number | null = null;
   try {
