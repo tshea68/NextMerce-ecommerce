@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
   // ✅ makes `next build` generate a static site in /out
 
   // ✅ Cloudflare Pages + static export + next/image
