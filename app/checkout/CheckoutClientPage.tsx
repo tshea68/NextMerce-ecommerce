@@ -367,7 +367,7 @@ export default function CheckoutClientPage() {
   }, [contextCartItems, queryCartItems]);
 
   const [shippingMethod, setShippingMethod] = useState(
-    params.get("ship_method") || "ground"
+    params.get("ship_method") || "GND"
   );
   const [email, setEmail] = useState(params.get("email") || "");
   const [phone, setPhone] = useState(params.get("phone") || "");
@@ -413,7 +413,7 @@ export default function CheckoutClientPage() {
     setCreatingIntent(true);
     try {
       const payload = {
-        shipping_method: (shippingMethod || "ground").trim(),
+        shippingMethod: (shippingMethod || "GND").trim(),
         items: cartItems.map((x) => ({
           mpn: x.mpn,
           quantity: x.qty,
@@ -523,7 +523,7 @@ export default function CheckoutClientPage() {
                 onChange={(e) => setShippingMethod(e.target.value)}
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black cursor-pointer"
               >
-                <option value="ground" className="bg-white text-black cursor-pointer">
+                <option value="GND" className="bg-white text-black cursor-pointer">
                   Ground ($11.95)
                 </option>
                 <option value="two_day" className="bg-white text-black cursor-pointer">

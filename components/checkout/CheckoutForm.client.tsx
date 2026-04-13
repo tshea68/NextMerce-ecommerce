@@ -175,7 +175,7 @@ export default function CheckoutPage() {
     return buildCartFromQuery(params.get("cart"));
   }, [params]);
 
-  const [shippingMethod, setShippingMethod] = useState("ground");
+  const [shippingMethod, setShippingMethod] = useState("GND");
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [address1, setAddress1] = useState("");
@@ -196,7 +196,7 @@ export default function CheckoutPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        shipping_method: shippingMethod,
+        shippingMethod: shippingMethod,
         items: cartItems.map((i: any) => ({
           mpn: i.mpn,
           quantity: i.qty,
