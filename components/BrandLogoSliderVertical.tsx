@@ -7,31 +7,29 @@ type LogoItem = {
   name: string;
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com";
-
-const ENDPOINT = `${String(API_BASE).replace(/\/+$/, "")}/api/brand-logos`;
+const ENDPOINT = "/api/brand-logos";
 
 function coerceLogos(data: any): LogoItem[] {
   const arr = Array.isArray(data)
     ? data
     : Array.isArray(data?.logos)
-    ? data.logos
-    : Array.isArray(data?.items)
-    ? data.items
-    : [];
+      ? data.logos
+      : Array.isArray(data?.items)
+        ? data.items
+        : [];
 
   const out = arr
     .map((b: any) => {
-      const img =
-        b?.image_url || b?.logo_url || b?.url || b?.src || b?.image || null;
+      const src =
+        b?.src || b?.image_url || b?.logo_url || b?.url || b?.image || null;
       const name = b?.name || b?.brand || b?.brand_long || b?.title || "";
-      return img ? { src: img, name } : null;
+      return src ? { src: String(src).trim(), name: String(name).trim() } : null;
     })
     .filter(Boolean) as LogoItem[];
 
   const seen = new Set<string>();
   return out.filter((x) => {
+    if (!x.src) return false;
     if (seen.has(x.src)) return false;
     seen.add(x.src);
     return true;
@@ -57,7 +55,16 @@ export default function BrandLogoSliderVertical() {
     (async () => {
       try {
         setErr(null);
-        const r = await fetch(ENDPOINT, { credentials: "omit", cache: "no-store" });
+
+        const r = await fetch(ENDPOINT, {
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+
+        if (!r.ok) {
+          throw new Error(`brand logos request failed: ${r.status}`);
+        }
+
         const data = await r.json();
         const normalized = coerceLogos(data).filter((l) => looksLikeImg(l.src));
 
@@ -104,16 +111,12 @@ export default function BrandLogoSliderVertical() {
   if (err || logos.length === 0) return null;
 
   return (
-    <div className="w-full h-full flex items-stretch justify-end">
+    <div className="flex h-full w-full items-stretch justify-end">
       <div
         className="
-          bg-white text-black
-          border border-gray-300
-          rounded-md shadow-md
-          w-[200px] lg:w-[220px]
-          h-full
-          flex flex-col
-          overflow-hidden
+          flex h-full w-[200px] flex-col overflow-hidden
+          rounded-md border border-gray-300 bg-white text-black shadow-md
+          lg:w-[220px]
         "
       >
         <div
@@ -125,16 +128,14 @@ export default function BrandLogoSliderVertical() {
             {logos.map((logo, i) => (
               <div
                 key={`${logo.src}-${i}`}
-                className="w-full flex items-center justify-center"
+                className="flex w-full items-center justify-center"
               >
                 <img
                   src={logo.src}
                   alt={logo.name || "Brand"}
                   className="
-                    max-h-8 md:max-h-8 lg:max-h-9
-                    object-contain
-                    max-w-[150px]
-                    opacity-90
+                    max-h-8 max-w-[150px] object-contain opacity-90
+                    md:max-h-8 lg:max-h-9
                   "
                   loading="lazy"
                   onError={(e) => {

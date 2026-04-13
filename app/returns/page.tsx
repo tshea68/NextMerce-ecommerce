@@ -1,55 +1,100 @@
+import InfoPageLayout from "@/components/site/InfoPageLayout";
+import SectionBar from "@/components/site/SectionBar";
+
 export default function ReturnsPage() {
   return (
-    <div className="bg-slate-950 text-slate-100 min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        <h1 className="text-3xl font-semibold mb-6">Our Return Policy</h1>
+    <InfoPageLayout title="Return Policy">
+      <div className="space-y-4 text-sm leading-7 text-black/75">
+        <SectionBar>Return Eligibility</SectionBar>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Return Window:</strong> Initiate within <strong>30 days</strong> of
+            delivery.
+          </li>
+          <li>
+            <strong>Condition:</strong> Items must be unused, unmodified, and in
+            original condition with all packaging, labels, and components.
+          </li>
+          <li>
+            <strong>RAN Required:</strong> A Return Authorization Number must be
+            obtained before returning any item. Returns without an approved RAN
+            will be refused.
+          </li>
+        </ul>
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Return Eligibility</h2>
-            <ul className="list-disc pl-5 space-y-1">
-              <li><strong>Return Window:</strong> Initiate within <strong>30 days</strong> of delivery.</li>
-              <li><strong>Condition:</strong> Items must be unused and in original condition with packaging/components.</li>
-              <li><strong>RAN Required:</strong> Returns without an approved return authorization may be refused.</li>
-            </ul>
+        <SectionBar>Non-Returnable Items</SectionBar>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>“For Parts Only” or “As-Is” items.</li>
+          <li>
+            Installed, modified, or damaged items due to improper installation or
+            handling.
+          </li>
+          <li>
+            Items missing essential components or original packaging may be
+            refused or may incur a restocking fee.
+          </li>
+        </ul>
 
-            <h3 className="text-lg font-semibold pt-3">Non-Returnable Items</h3>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>“For Parts Only” or “As-Is” items.</li>
-              <li>Installed, modified, or damaged items due to improper installation/handling.</li>
-              <li>Items missing essential components or original packaging.</li>
-            </ul>
-          </section>
+        <SectionBar>How to Initiate a Return</SectionBar>
+        <ol className="list-decimal pl-5 space-y-1">
+          <li>
+            Email{" "}
+            <a className="underline" href="mailto:returns@appliancepartgeeks.com">
+              returns@appliancepartgeeks.com
+            </a>{" "}
+            with your order number in the subject line.
+          </li>
+          <li>
+            Include your full name, order date, reason for return, and photos if
+            applicable.
+          </li>
+          <li>
+            Our team will review your request within <strong>3 business days</strong>{" "}
+            and provide return instructions.
+          </li>
+        </ol>
 
-          <section className="space-y-3">
-            <h2 className="text-xl font-semibold">How to Initiate a Return</h2>
-            <ol className="list-decimal pl-5 space-y-1">
-              <li>Email <strong>returns@appliancepartgeeks.com</strong> with your order number in the subject line.</li>
-              <li>Include your full name, order date, reason for return, and photos if applicable.</li>
-              <li>Our team will review your request within <strong>3 business days</strong>.</li>
-            </ol>
+        <SectionBar>Shipping &amp; Return Process</SectionBar>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            If <strong>our error</strong> caused the issue, we cover return shipping.
+          </li>
+          <li>
+            If <strong>customer error</strong> caused the issue, the customer covers
+            return shipping.
+          </li>
+          <li>
+            Items must be securely packed to prevent transit damage and include the
+            issued RAN on the package.
+          </li>
+        </ul>
 
-            <h3 className="text-lg font-semibold pt-3">Shipping &amp; Return Process</h3>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>If the return is due to <strong>our error</strong>, we cover return shipping.</li>
-              <li>If the return is due to <strong>customer error</strong>, the customer covers return shipping.</li>
-              <li>Items must be securely packed and include the issued return authorization.</li>
-            </ul>
-          </section>
+        <SectionBar>Refunds &amp; Processing</SectionBar>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            Refunds are issued within <strong>5–7 business days</strong> after the
+            item is received and inspected.
+          </li>
+          <li>Refunds are credited to the original payment method.</li>
+          <li>
+            Shipping fees are non-refundable unless the return is due to our error.
+          </li>
+        </ul>
 
-          <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Refunds &amp; Processing</h2>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Refunds are typically issued within <strong>5–7 business days</strong> after inspection.</li>
-              <li>Refunds go back to the original payment method.</li>
-              <li>Shipping fees are generally non-refundable unless the return is due to our error.</li>
-            </ul>
+        <SectionBar>Right to Refuse</SectionBar>
+        <p>
+          Appliance Part Geeks reserves the right to refuse any return that does
+          not meet our policy guidelines or is deemed fraudulent.
+        </p>
 
-            <h3 className="text-lg font-semibold pt-3">Right to Refuse</h3>
-            <p>Appliance Part Geeks reserves the right to refuse any return that does not meet policy guidelines or appears fraudulent.</p>
-          </section>
-        </div>
+        <p>
+          Need help? Email{" "}
+          <a className="underline" href="mailto:returns@appliancepartgeeks.com">
+            returns@appliancepartgeeks.com
+          </a>
+          .
+        </p>
       </div>
-    </div>
+    </InfoPageLayout>
   );
 }

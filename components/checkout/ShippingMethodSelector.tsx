@@ -1,0 +1,382 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+
+const API_BASE =
+  (process.env.NEXT_PUBLIC_API_BASE || "").trim() ||
+  "https://api.appliancepartgeeks.com";
+
+function extractPiFromClientSecret(cs: string | null | undefined) {
+  const v = (cs || "").trim();
+  if (!v) return null;
+  if (v.includes("_secret_")) return v.split("_secret_")[0];
+  if (v.startsWith("pi_")) return v;
+  return null;
+}
+
+async function safeJson(resp: Response) {
+  const text = await resp.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { _raw: text };
+  }
+}
+
+type OrderLike = Record<string, any> | null;
+
+export default function SuccessPage() {
+  const params = useSearchParams();
+
+  const [status, setStatus] = useState("loading");
+  const [order, setOrder] = useState<OrderLike>(null);
+  const [orderRow, setOrderRow] = useState<OrderLike>(null);
+  const [msg, setMsg] = useState("Finalizing…");
+
+  const statusMeta = useMemo(() => {
+    const s = (status || "").toLowerCase();
+
+    if (s === "paid" || s === "succeeded") {
+      return {
+        label: "Payment confirmed",
+        color: "bg-emerald-100 text-emerald-800",
+      };
+    }
+
+    if (s === "processing" || s === "requires_capture") {
+      return {
+        label: "Payment processing",
+        color: "bg-amber-100 text-amber-800",
+      };
+    }
+
+    if (s === "requires_payment_method" || s === "canceled") {
+      return {
+        label: "Payment failed",
+        color: "bg-red-100 text-red-800",
+      };
+    }
+
+    if (s === "loading") {
+      return {
+        label: "Checking payment status…",
+        color: "bg-sky-100 text-sky-800",
+      };
+    }
+
+    return {
+      label: "Status unknown",
+      color: "bg-gray-100 text-gray-800",
+    };
+  }, [status]);
+
+  const lineItems = useMemo(() => {
+    if (!order) return [];
+
+    if (Array.isArray(order.items) && order.items.length > 0) {
+      return order.items.map((item: any, idx: number) => ({
+        id: item.id || item.mpn || idx,
+        name: item.name || item.description || "Item",
+        mpn: item.mpn || item.part_number || "",
+        qty: item.qty || item.quantity || 1,
+        totalCents: item.total_cents ?? item.amount_cents ?? item.total ?? null,
+        unitCents:
+          item.unit_cents ??
+          item.price_cents ??
+          (item.total_cents && (item.qty || item.quantity)
+            ? Math.round(item.total_cents / (item.qty || item.quantity))
+            : null),
+      }));
+    }
+
+    if (Array.isArray(order.line_items) && order.line_items.length > 0) {
+      return order.line_items.map((li: any, idx: number) => ({
+        id: li.id || idx,
+        name: li.description || "Item",
+        mpn: li.mpn || "",
+        qty: li.quantity || 1,
+        totalCents: li.amount_total ?? li.amount_subtotal ?? null,
+        unitCents:
+          li.amount_total && li.quantity
+            ? Math.round(li.amount_total / li.quantity)
+            : null,
+      }));
+    }
+
+    if (Array.isArray(order.lines?.data) && order.lines.data.length > 0) {
+      return order.lines.data.map((li: any, idx: number) => ({
+        id: li.id || idx,
+        name: li.description || "Item",
+        mpn: li.mpn || "",
+        qty: li.quantity || 1,
+        totalCents: li.amount_total ?? li.amount_subtotal ?? null,
+        unitCents:
+          li.amount_total && li.quantity
+            ? Math.round(li.amount_total / li.quantity)
+            : null,
+      }));
+    }
+
+    return [];
+  }, [order]);
+
+  const handlePrint = () => {
+    try {
+      window.print();
+    } catch {
+      // no-op
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      const sid = params.get("sid");
+      const pi = params.get("payment_intent");
+      const cs = params.get("payment_intent_client_secret");
+      const redirect = params.get("redirect_status");
+
+      const derivedPi = !pi && cs ? extractPiFromClientSecret(cs) : null;
+      const piToUse = pi || derivedPi;
+
+      async function fetchOrderRowByPi(piId: string) {
+        const r = await fetch(
+          `${API_BASE}/api/orders/by-payment-intent?pi=${encodeURIComponent(piId)}`
+        );
+        const j = await safeJson(r);
+        if (!r.ok) return null;
+        return j;
+      }
+
+      try {
+        if (sid) {
+          const r = await fetch(
+            `${API_BASE}/api/checkout/session/status?sid=${encodeURIComponent(sid)}`
+          );
+          const j = await safeJson(r);
+
+          const st = j.status || "unknown";
+          setStatus(st);
+          setOrder(j);
+          setMsg(
+            st === "paid" || st === "succeeded"
+              ? "Order confirmed. Thank you for your purchase."
+              : `Payment status: ${st}`
+          );
+
+          const piFromSession = j.payment_intent_id || j.payment_intent || null;
+          if (piFromSession) {
+            const row = await fetchOrderRowByPi(piFromSession);
+            if (row) setOrderRow(row);
+          }
+          return;
+        }
+
+        if (piToUse) {
+          const r = await fetch(
+            `${API_BASE}/api/checkout/intent/status?pi=${encodeURIComponent(piToUse)}`
+          );
+          const j = await safeJson(r);
+
+          const st = j.status || redirect || "unknown";
+          setStatus(st);
+          setOrder(j);
+          setMsg(
+            st === "paid" || st === "succeeded"
+              ? "Order confirmed. Thank you for your purchase."
+              : `Payment status: ${st}`
+          );
+
+          const row = await fetchOrderRowByPi(piToUse);
+          if (row) setOrderRow(row);
+
+          return;
+        }
+
+        setStatus("unknown");
+        setMsg("No payment information was found in the URL.");
+      } catch (e) {
+        console.error("Error loading success status:", e);
+        setStatus("unknown");
+        setMsg(
+          "Your payment was completed, but we couldn't load the final status. Our team will verify your order."
+        );
+      }
+    })();
+  }, [params]);
+
+  const publicToken =
+    orderRow?.public_lookup_token || orderRow?.publicLookupToken || null;
+
+  const reliableOrderNumber =
+    orderRow?.reliable_order_number || orderRow?.reliableOrderNumber || null;
+
+  const totalCents =
+    (typeof orderRow?.total_amount_cents === "number"
+      ? orderRow.total_amount_cents
+      : null) ??
+    (typeof order?.total_cents === "number" ? order.total_cents : null) ??
+    (typeof order?.amount_total === "number" ? order.amount_total : null) ??
+    (typeof order?.amount === "number" ? order.amount : null);
+
+  const currency =
+    (orderRow?.currency || order?.currency || "USD").toString().toUpperCase();
+
+  return (
+    <div className="min-h-[calc(100vh-180px)] bg-[#001f3e] flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-3xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-2xl print:border-0 print:shadow-none">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-[#001f3e] to-[#003266] px-6 py-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-xl text-white">
+            {status === "loading" ? (
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-transparent" />
+            ) : (
+              "✓"
+            )}
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-white">
+              Order Confirmation
+            </h1>
+            <p className="text-xs text-emerald-100">
+              {status === "loading" ? "We’re confirming your payment…" : msg}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-5 px-6 py-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusMeta.color}`}
+            >
+              <span className="mr-2 h-2 w-2 rounded-full bg-current/70" />
+              {statusMeta.label}
+            </span>
+
+            {reliableOrderNumber ? (
+              <div className="text-xs text-gray-600">
+                Order Number #{" "}
+                <span className="font-semibold text-gray-900">
+                  {reliableOrderNumber}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap gap-3 print:hidden">
+            {publicToken ? (
+              <Link
+                href={`/order/${publicToken}`}
+                className="inline-flex items-center rounded-md bg-[#efcc30] px-4 py-2 text-sm font-semibold text-[#001f3e] shadow-sm hover:bg-[#f5d955]"
+              >
+                Track your order
+              </Link>
+            ) : null}
+
+            <Link
+              href="/"
+              className="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Continue shopping
+            </Link>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Print confirmation
+            </button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+              {orderRow?.customer_email ? (
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-600">Confirmation sent to</span>
+                  <span className="font-medium text-gray-900">
+                    {orderRow.customer_email}
+                  </span>
+                </div>
+              ) : null}
+
+              {typeof totalCents === "number" ? (
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-600">Order total</span>
+                  <span className="font-semibold text-gray-900">
+                    ${(totalCents / 100).toFixed(2)} {currency}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            {lineItems.length > 0 ? (
+              <div className="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                    Order summary
+                  </h2>
+                </div>
+
+                <ul className="max-h-40 divide-y divide-gray-200 overflow-y-auto">
+                  {lineItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex justify-between gap-3 py-2"
+                    >
+                      <div>
+                        <div className="text-xs font-medium text-gray-900">
+                          {item.name}
+                        </div>
+                        <div className="text-[11px] text-gray-500">
+                          Qty {item.qty}
+                          {item.mpn ? ` • MPN ${item.mpn}` : ""}
+                        </div>
+                      </div>
+
+                      <div className="text-right text-xs text-gray-800">
+                        {item.totalCents != null ? (
+                          <div className="font-semibold">
+                            ${(item.totalCents / 100).toFixed(2)}
+                          </div>
+                        ) : null}
+
+                        {item.unitCents != null && item.qty > 1 ? (
+                          <div className="text-[11px] text-gray-500">
+                            ${(item.unitCents / 100).toFixed(2)} each
+                          </div>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="text-xs leading-relaxed text-gray-600">
+            <p>
+              You’ll receive an email shortly with your order confirmation and
+              tracking link. If you have any questions or need to change your
+              order, reply to that email and our team will help you out.
+            </p>
+            <p className="mt-2">
+              Shipping destinations: We ship to the United States and U.S.
+              territories, including Puerto Rico. We currently do not ship to
+              international addresses.
+            </p>
+          </div>
+
+          <div className="flex justify-end print:hidden">
+            <Link
+              href="/rare-part-request"
+              className="inline-flex items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-[#001f3e] shadow-sm hover:bg-gray-50"
+            >
+              Need help finding another part?
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

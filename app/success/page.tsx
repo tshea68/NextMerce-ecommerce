@@ -283,7 +283,7 @@ function SuccessPageInner() {
             {publicToken ? (
               <Link
                 href={`/order/${publicToken}`}
-                className="inline-flex items-center px-4 py-2 rounded-md text-sm font-semibold bg-[#efcc30] hover:bg-[#f5d955] text-[#001f3e] shadow-sm"
+                className="inline-flex items-center px-4 py-2 rounded-md text-sm font-semibold bg-[#efcc30] hover:bg-[#f5d955] text-[#001f3e] shadow-sm cursor-pointer"
               >
                 Track your order
               </Link>
@@ -380,7 +380,7 @@ function SuccessPageInner() {
           <div className="flex justify-end print:hidden">
             <Link
               href="/rare-part-request"
-              className="inline-flex items-center px-4 py-2 rounded-md text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50 text-[#001f3e] shadow-sm"
+              className="inline-flex items-center px-4 py-2 rounded-md text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50 text-[#001f3e] shadow-sm cursor-pointer"
             >
               Need help finding another part?
             </Link>

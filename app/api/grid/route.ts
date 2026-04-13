@@ -392,10 +392,7 @@ async function enrichModelCardsWithPartCountsAndDiagrams(supabase: any, rows: an
   if (!modelNumbers.length) return rows;
 
   const [mplRes, evRes] = await Promise.all([
-    supabase
-      .from("model_part_links")
-      .select("model_number, mpn")
-      .in("model_number", modelNumbers),
+    supabase.from("model_part_links").select("model_number, mpn").in("model_number", modelNumbers),
     supabase
       .from("exploded_views")
       .select("model_number, label, image_url")
@@ -419,7 +416,10 @@ async function enrichModelCardsWithPartCountsAndDiagrams(supabase: any, rows: an
     allMpns.add(mpn);
   }
 
-  const modelToExplodedViews = new Map<string, Array<{ label: string | null; image_url: string | null }>>();
+  const modelToExplodedViews = new Map<
+    string,
+    Array<{ label: string | null; image_url: string | null }>
+  >();
 
   for (const row of evRows) {
     const modelNumber = String(row?.model_number ?? "").trim();
@@ -534,7 +534,10 @@ export async function GET(req: Request) {
   const partTypesIn = url.searchParams.getAll("part_types").map((x) => x.trim()).filter(Boolean);
 
   const legacyInStockOnly = asBool(url.searchParams.get("in_stock_only"));
-  let availability: Availability = parseAvailability(url.searchParams.get("availability"), legacyInStockOnly);
+  let availability: Availability = parseAvailability(
+    url.searchParams.get("availability"),
+    legacyInStockOnly
+  );
 
   const conditionParam = url.searchParams.get("condition");
   const conditionRaw = (conditionParam || "").toLowerCase();
@@ -776,10 +779,14 @@ export async function GET(req: Request) {
   }
 
   const from = (page - 1) * perPage;
-  const to = from + perPage;
+  const to = from + perPage - 1;
 
   const isBroad =
-    !q && !itemsApplianceType && itemsBrands.length === 0 && itemsPartTypes.length === 0 && availability === "all";
+    !q &&
+    !itemsApplianceType &&
+    itemsBrands.length === 0 &&
+    itemsPartTypes.length === 0 &&
+    availability === "all";
 
   function sortItems(arr: any[]) {
     const s = sort || "";
@@ -957,8 +964,8 @@ export async function GET(req: Request) {
     combined = groupItemsToCanonicalProducts(combined);
 
     const pageSlice = combined.slice(from, to + 1);
-    const has_more = pageSlice.length > perPage;
-    const items = has_more ? pageSlice.slice(0, perPage) : pageSlice;
+    const has_more = combined.length > to + 1;
+    const items = pageSlice;
 
     let page_inventory_total: number | null = null;
     try {
@@ -1094,6 +1101,142 @@ export async function GET(req: Request) {
       availability,
       items,
       model_cards: [],
+      has_more,
+      page,
+      per_page: perPage,
+      total_count: null,
+      facets,
+      facets_source,
+      facets_scope,
+      facets_rpc,
+      facets_error,
+      defaults_applied: defaultsApplied,
+      page_inventory_total,
+      took_ms: Date.now() - t0,
+    });
+  }
+
+  if (condition === "both" && availability === "in_stock" && !searchMode) {
+    const offerCols =
+      "id,listing_id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,canonical_part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
+
+    const partCols =
+      "id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,canonical_part_type,specific_part_type,appliance_type,stock_status_canon,availability_rank,compatible_brands,compatible_models,replaced_by,replaces_previous_parts,reliable_part_url";
+
+    const splitTo = Math.min(to + perPage * 2, 999);
+
+    const [offersRes, partsRes] = await Promise.all([
+      (async () => {
+        let qb: any = supabase
+          .from("offers")
+          .select(offerCols)
+          .gt("price", 0)
+          .gt("inventory_total", 0);
+
+        if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
+        if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
+        if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
+
+        qb = qb
+          .order("inventory_total", { ascending: false, nullsFirst: false })
+          .order("price", { ascending: false, nullsFirst: false })
+          .order("id", { ascending: false, nullsFirst: false })
+          .range(0, splitTo);
+
+        return qb;
+      })(),
+      (async () => {
+        let qb: any = supabase.from("parts").select(partCols).gt("price", 0);
+
+        if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
+        if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
+        if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
+
+        qb = applyPartsInStockOnly(qb);
+
+        if (sort === "inventory_desc" || sort === "price_desc" || sort === "") {
+          qb = qb
+            .order("price", { ascending: false, nullsFirst: false })
+            .order("id", { ascending: false, nullsFirst: false });
+        } else if (sort === "price_asc") {
+          qb = qb
+            .order("price", { ascending: true, nullsFirst: false })
+            .order("id", { ascending: false, nullsFirst: false });
+        } else {
+          qb = qb.order("id", { ascending: false, nullsFirst: false });
+        }
+
+        qb = qb.range(0, splitTo);
+
+        return qb;
+      })(),
+    ]);
+
+    if (offersRes?.error || partsRes?.error) {
+      const err = offersRes?.error || partsRes?.error;
+      return NextResponse.json(
+        {
+          ok: false,
+          error: String(err?.message || err || "Split in-stock query failed"),
+          items: [],
+          model_cards,
+          has_more: false,
+          page,
+          per_page: perPage,
+          total_count,
+          facets,
+          facets_source,
+          facets_scope,
+          facets_rpc,
+          facets_error,
+          defaults_applied: defaultsApplied,
+          page_inventory_total: null,
+          took_ms: Date.now() - t0,
+        },
+        { status: 500 }
+      );
+    }
+
+    const offersRows = Array.isArray(offersRes?.data) ? offersRes.data : [];
+    const partsRows = Array.isArray(partsRes?.data) ? partsRes.data : [];
+
+    let combined = sortItems([
+      ...offersRows.map((o: any) => mapProductRow(o, "offers")),
+      ...partsRows.map((p: any) => mapProductRow(p, "parts")),
+    ]);
+
+    combined = await enrichProductItemsFromTables(supabase, combined);
+    combined = await enrichComparisonCounts(supabase, combined);
+    combined = groupItemsToCanonicalProducts(combined);
+
+    const pageSlice = combined.slice(from, to + 1);
+    const has_more = combined.length > to + 1;
+    const items = pageSlice;
+
+    let page_inventory_total: number | null = null;
+    try {
+      let sum = 0;
+      let any = false;
+      for (const p of items) {
+        if (p?.is_refurb === true) {
+          const n = Number(p?.inventory_total);
+          if (Number.isFinite(n)) {
+            sum += n;
+            any = true;
+          }
+        }
+      }
+      page_inventory_total = any ? sum : null;
+    } catch {
+      page_inventory_total = null;
+    }
+
+    return NextResponse.json({
+      ok: true,
+      condition,
+      availability,
+      items,
+      model_cards,
       has_more,
       page,
       per_page: perPage,

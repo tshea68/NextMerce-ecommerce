@@ -1,0 +1,766 @@
+./components/ProductPage.client.tsx:5:import { useRouter } from "next/navigation";
+./components/ProductPage.client.tsx:147:  const router = useRouter();
+./components/ProductPage.client.tsx:271:    router.push("/cart");
+./components/ProductPage.client.tsx:277:        <Link href="/" className="text-gray-200 hover:underline">
+./components/ProductPage.client.tsx:338:            <Link
+./components/ProductPage.client.tsx:392:            <Link
+./components/ProductPage.client.tsx:408:              <Link
+./components/ProductPage.client.tsx:468:                <Link
+./components/ProductPage.client.tsx:526:              Add to Cart
+./components/ProductPage.client.tsx:533:              Buy Now
+./components/ComparisonBadge.client.tsx:115:      <Link href={badge.href} className={className}>
+./components/ReliableAvailabilityPill.client.tsx:163:        const res = await fetch(`${AVAIL_URL}/availability`, {
+./components/cards/ProductCard.tsx:5:import { useRouter } from "next/navigation";
+./components/cards/ProductCard.tsx:167:  const router = useRouter();
+./components/cards/ProductCard.tsx:250:    if (detailHref && detailHref !== "#") router.push(detailHref);
+./components/cards/ProductCard.tsx:426:            <Link href={replacementHref} className="text-blue-700 underline font-semibold">
+./components/cards/ProductCard.tsx:496:            title={isNla ? "This part is not available for purchase" : "Add to Cart"}
+./components/cards/ProductCard.tsx:498:            Add to Cart
+./_legacy/merce_old/components/homepage/footer/Footer.tsx:48:            <LinkedinIcon size={20} />
+./_legacy/merce_old/components/homepage/music/Music.tsx:92:            <Link href="/">
+./_legacy/merce_old/components/homepage/browse/Editbrowse.tsx:146:          <Link
+./_legacy/merce_old/components/homepage/trend/Trade.tsx:6:import { useRouter } from "next/navigation";
+./_legacy/merce_old/components/homepage/trend/Trade.tsx:10:  const router = useRouter();
+./_legacy/merce_old/components/homepage/trend/Trade.tsx:16:    router.push("/");
+./_legacy/merce_old/components/homepage/iphone/Iphone.tsx:22:            <Link href="/product/iphone14">
+./_legacy/merce_old/components/homepage/iphone/Iphone.tsx:24:                Buy Now
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:8:import { useRouter } from "next/navigation";
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:75:    cartItems,
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:84:  const router = useRouter();
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:96:              Product added to cart
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:126:          const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:130:              <Link href={item.link}>
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:161:                {/* Add to Cart / Checkout */}
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:167:                      router.push("/checkout");
+./_legacy/merce_old/components/homepage/bestsellers/Sellers.tsx:237:        <Link href="/popular">
+./_legacy/merce_old/components/homepage/purchase/Purchase.tsx:39:            <Link href="/product/fitness">
+./_legacy/merce_old/components/homepage/purchase/Purchase.tsx:66:            <Link href="/product/applewatch">
+./_legacy/merce_old/components/homepage/purchase/Purchase.tsx:68:                Buy Now
+./_legacy/merce_old/components/homepage/hero/Hero.tsx:93:                  <Link href={slide.link}>
+./_legacy/merce_old/components/homepage/hero/Hero.tsx:125:            <Link href="/product/television">
+./_legacy/merce_old/components/homepage/hero/Hero.tsx:149:            <Link href="/product/iphone16promax">
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:37:import { useRouter } from "next/navigation";
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:46:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:52:  const { cartItems, cartOpen, setCartOpen, removeFromCart } = useCart();
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:171:  const pagesRoutes = [
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:174:    { label: "Checkout", path: "/checkout" },
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:175:    { label: "Cart", path: "/cart" },
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:184:  const blogRoutes = [
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:203:  // effect to use esc to close cart
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:211:    if (cartOpen) {
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:218:  }, [cartOpen]);
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:221:  const router = useRouter();
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:297:  // Route for product listing
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:298:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:344:          <Link href="/" className="flex items-center gap-2">
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:375:                      <Link href={`/categories/${slug}`} key={item}>
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:455:                              const route = getProductRoute(p.name); // ✅ same routing logic
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:461:                                    router.push(route); // ✅ navigate correctly
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:534:                              <Link
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:595:            <Link href="/wishlist">
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:605:            {/* Shopping cart    */}
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:612:                {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:617:            {cartOpen && (
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:640:                    {cartItems.length === 0 ? (
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:648:                          Your cart is empty!
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:661:                        {cartItems.map((item) => (
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:703:                        {cartItems
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:712:                      <Link
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:713:                        href="/cart"
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:719:                      <Link
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:720:                        href="/checkout"
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:758:                  <Link
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:765:                  <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:769:                  <Link
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:791:                      {pagesRoutes.map(({ label, path }) => {
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:796:                            <Link
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:830:                      {blogRoutes.map(({ label, path }) => (
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:831:                        <Link key={label} href={path}>
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:857:                  <Link href="/signin" onClick={() => setMobileMenuOpen(false)}>
+./_legacy/merce_old/components/homepage/navbar/MobileNav.tsx:864:                  <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:42:import { useRouter } from "next/navigation";
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:48:  const { cartItems, removeFromCart, cartOpen, setCartOpen } = useCart();
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:172:  const pagesRoutes = [
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:175:    { label: "Checkout", path: "/checkout" },
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:176:    { label: "Cart", path: "/cart" },
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:185:  const blogRoutes = [
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:206:  const router = useRouter();
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:283:  // Route for product listing
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:284:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:310:  const subtotal = cartItems.reduce(
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:327:          <Link href="/">
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:356:                      <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:440:                              const route = getProductRoute(p.name);
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:446:                                    router.push(route); // ✅ apply same routing
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:519:                              <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:577:          <Link href="/register" className="hidden xl:flex">
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:593:            <Link href="/wishlist">
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:603:            {/* Shopping cart  */}
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:611:                {cartItems.length}
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:616:            {cartOpen && (
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:635:                    {cartItems.length === 0 ? (
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:641:                        <p className="mb-6">Your cart is empty!</p>
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:652:                        {cartItems.map((item) => (
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:692:                        {cartItems.reduce(
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:700:                      <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:701:                        href="/cart"
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:708:                      <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:709:                        href="/checkout"
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:747:                  <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:754:                  <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:758:                  <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:838:                  <Link href="/signin" onClick={() => setMobileMenuOpen(false)}>
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:845:                  <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:873:                  <Link
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:890:                  pagesRoutes.some((p) => p.path === pathname)
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:900:                  pagesRoutes.some((p) => p.path === pathname)
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:915:                {pagesRoutes.map(({ label, path }) => (
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:916:                  <Link key={label} href={path}>
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:964:                {blogRoutes.map(({ label, path }) => (
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:965:                  <Link key={label} href={path}>
+./_legacy/merce_old/components/homepage/navbar/Navbar.tsx:984:        <Link href="/popular">
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:8:import { useRouter } from "next/navigation";
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:91:    cartItems,
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:102:  const router = useRouter();
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:114:              Product added to cart
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:140:        <Link href="/popular">
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:150:          const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:154:              <Link href={item.link}>
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:177:                      router.push("/checkout");
+./_legacy/merce_old/components/homepage/newarrivals/Arrival.tsx:199:                  {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/not-found.jsx:23:        <Link
+./_legacy/merce_old/_app_legacy/layout.tsx:18:export const metadata: Metadata = {
+./_legacy/merce_old/_app_legacy/popular/page.tsx:19:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/popular/page.tsx:104:    cartItems,
+./_legacy/merce_old/_app_legacy/popular/page.tsx:115:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/popular/page.tsx:131:  // Route for product listing
+./_legacy/merce_old/_app_legacy/popular/page.tsx:132:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/popular/page.tsx:167:              Product added to cart
+./_legacy/merce_old/_app_legacy/popular/page.tsx:195:          <Link href="/">
+./_legacy/merce_old/_app_legacy/popular/page.tsx:286:                const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/popular/page.tsx:291:                    onClick={() => router.push(getProductRoute(item.title))} // ✅ route applied
+./_legacy/merce_old/_app_legacy/popular/page.tsx:319:                            router.push("/checkout");
+./_legacy/merce_old/_app_legacy/popular/page.tsx:341:                        {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/popular/page.tsx:413:                  onClick={() => router.push(getProductRoute(item.title))} // ✅ routing
+./_legacy/merce_old/_app_legacy/popular/page.tsx:440:                        Add to Cart
+./_legacy/merce_old/_app_legacy/product/[slug]/page.tsx:12:  const params = await props?.params;
+./_legacy/merce_old/_app_legacy/product/[slug]/page.tsx:13:  const searchParams = await props?.searchParams;
+./_legacy/merce_old/_app_legacy/product/[slug]/page.tsx:15:  const slugDecoded = decodeURIComponent(first(params?.slug)).trim();
+./_legacy/merce_old/_app_legacy/product/[slug]/page.tsx:16:  const offerDecoded = decodeURIComponent(first(searchParams?.offer)).trim();
+./_legacy/merce_old/_app_legacy/product/[slug]/page.tsx:21:  if (offerDecoded) redirect(`/offers/${slug}${qs}`);
+./_legacy/merce_old/_app_legacy/product/[slug]/page.tsx:22:  redirect(`/parts/${slug}`);
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:35:    const table = url.searchParams.get("table") ?? "parts";
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:43:    const sample = asBool(url.searchParams.get("sample"));
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:44:    const priced = asBool(url.searchParams.get("priced"));
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:45:    const hasImage = asBool(url.searchParams.get("has_image"));
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:47:    const limitParam = url.searchParams.get("limit");
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:53:    const colsParam = (url.searchParams.get("cols") ?? "").trim();
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:70:    const orderBy = (url.searchParams.get("order_by") ?? "").trim();
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:78:    const orderDirRaw = (url.searchParams.get("order_dir") ?? "asc")
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:103:      const countMode = parseCountMode(url.searchParams.get("count"), "exact");
+./_legacy/merce_old/_app_legacy/api/supabase-test/route.ts:132:    const countMode = parseCountMode(url.searchParams.get("count"), "none");
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:27:  const dataset = ((url.searchParams.get("dataset") || "parts").toLowerCase() === "offers"
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:31:  const page = Math.max(parseInt(url.searchParams.get("page") ?? "1", 10) || 1, 1);
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:32:  const perPage = Math.min(Math.max(parseInt(url.searchParams.get("per_page") ?? "30", 10) || 30, 1), 100);
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:34:  const q = (url.searchParams.get("q") || "").trim();
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:35:  const model = (url.searchParams.get("model") || "").trim(); // NEW
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:36:  const applianceType = (url.searchParams.get("appliance_type") || "").trim();
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:38:  const brands = url.searchParams.getAll("brands").filter(Boolean);
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:39:  const partTypes = url.searchParams.getAll("part_types").filter(Boolean);
+./_legacy/merce_old/_app_legacy/api/grid/route.ts:40:  const inStockOnly = asBool(url.searchParams.get("in_stock_only"));
+./_legacy/merce_old/_app_legacy/shop/page.tsx:61:        <Link className="text-sm underline" href="/api/supabase-test?table=parts">
+./_legacy/merce_old/_app_legacy/shop/page.tsx:70:            <Link
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:17:import stripe from "../../public/images/stripe.png";
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:34:  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "cash">(
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:35:    "stripe",
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:45:  const { cartItems, removeFromCart, updateQuantity } = useCart();
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:47:  const total = cartItems.reduce(
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:109:          <Link href="/">
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:123:                <p className="text-black mb-6 text-[22px] md:text-2xl font-semibold">No items found in your cart to checkout.</p>
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:124:                <Link href='/shop'>
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:133:      {/* Available checkout  */}
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:429:              {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:600:                      onClick={() => setPaymentMethod("stripe")}
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:605:                          ${paymentMethod === "stripe" ? "border-blue-700" : "border-gray-400"}
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:608:                        {paymentMethod === "stripe" && (
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:616:                            paymentMethod === "stripe"
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:622:                        <Image src={stripe} alt="fedex" className="w-14" />
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:667:                  {paymentMethod === "stripe" && (
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:735:                            {/* fast checkout */}
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:748:                                      Secure fast checkout with Link
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:758:                              {/* fast checkout dropdown */}
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:768:                                        Secure fast checkout with Link
+./_legacy/merce_old/_app_legacy/checkout/page.tsx:782:                                    a Link account for faster checkout next time
+./_legacy/merce_old/_app_legacy/register/page.tsx:20:          <Link href="/">
+./_legacy/merce_old/_app_legacy/register/page.tsx:99:                  <Link href="../login">
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:6: * - Real grid UI that fetches /api/grid
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:10: * - Grid UI that fetches /api/grid
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:14: *    1) Items:  /api/grid (NO facets)
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:15: *    2) Facets (cached): /api/parts/facets  (fast; includes estimated totals)
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:16: *    3) Search totals (optional): /api/grid?meta_only=1&total=1 (exact count for search mode)
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:32: * - UI shows clear NLA badge + replacement info + disables Add to Cart
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:40:import { useRouter, usePathname, useSearchParams } from "next/navigation";
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:286:  // supports repeated params OR comma-separated
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:373:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:464:    if (detailHref && detailHref !== "#") router.push(detailHref);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:545:                    router.push(replacementHref);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:601:            title={isNla ? "This part is not available for purchase" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:603:            Add to Cart
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:623:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:653:              if (href !== "#") router.push(href);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:688:            if (href !== "#") router.push(href);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:746:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:749:  const searchParams = useSearchParams();
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:756:    return stableKeyFromSearchParamsString(searchParams?.toString() ?? "");
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:757:  }, [searchParams]);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:766:    const sp = new URLSearchParams(searchParams?.toString() ?? "");
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:806:  }, [props?.initial, searchParams]);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1056:      const facetsUrl = `${API_BASE}/api/parts/facets?${sp.toString()}`;
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1059:        const res = await fetch(facetsUrl, {
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1117:      const url = `${API_BASE}/api/grid?${sp.toString()}`;
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1120:        const res = await fetch(url, {
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1171:      const url = `${API_BASE}/api/grid?${sp.toString()}`;
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1174:      // ✅ FIX: always send availability to /api/grid (even when "all")
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1191:      const itemsUrl = `${API_BASE}/api/grid?${sp.toString()}`;
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1195:        const res = await fetch(url, {
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx.bak.1772250441:1689:              <div className="font-semibold mb-1">/api/grid error</div>
+./_legacy/merce_old/_app_legacy/grid/page.tsx:127:    const res = await fetch(url, {
+./_legacy/merce_old/_app_legacy/grid/page.tsx:141:  searchParams,
+./_legacy/merce_old/_app_legacy/grid/page.tsx:143:  searchParams?: SP | Promise<SP>;
+./_legacy/merce_old/_app_legacy/grid/page.tsx:145:  const spObj = (await Promise.resolve(searchParams)) || {};
+./_legacy/merce_old/_app_legacy/grid/page.tsx:147:  // ---- parse & whitelist URL params -> API ----
+./_legacy/merce_old/_app_legacy/grid/page.tsx:191:  const itemsUrl = new URL(`/api/grid/?${itemsParams.toString()}`, origin).toString();
+./_legacy/merce_old/_app_legacy/grid/page.tsx:215:          ? `Non-JSON from /api/grid (status ${itemsJson?.status ?? itemsRes.status}, ct ${itemsJson?.ct})`
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:5: * - Grid UI that fetches /api/grid
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:9: *    1) Items:  /api/grid (NO facets)
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:10: *    2) Facets (cached): /api/parts/facets  (fast; includes estimated totals)
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:11: *    3) Search totals (optional): /api/grid?meta_only=1&total=1 (exact count for search mode)
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:27: * - UI shows clear NLA badge + replacement info + disables Add to Cart
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:34:import { useRouter, usePathname, useSearchParams } from "next/navigation";
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:264:  // supports repeated params OR comma-separated
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:351:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:427:    if (detailHref && detailHref !== "#") router.push(detailHref);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:502:                    router.push(replacementHref);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:547:            title={isNla ? "This part is not available for purchase" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:549:            Add to Cart
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:569:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:599:              if (href !== "#") router.push(href);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:634:            if (href !== "#") router.push(href);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:678:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:681:  const searchParams = useSearchParams();
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:685:    return stableKeyFromSearchParamsString(searchParams?.toString() ?? "");
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:686:  }, [searchParams]);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:694:    const sp = new URLSearchParams(searchParams?.toString() ?? "");
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:719:  }, [props?.initial, searchParams]);
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:923:      const facetsUrl = `${API_BASE}/api/parts/facets/?${sp.toString()}`;
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:926:        const res = await fetch(facetsUrl, {
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:985:      const url = `${API_BASE}/api/grid/?${sp.toString()}`;
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:988:        const res = await fetch(url, {
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:1028:      // ✅ always send availability to /api/grid (even when "all")
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:1045:      const itemsUrl = `${API_BASE}/api/grid/?${sp.toString()}`;
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:1048:        const res = await fetch(itemsUrl, {
+./_legacy/merce_old/_app_legacy/grid/PartsExplorer.client.tsx:1399:              <div className="font-semibold mb-1">/api/grid error</div>
+./_legacy/merce_old/_app_legacy/login/page.tsx:20:          <Link href="/">
+./_legacy/merce_old/_app_legacy/login/page.tsx:134:                  <Link href="../register">
+./_legacy/merce_old/_app_legacy/error/page.tsx:23:        <Link
+./_legacy/merce_old/_app_legacy/mailsuccess/page.tsx:23:        <Link
+./_legacy/merce_old/_app_legacy/cart/page.tsx:11:  const { cartItems, removeFromCart, updateQuantity } = useCart();
+./_legacy/merce_old/_app_legacy/cart/page.tsx:13:  const total = cartItems.reduce(
+./_legacy/merce_old/_app_legacy/cart/page.tsx:26:          <Link href="/">
+./_legacy/merce_old/_app_legacy/cart/page.tsx:35:      {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/cart/page.tsx:42:          <p className="text-black mb-6 text-md">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/cart/page.tsx:44:          <Link href="/shop">
+./_legacy/merce_old/_app_legacy/cart/page.tsx:56:            <Link href="/" className="text-blue-700 text-[16px] cursor-pointer">
+./_legacy/merce_old/_app_legacy/cart/page.tsx:76:                {cartItems.map((item) => {
+./_legacy/merce_old/_app_legacy/cart/page.tsx:191:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/cart/page.tsx:213:                {/* product checkout  */}
+./_legacy/merce_old/_app_legacy/cart/page.tsx:215:                  <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:186:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:187:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:264:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:266:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:269:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:271:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:285:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:361:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:368:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:420:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:421:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:454:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:482:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:767:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:774:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:788:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1176:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1177:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1182:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1212:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1232:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1339:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1346:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1353:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1368:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1375:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1381:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1387:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1425:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1434:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/iphone14/page.tsx:1437:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:186:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:187:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:264:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:266:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:269:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:271:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:285:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:361:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:368:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:420:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:421:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:454:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:482:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:701:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:708:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:722:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1080:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1081:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1085:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1115:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1135:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1242:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1249:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1256:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1271:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1278:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1284:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1290:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1333:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1342:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/fitness/page.tsx:1345:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:186:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:187:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:264:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:266:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:269:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:271:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:284:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:360:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:367:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:399:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:400:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:433:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:460:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:718:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:725:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:739:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1097:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1098:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1103:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1133:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1153:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1260:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1267:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1274:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1289:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1296:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1302:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1308:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1346:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1355:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/iphone16promax/page.tsx:1358:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:186:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:187:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:264:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:266:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:269:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:271:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:285:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:361:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:368:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:400:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:401:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:434:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:462:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:688:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:695:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:709:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1067:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1068:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1073:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1103:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1123:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1230:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1237:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1244:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1259:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1266:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1272:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1278:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1321:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1330:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/grinder/page.tsx:1333:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:147:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:148:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:225:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:227:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:230:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:232:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:246:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:322:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:329:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:361:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:362:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:395:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:423:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:661:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:668:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:682:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1062:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1063:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1068:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1098:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1118:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1225:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1232:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1239:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1254:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1261:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1267:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1273:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1316:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1325:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/imac/page.tsx:1328:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:186:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:187:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:264:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:266:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:269:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:271:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:284:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:360:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:367:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:399:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:400:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:433:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:461:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:771:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:778:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:792:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1186:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1187:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1191:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1221:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1241:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1348:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1355:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1362:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1377:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1384:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1390:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1396:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1434:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1443:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/macbook/page.tsx:1446:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:187:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:188:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:265:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:267:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:270:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:272:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:286:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:364:  //Handle Addtocart
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:413:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:414:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:447:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:475:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:700:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:707:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:721:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1079:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1080:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1084:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1114:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1134:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1241:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1248:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1255:                ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1270:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1277:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1283:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1289:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1332:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1341:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/applewatch/page.tsx:1344:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:186:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:187:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:264:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:266:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:269:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:271:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:285:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:361:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:368:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:400:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:401:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:434:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:462:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:747:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:754:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:768:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1146:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1147:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1151:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1179:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1199:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1306:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1313:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1320:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1335:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1342:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1348:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1354:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1397:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1406:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/gamepad/page.tsx:1409:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:186:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:187:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:264:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:266:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:269:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:271:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:284:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:360:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:367:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:419:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:420:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:453:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:481:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:739:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:746:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:760:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1116:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1117:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1122:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1152:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1172:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1279:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1286:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1293:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1308:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1315:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1321:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1327:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1365:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1374:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/ipad/page.tsx:1377:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:35:import { useRouter } from "next/navigation";
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:186:  // const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:187:  // const [cartItems, setCartItems] = useState<any[]>([]);
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:264:  const router = useRouter();
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:266:  // const isInCart = cartItems.some(item => item.id === 1);
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:269:    cartItems,
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:271:    cartOpen,
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:285:  const isInCart = cartItems.some((cartItem) => cartItem.id === product?.id);
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:361:  // handle cart function
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:368:      image: item.image.src, // ✅ store string URL (FIXES /cart image)
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:400:  // Route for recently viewed
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:401:  const getProductRoute = (title: string) => {
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:434:              Product added to cart
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:462:          <Link href="/">
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:689:                <Link href="/checkout">
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:696:              {/* cart  */}
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:710:                  {isInCart ? "Added" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1077:            const route = getProductRoute(item.title);
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1078:            const isInCart = cartItems.some((ci) => ci.id === item.id);
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1083:                onClick={() => router.push(route)}
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1113:                        router.push("/checkout");
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1133:                    {isInCart ? "Checkout" : "Add to Cart"}
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1240:          cartOpen ? "visible" : "invisible"
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1247:            cartOpen ? "opacity-100" : "opacity-0"
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1254:            ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1269:            {cartItems.length === 0 ? (
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1276:                <p className="text-black mb-6">Your cart is empty!</p>
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1282:                  <Link href="/shop">Continue Shopping</Link>
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1288:                {cartItems.map((item) => (
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1326:                {cartItems.reduce(
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1335:                <Link href="/cart">View Cart</Link>
+./_legacy/merce_old/_app_legacy/demo_product/television/page.tsx:1338:                <Link href="/checkout">Checkout</Link>
+./_legacy/merce_old/_app_legacy/page.tsx:3:  redirect("/shop");
+./_legacy/merce_old/_app_legacy/best/bestselling.tsx:56:          <Link href="/">
+./_legacy/merce_old/_app_legacy/best/bestselling.tsx:164:                      Add to Cart
+./_legacy/merce_old/_app_legacy/best/bestselling.tsx:223:                        Add to Cart
+./_legacy/merce_old/_app_legacy/wishlist/page.tsx:15:    cartItems,
+./_legacy/merce_old/_app_legacy/wishlist/page.tsx:30:          <Link href="/" className="hover:text-blue-500">
+./_legacy/merce_old/_app_legacy/wishlist/page.tsx:48:              <Link href="/shop">
+./_legacy/merce_old/_app_legacy/wishlist/page.tsx:110:                        const isInCart = cartItems.some(
+./_legacy/merce_old/_app_legacy/wishlist/page.tsx:130:                      Add to Cart
+./_legacy/merce_old/_app_legacy/contact/page.tsx:14:          <Link href="/">
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:33:  cartItems: CartItem[];
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:34:  cartOpen: boolean;
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:55:  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:57:  const [cartOpen, setCartOpen] = useState(false);
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:64:    const storedCart = localStorage.getItem("cart");
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:76:    localStorage.setItem("cart", JSON.stringify(cartItems));
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:77:  }, [cartItems]);
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:147:        cartItems,
+./_legacy/merce_old/_app_legacy/context/CartContext.tsx:148:        cartOpen,
+./_legacy/merce_old/lib/_demo_catalog.ts:12: * Later: replace this with fetch() from your FastAPI endpoints.
+./_legacy/merce_old/lib/_demo_catalog.ts:33:export function productRoute(p: Pick<CatalogProduct, "id" | "mode">) {
+./sql/other_parts_rank_1_2_full.csv:9025:Assy Case Ice Route Aw4 4d 2,Chassis & Cabinet,"ASSY CASE ICE ROUTE;AW4-4D,-,2",DA97-13829B,2
+./sql/other_parts_rank_1_2_full.csv:9026:Assy Case Ice Route Fsr Cd 220,Chassis & Cabinet,"ASSY CASE ICE-ROUTE;FSR CD,220",DA97-06473J,2
+./sql/other_parts_rank_1_2_full.csv:9027:Assy Case Ice Route Rf8000mc,Chassis & Cabinet,"ASSY CASE ICE ROUTE;RF8000MC,-",DA97-24100A,2
+./sql/other_parts_rank_1_2_full.csv:9028:Assy Case Ice Route Rf8000mc 2,Chassis & Cabinet,"ASSY CASE ICE ROUTE;RF8000MC,2",DA97-17296B,2
+./sql/other_parts_rank_1_2_full.csv:9029:Assy Case Ice Route Rs8000nc,Chassis & Cabinet,"ASSY CASE ICE ROUTE;RS8000NC,-",DA97-19028A,2
+./sql/other_parts_rank_1_2_full.csv:16721:Case Ice Route,Chassis & Cabinet,DA97-05397B Samsung Refrigerator Case Ice Route,DA97-05397B,2
+./sql/other_parts_rank_1_2_full.csv:16722:Case Ice Route,Chassis & Cabinet,DA97-07361B Samsung Refrigerator Assembly Case Ice Route,DA97-07361B,2
+./sql/other_parts_rank_1_2_full.csv:16723:Case Ice Route,Chassis & Cabinet,DA97-07361D Samsung Refrigerator Assembly Case Ice Route,DA97-07361D,2
+./sql/other_parts_rank_1_2_full.csv:16724:Case Ice Route,Chassis & Cabinet,DA97-07361R Samsung Refrigerator Assembly Case Ice Route,DA97-07361R,2
+./sql/other_parts_rank_1_2_full.csv:38708:Ice Route Case,Chassis & Cabinet,DA61-04373A Samsung Refrigerator Ice Route Case,DA61-04373A,2
+./sql/other_parts_rank_1_2_full.csv:38709:Ice Route Case,Chassis & Cabinet,DA97-05397C Samsung Refrigerator Ice Route Case,DA97-05397C,2
+./sql/other_parts_rank_1_2_full.csv:38710:Ice Route Case,Chassis & Cabinet,DA97-05397M Samsung Ice Route Case Assembly,DA97-05397M,2
+./sql/other_parts_rank_1_2_full.csv:38711:Ice Route Case,Chassis & Cabinet,DA97-05397Q Samsung Refrigerator Ice Route Case Assembly,DA97-05397Q,2
+./sql/other_parts_rank_1_2_full.csv:38712:Ice Route Case,Chassis & Cabinet,DA97-05397U Samsung Refrigerator Ice Route Case Assembly,DA97-05397U,2
+./sql/other_parts_rank_1_2_full.csv:38713:Ice Route Case,Chassis & Cabinet,DA97-06473B Samsung Refrigerator Ice Route Case Assembly,DA97-06473B,1
+./sql/other_parts_rank_1_2_full.csv:38714:Ice Route Case,Chassis & Cabinet,DA97-06473G Samsung Refrigerator Ice Route Case Assembly,DA97-06473G,2
+./sql/other_parts_rank_1_2_full.csv:38715:Ice Route Case,Chassis & Cabinet,DA97-07288B Samsung Refrigerator Ice Route Case Assembly,DA97-07288B,2
+./sql/other_parts_rank_1_2_full.csv:38716:Ice Route Case,Chassis & Cabinet,DA97-07361A Samsung Refrigerator Ice Route Case Assembly,DA97-07361A,2
+./sql/other_parts_rank_1_2_full.csv:38717:Ice Route Case,Chassis & Cabinet,DA97-07361E Samsung Refrigerator Ice Route Case Assembly,DA97-07361E,2
+./sql/other_parts_rank_1_2_full.csv:38718:Ice Route Case,Chassis & Cabinet,DA97-07361F Samsung Refrigerator Assembly Ice Route Case,DA97-07361F,2
+./sql/other_parts_rank_1_2_full.csv:38719:Ice Route Case,Chassis & Cabinet,DA97-07361Q Samsung Refrigerator Ice Route Case Assembly,DA97-07361Q,2
+./sql/other_parts_rank_1_2_full.csv:38720:Ice Route Case,Chassis & Cabinet,DA97-07361S Samsung Refrigerator Ice Route Case,DA97-07361S,2
+./sql/other_parts_rank_1_2_full.csv:38721:Ice Route Case,Chassis & Cabinet,DA97-07361T Samsung Refrigerator Ice Route Case Assembly,DA97-07361T,2
+./sql/other_parts_rank_1_2_full.csv:38722:Ice Route Case,Chassis & Cabinet,DA97-08680A Samsung Refrigerator Ice Route Case Assembly,DA97-08680A,2
+./sql/other_parts_rank_1_2_full.csv:38723:Ice Route Case,Chassis & Cabinet,DA97-08680E Samsung Refrigerator Ice Route Case Assembly,DA97-08680E,2
+./sql/other_parts_rank_1_2_full.csv:38724:Ice Route Case,Chassis & Cabinet,DA97-24100B Samsung Refrigerator Ice Route Case,DA97-24100B,1
+./sql/other_parts_rank_1_2_full.csv:38725:Ice Route Case,Chassis & Cabinet,WR13X10737 GE Refrigerator Ice Route Assembly Case,WR13X10737,1
+./sql/other_parts_rank_1_2_full.csv:38726:Ice Route Case,Chassis & Cabinet,WR13X10738 GE Refrigerator Ice Route Case Assembly,WR13X10738,2
+./sql/other_parts_rank_1_2_full.csv:38727:Ice Route Case Aw Pjt Abs I,Chassis & Cabinet,DA61-03526A Samsung Refrigerator Ice Route Case Assembly AW PJT ABS I,DA61-03526A,2
+./sql/other_parts_rank_1_2_full.csv:38728:Ice Route Case Aw2,Chassis & Cabinet,DA97-05397N Samsung Refrigerator Assembly Ice Route Case Aw2,DA97-05397N,2
+./sql/other_parts_rank_1_2_full.csv:38729:Ice Route Case Aw3 220v,Chassis & Cabinet,DA97-08680D Samsung Refrigerator Ice Route Case Assembly Aw3 220V,DA97-08680D,2
+./sql/other_parts_rank_1_2_full.csv:38730:Ice Route Case Aw4 4d,Chassis & Cabinet,DA97-13829A Samsung Refrigerator Ice Route Case Assembly AW4-4D,DA97-13829A,2
+./sql/other_parts_rank_1_2_full.csv:38731:Ice Route Case Fsr Cd 1,Chassis & Cabinet,DA97-06473K Samsung Refrigerator Ice Route Case Assembly FSR CD 1,DA97-06473K,2
+./sql/other_parts_rank_1_2_full.csv:38732:Ice Route Case Rf 920g,Chassis & Cabinet,DA97-14505A Samsung Refrigerator Ice Route Assembly Case RF-920G,DA97-14505A,2
+./sql/other_parts_rank_1_2_full.csv:38733:Ice Route Rs8000nc,Ice Maker,DA97-19028B Samsung Refrigerator Ice Route Assembly RS8000NC,DA97-19028B,1
+./sql/other_parts_rank_1_2_full.csv:41352:Jack Scart,,"JACK,SCART",6612M00011A,2
+./app/offers/[mpn]/page.tsx:10:  params,
+./app/offers/[mpn]/page.tsx:12:  params: MaybePromise<{ mpn: string }>;
+./app/offers/[mpn]/page.tsx:14:  const { mpn } = await params;
+./app/layout.tsx:4:export const metadata = {
+./app/api/parts/facets/route.ts:1:// app/api/parts/facets/route.ts
+./app/api/parts/facets/route.ts:142:    const availabilityParam = u.searchParams.get("availability");
+./app/api/parts/facets/route.ts:143:    const inStockOnly = asBool(u.searchParams.get("in_stock_only"));
+./app/api/parts/facets/route.ts:154:    const condition = normalizeCondition(u.searchParams.get("condition"));
+./app/api/parts/facets/route.ts:157:      u.searchParams.get("facet_limit") ?? u.searchParams.get("limit") ?? 40,
+./app/api/grid/route.ts:150:async function rpcFacets(supabase: any, params: any) {
+./app/api/grid/route.ts:151:  if (params.p_condition === "new") {
+./app/api/grid/route.ts:153:      p_q: params.p_q ?? null,
+./app/api/grid/route.ts:154:      p_availability: params.p_availability ?? "all",
+./app/api/grid/route.ts:155:      p_appliance_type: params.p_appliance_type ?? null,
+./app/api/grid/route.ts:156:      p_brands: params.p_brands ?? null,
+./app/api/grid/route.ts:157:      p_part_types: params.p_part_types ?? null,
+./app/api/grid/route.ts:158:      p_facet_limit: params.p_limit ?? 20,
+./app/api/grid/route.ts:165:  const paramsV1 = {
+./app/api/grid/route.ts:166:    p_condition: params.p_condition,
+./app/api/grid/route.ts:167:    p_q: params.p_q,
+./app/api/grid/route.ts:168:    p_appliance_type: params.p_appliance_type,
+./app/api/grid/route.ts:169:    p_brands: params.p_brands,
+./app/api/grid/route.ts:170:    p_part_types: params.p_part_types,
+./app/api/grid/route.ts:171:    p_in_stock_only: params.p_in_stock_only,
+./app/api/grid/route.ts:172:    p_model: params.p_model ?? null,
+./app/api/grid/route.ts:173:    p_limit: params.p_limit,
+./app/api/grid/route.ts:176:  const r1 = await supabase.rpc("grid_facets_v1", paramsV1);
+./app/api/grid/route.ts:179:  const paramsV0 = {
+./app/api/grid/route.ts:180:    p_condition: params.p_condition,
+./app/api/grid/route.ts:181:    p_q: params.p_q,
+./app/api/grid/route.ts:182:    p_appliance_type: params.p_appliance_type,
+./app/api/grid/route.ts:183:    p_brands: params.p_brands,
+./app/api/grid/route.ts:184:    p_part_types: params.p_part_types,
+./app/api/grid/route.ts:185:    p_in_stock_only: params.p_in_stock_only,
+./app/api/grid/route.ts:186:    p_model: params.p_model ?? null,
+./app/api/grid/route.ts:189:  const r2 = await supabase.rpc("grid_facets", paramsV0);
+./app/api/grid/route.ts:517:  const metaOnly = asBool(url.searchParams.get("meta_only"));
+./app/api/grid/route.ts:518:  const wantDbFacets = asBool(url.searchParams.get("facets"));
+./app/api/grid/route.ts:519:  const countOnly = asBool(url.searchParams.get("count_only"));
+./app/api/grid/route.ts:520:  const wantTotal = countOnly || metaOnly || asBool(url.searchParams.get("total"));
+./app/api/grid/route.ts:522:  const page = clampInt(url.searchParams.get("page"), 1, 1_000_000, 1);
+./app/api/grid/route.ts:523:  const perPage = clampInt(url.searchParams.get("per_page"), 1, 100, 30);
+./app/api/grid/route.ts:525:  const qTrim = (url.searchParams.get("q") ?? "").trim();
+./app/api/grid/route.ts:532:  const applianceTypeIn = (url.searchParams.get("appliance_type") || "").trim();
+./app/api/grid/route.ts:533:  const brandsIn = url.searchParams.getAll("brands").map((x) => x.trim()).filter(Boolean);
+./app/api/grid/route.ts:534:  const partTypesIn = url.searchParams.getAll("part_types").map((x) => x.trim()).filter(Boolean);
+./app/api/grid/route.ts:536:  const legacyInStockOnly = asBool(url.searchParams.get("in_stock_only"));
+./app/api/grid/route.ts:537:  let availability: Availability = parseAvailability(url.searchParams.get("availability"), legacyInStockOnly);
+./app/api/grid/route.ts:539:  const conditionParam = url.searchParams.get("condition");
+./app/api/grid/route.ts:546:  const parsedSort = parseSort(url.searchParams.get("sort"));
+./app/api/grid/route.ts:547:  const mixRefurbsParam = clampInt(url.searchParams.get("mix_refurbs"), 0, 100, 0);
+./app/api/grid/route.ts:548:  const noDefaults = asBool(url.searchParams.get("no_defaults"));
+./app/api/grid/route.ts:607:  const scopeRaw = (url.searchParams.get("facets_scope") || "").toLowerCase();
+./app/api/grid/route.ts:609:  const facetLimit = clampInt(url.searchParams.get("facet_limit"), 1, 100, 20);
+./app/api/grid/facets.parts.ts:1:// app/api/grid/facets.parts.ts
+./app/parts/[mpn]/page.tsx.bak.1771616423:60:export async function generateMetadata({ params }: { params: { mpn: string } }) {
+./app/parts/[mpn]/page.tsx.bak.1771616423:61:  const mpn = decodeURIComponent(params.mpn || "").trim();
+./app/parts/[mpn]/page.tsx.bak.1771616423:64:  // best-effort, don’t hard fail metadata
+./app/parts/[mpn]/page.tsx.bak.1771616423:93:export default async function PartPage({ params }: { params: { mpn: string } }) {
+./app/parts/[mpn]/page.tsx.bak.1771616423:94:  const mpnRaw = decodeURIComponent(params.mpn || "").trim();
+./app/parts/[mpn]/page.tsx.bak.1771616423:133:        <Link className="underline hover:text-gray-800" href="/">
+./app/parts/[mpn]/page.tsx.bak.1771616423:137:        <Link className="underline hover:text-gray-800" href="/grid">
+./app/parts/[mpn]/page.tsx.bak.1771616423:192:            {/* SEO-friendly fallback actions. You can later wire these into your cart system. */}
+./app/parts/[mpn]/page.tsx.bak.1771616423:193:            <Link
+./app/parts/[mpn]/page.tsx.bak.1771616423:194:              href={`/cart?add=${encodeURIComponent(mpnNorm)}&qty=1`}
+./app/parts/[mpn]/page.tsx.bak.1771616423:197:              Add to cart
+./app/parts/[mpn]/page.tsx.bak.1771616423:200:            <Link
+./app/parts/[mpn]/page.tsx.bak.1771616423:201:              href={`/cart?add=${encodeURIComponent(mpnNorm)}&qty=1&checkout=1`}
+./app/parts/[mpn]/page.tsx.bak.1771616423:235:                        <Link href={href} className="text-[13px] font-semibold text-blue-700 hover:underline">
+./app/parts/[mpn]/page.tsx.bak.1771616423:246:                        <Link
+./app/parts/[mpn]/AddToCartBox.client.tsx:80:        title={!inStock ? "Out of stock" : "Add to Cart"}
+./app/parts/[mpn]/AddToCartBox.client.tsx:82:        {adding ? "Adding..." : "Add to Cart"}
+./app/parts/[mpn]/AddToCartBox.client.tsx:85:      <Link href="/cart" className="text-[12px] text-blue-700 underline">
+./app/parts/[mpn]/AddToCartBox.client.tsx:86:        View cart
+./app/parts/[mpn]/page.tsx:10:  params,
+./app/parts/[mpn]/page.tsx:12:  params: MaybePromise<{ mpn: string }>;
+./app/parts/[mpn]/page.tsx:14:  const { mpn } = await params;
+./app/grid/page.tsx:127:    const res = await fetch(url, {
+./app/grid/page.tsx:141:  searchParams,
+./app/grid/page.tsx:143:  searchParams?: SP | Promise<SP>;
+./app/grid/page.tsx:145:  const spObj = (await Promise.resolve(searchParams)) || {};
+./app/grid/page.tsx:147:  // ---- parse & whitelist URL params -> API ----
+./app/grid/page.tsx:191:  const itemsUrl = new URL(`/api/grid/?${itemsParams.toString()}`, origin).toString();
+./app/grid/page.tsx:215:          ? `Non-JSON from /api/grid (status ${itemsJson?.status ?? itemsRes.status}, ct ${itemsJson?.ct})`
+./app/grid/PartsExplorer.client.tsx:5: * - Grid UI that fetches /api/grid
+./app/grid/PartsExplorer.client.tsx:9: *    1) Items:  /api/grid (NO facets)
+./app/grid/PartsExplorer.client.tsx:10: *    2) Facets (cached): /api/parts/facets  (fast; includes estimated totals)
+./app/grid/PartsExplorer.client.tsx:11: *    3) Search totals (optional): /api/grid?meta_only=1&total=1 (exact count for search mode)
+./app/grid/PartsExplorer.client.tsx:34:import { useRouter, usePathname, useSearchParams } from "next/navigation";
+./app/grid/PartsExplorer.client.tsx:388:  const router = useRouter();
+./app/grid/PartsExplorer.client.tsx:390:  const searchParams = useSearchParams();
+./app/grid/PartsExplorer.client.tsx:393:    return stableKeyFromSearchParamsString(searchParams?.toString() ?? "");
+./app/grid/PartsExplorer.client.tsx:394:  }, [searchParams]);
+./app/grid/PartsExplorer.client.tsx:401:    const sp = new URLSearchParams(searchParams?.toString() ?? "");
+./app/grid/PartsExplorer.client.tsx:426:  }, [props?.initial, searchParams]);
+./app/grid/PartsExplorer.client.tsx:588:      const url = `https://api.appliancepartgeeks.com/api/parts/for-model/${encodeURIComponent(modelNumber)}`;
+./app/grid/PartsExplorer.client.tsx:589:      const res = await fetch(url, {
+./app/grid/PartsExplorer.client.tsx:691:      const facetsUrl = `/api/parts/facets?${sp.toString()}`;
+./app/grid/PartsExplorer.client.tsx:694:        const res = await fetch(facetsUrl, {
+./app/grid/PartsExplorer.client.tsx:753:      const url = `${API_BASE}/api/grid/?${sp.toString()}`;
+./app/grid/PartsExplorer.client.tsx:756:        const res = await fetch(url, {
+./app/grid/PartsExplorer.client.tsx:807:      const itemsUrl = `${API_BASE}/api/grid/?${sp.toString()}`;
+./app/grid/PartsExplorer.client.tsx:810:        const res = await fetch(itemsUrl, {
+./app/grid/PartsExplorer.client.tsx:1169:              <div className="font-semibold mb-1">/api/grid error</div>
+./context/CartContext.tsx:33:  cartItems: CartItem[];
+./context/CartContext.tsx:34:  cartOpen: boolean;
+./context/CartContext.tsx:55:  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+./context/CartContext.tsx:57:  const [cartOpen, setCartOpen] = useState(false);
+./context/CartContext.tsx:64:    const storedCart = localStorage.getItem("cart");
+./context/CartContext.tsx:76:    localStorage.setItem("cart", JSON.stringify(cartItems));
+./context/CartContext.tsx:77:  }, [cartItems]);
+./context/CartContext.tsx:147:        cartItems,
+./context/CartContext.tsx:148:        cartOpen,

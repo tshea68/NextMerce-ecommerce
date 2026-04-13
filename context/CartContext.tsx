@@ -1,177 +1,101 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-
-/* =======================
-   TYPES
-======================= */
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 export type CartItem = {
-  id: string;
-  title: string;
+  mpn: string;
+  name: string;
   price: number;
-  image: string;
-  quantity: number;
-};
-
-export type WishlistItem = {
-  id: string;
-  title: string;
-  price: number;
-  image: string;
-  inStock?: boolean;
+  qty: number;
+  image?: string;
+  condition?: string;
+  is_refurb: boolean;
 };
 
 type CartContextType = {
-  /* Cart */
   cartItems: CartItem[];
-  cartOpen: boolean;
-  setCartOpen: (open: boolean) => void;
-  addToCart: (product: Omit<CartItem, "quantity">) => void;
-  removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-
-  /* Wishlist */
-  wishlistItems: WishlistItem[];
-  addToWishlist: (product: WishlistItem) => void;
-  removeFromWishlist: (id: string) => void;
-  clearWishlist: () => void;
-  isInWishlist: (id: string) => boolean;
+  addToCart: (newItem: CartItem) => void;
+  updateQty: (mpn: string, is_refurb: boolean, qty: number) => void;
+  removeFromCart: (mpn: string, is_refurb: boolean) => void;
+  clearCart: () => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
 
-/* =======================
-   PROVIDER
-======================= */
-
-export const CartProvider = ({ children }: { children: ReactNode }) => {
+export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-  const [cartOpen, setCartOpen] = useState(false);
-
-  /* =======================
-     LOAD FROM STORAGE
-  ======================= */
 
   useEffect(() => {
-    const storedCart = localStorage.getItem("cart");
-    const storedWishlist = localStorage.getItem("wishlist");
-
-    if (storedCart) setCartItems(JSON.parse(storedCart));
-    if (storedWishlist) setWishlistItems(JSON.parse(storedWishlist));
+    try {
+      const raw = localStorage.getItem("cartItems");
+      setCartItems(raw ? JSON.parse(raw) : []);
+    } catch {
+      setCartItems([]);
+    }
   }, []);
 
-  /* =======================
-     SAVE TO STORAGE
-  ======================= */
-
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
+    try {
+      localStorage.setItem("cartItems", JSON.stringify(cartItems));
+    } catch {
+      // ignore storage failures
+    }
   }, [cartItems]);
 
-  useEffect(() => {
-    localStorage.setItem("wishlist", JSON.stringify(wishlistItems));
-  }, [wishlistItems]);
-
-  /* =======================
-     CART FUNCTIONS
-  ======================= */
-
-  const addToCart = (product: Omit<CartItem, "quantity">) => {
+  function addToCart(newItem: CartItem) {
     setCartItems((prev) => {
-      const exists = prev.find((item) => item.id === product.id);
+      const idx = prev.findIndex(
+        (it) => it.mpn === newItem.mpn && it.is_refurb === newItem.is_refurb
+      );
 
-      if (exists) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        );
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy[idx] = {
+          ...copy[idx],
+          qty: copy[idx].qty + newItem.qty,
+        };
+        return copy;
       }
 
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, newItem];
     });
+  }
 
-    setCartOpen(true);
-  };
+  function updateQty(mpn: string, is_refurb: boolean, qty: number) {
+    const safeQty = Math.max(1, Number(qty) || 1);
 
-  const updateQuantity = (id: string, quantity: number) => {
     setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
+      prev.map((it) =>
+        it.mpn === mpn && it.is_refurb === is_refurb
+          ? { ...it, qty: safeQty }
+          : it
+      )
     );
-  };
+  }
 
-  const removeFromCart = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
+  function removeFromCart(mpn: string, is_refurb: boolean) {
+    setCartItems((prev) =>
+      prev.filter((it) => !(it.mpn === mpn && it.is_refurb === is_refurb))
+    );
+  }
 
-  /* =======================
-     WISHLIST FUNCTIONS
-  ======================= */
-
-  const addToWishlist = (product: WishlistItem) => {
-    setWishlistItems((prev) => {
-      const exists = prev.find((item) => item.id === product.id);
-      if (exists) return prev;
-      return [...prev, product];
-    });
-  };
-
-  const removeFromWishlist = (id: string) => {
-    setWishlistItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const clearWishlist = () => {
-    setWishlistItems([]);
-  };
-
-  const isInWishlist = (id: string) => {
-    return wishlistItems.some((item) => item.id === id);
-  };
-
-  /* =======================
-     PROVIDER VALUE
-  ======================= */
+  function clearCart() {
+    setCartItems([]);
+  }
 
   return (
     <CartContext.Provider
-      value={{
-        /* Cart */
-        cartItems,
-        cartOpen,
-        setCartOpen,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-
-        /* Wishlist */
-        wishlistItems,
-        addToWishlist,
-        removeFromWishlist,
-        clearWishlist,
-        isInWishlist,
-      }}
+      value={{ cartItems, addToCart, updateQty, removeFromCart, clearCart }}
     >
       {children}
     </CartContext.Provider>
   );
-};
+}
 
-/* =======================
-   HOOK
-======================= */
-
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart must be used inside CartProvider");
+export function useCart() {
+  const ctx = useContext(CartContext);
+  if (!ctx) {
+    throw new Error("useCart must be used inside <CartProvider>");
   }
-  return context;
-};
+  return ctx;
+}

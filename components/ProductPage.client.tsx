@@ -220,7 +220,7 @@ function MiniScrollSection({
 
 export default function ProductPageClient({ vm }: { vm: ProductVM }) {
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addToCart: addItem } = useCart();
 
   const mpn = vm.mpn || vm.part_number || "";
   const title = titleFor(vm);
@@ -365,13 +365,12 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
       setBusy(true);
       addItem({
         mpn,
-        title,
+        name: title,
         price: asNumber(vm.price) ?? 0,
-        image_url: vm.image_url || "",
-        brand: vm.brand || "",
-        quantity: qty,
+        image: vm.image_url || "",
+        qty,
         is_refurb: !!vm.is_refurb,
-      } as any);
+      });
     } finally {
       setBusy(false);
     }

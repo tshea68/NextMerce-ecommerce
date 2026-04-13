@@ -10,6 +10,12 @@ type BrandMeta = {
   label: string | null;
 };
 
+type CompatibleBrandMapRow = {
+  mapped_brand_norm: string | null;
+  mapped_display: string | null;
+  is_valid: boolean | null;
+};
+
 function normAlnum(s: string) {
   return String(s ?? "").trim().replace(/[^A-Za-z0-9._-]+/g, "");
 }
@@ -203,16 +209,43 @@ async function fetchBrandMetaMap(brands: string[]) {
 
   const map = new Map<string, BrandMeta>();
   for (const row of data || []) {
-    const k = cleanStr(row?.brand_norm).toLowerCase();
+    const k = cleanStr((row as any)?.brand_norm).toLowerCase();
     if (!k) continue;
 
-    const image_url = cleanStr(row?.image_url) || null;
+    const image_url = cleanStr((row as any)?.image_url) || null;
     const label =
       cleanStr((row as any)?.brand_long) ||
       cleanStr((row as any)?.brand) ||
       (k ? toTitleCase(k) : null);
 
     map.set(k, { image_url, label: label || null });
+  }
+
+  return map;
+}
+
+async function fetchCompatibleBrandMap(rawValues: string[]) {
+  const supabase = getSupabase();
+  if (!supabase) return new Map<string, CompatibleBrandMapRow>();
+
+  const raws = Array.from(new Set(rawValues.map((v) => cleanStr(v)).filter(Boolean)));
+  if (!raws.length) return new Map<string, CompatibleBrandMapRow>();
+
+  const { data } = await supabase
+    .from("compatible_brand_map")
+    .select("raw_value,mapped_brand_norm,mapped_display,is_valid")
+    .in("raw_value", raws);
+
+  const map = new Map<string, CompatibleBrandMapRow>();
+  for (const row of data || []) {
+    const raw = cleanStr((row as any)?.raw_value);
+    if (!raw) continue;
+    map.set(raw, {
+      mapped_brand_norm: cleanStr((row as any)?.mapped_brand_norm) || null,
+      mapped_display: cleanStr((row as any)?.mapped_display) || null,
+      is_valid:
+        typeof (row as any)?.is_valid === "boolean" ? (row as any).is_valid : null,
+    });
   }
 
   return map;
@@ -225,12 +258,27 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
   const { newPart, refurbOffers } = await fetchAlternates(primary.mpn_norm);
   const primaryRow = primary.row;
 
+  const effectiveOffer = primary.source === "offers" ? primaryRow : null;
+  const effectivePart = primary.source === "parts" ? primaryRow : newPart;
+
+  const detailFields = resolveKeyPartFields({
+    kind: primary.source === "offers" ? "offer" : "part",
+    primary: primaryRow,
+    matchedPart: effectivePart ?? null,
+  });
+
+  const rawCompatibleBrands = normalizeArray(
+    effectivePart?.compatible_brands ?? primaryRow?.compatible_brands
+  );
+
+  const compatibleBrandMap = await fetchCompatibleBrandMap(rawCompatibleBrands);
+
   const brandCandidates = [
     primaryRow?.brand,
     newPart?.brand,
     ...((refurbOffers || []).map((o: any) => o?.brand)),
-    ...normalizeArray(newPart?.compatible_brands),
-    ...normalizeArray(primaryRow?.compatible_brands),
+    ...rawCompatibleBrands,
+    ...Array.from(compatibleBrandMap.values()).map((row) => row.mapped_brand_norm),
   ]
     .map((x) => cleanStr(x))
     .filter(Boolean);
@@ -246,21 +294,24 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     const raw = cleanStr(brand);
     if (!raw) return null;
 
+    const mapped = compatibleBrandMap.get(raw);
+    if (mapped) {
+      if (mapped.is_valid === false) return null;
+      if (mapped.mapped_display) return mapped.mapped_display;
+
+      const mappedNorm = brandNorm(mapped.mapped_brand_norm);
+      if (mappedNorm) {
+        const meta = brandMetaMap.get(mappedNorm);
+        if (meta?.label) return meta.label;
+      }
+    }
+
     const norm = brandNorm(raw);
-    const mapped = norm ? brandMetaMap.get(norm)?.label ?? null : null;
-    if (mapped) return mapped;
+    const meta = norm ? brandMetaMap.get(norm) : null;
+    if (meta?.label) return meta.label;
 
-    return toTitleCase(raw);
+    return toTitleCase(raw.replace(/[_-]+/g, " "));
   };
-
-  const effectiveOffer = primary.source === "offers" ? primaryRow : null;
-  const effectivePart = primary.source === "parts" ? primaryRow : newPart;
-
-  const detailFields = resolveKeyPartFields({
-    kind: primary.source === "offers" ? "offer" : "part",
-    primary: primaryRow,
-    matchedPart: effectivePart ?? null,
-  });
 
   // Identity: always the route/primary record first.
   const displayMpn =
@@ -294,10 +345,6 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
             effectivePart?.canonical_part_type
     ) || null;
 
-  const rawCompatibleBrands = normalizeArray(
-    effectivePart?.compatible_brands ?? primaryRow?.compatible_brands
-  );
-
   const compatibleBrands = Array.from(
     new Set(
       rawCompatibleBrands
@@ -306,7 +353,6 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     )
   );
 
-  // Simple breadcrumb: Home / MPN
   const breadcrumb_items = [
     { label: "Home", href: "/" },
     ...(displayMpn ? [{ label: displayMpn }] : []),
@@ -316,8 +362,6 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     mpn: displayMpn || null,
     part_number: displayMpn || null,
 
-    // For offers: do NOT pass parts-table title_display/feed_title through.
-    // Let the client helper build a clean title from the offer identity + enrichment.
     title:
       primary.source === "offers"
         ? null

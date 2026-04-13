@@ -1,0 +1,7 @@
+middleware.ts
+next.config.ts
+package-lock.json
+package.json
+postcss.config.mjs
+tailwind.config.ts
+tsconfig.json
