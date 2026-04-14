@@ -101,44 +101,6 @@ function buildBreadcrumbSchema(model: AnyObj | null, modelNumber: string) {
   };
 }
 
-function buildModelEntitySchema(model: AnyObj | null, modelNumber: string, url: string) {
-  const brand = cleanStr(model?.brand);
-  const applianceType = cleanStr(model?.appliance_type);
-  const modelNum = cleanStr(model?.model_number) || modelNumber;
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: [brand, modelNum, applianceType].filter(Boolean).join(" "),
-    url,
-    brand: brand
-      ? {
-          "@type": "Brand",
-          name: brand,
-        }
-      : undefined,
-    additionalProperty: [
-      ...(modelNum
-        ? [
-            {
-              "@type": "PropertyValue",
-              name: "Model Number",
-              value: modelNum,
-            },
-          ]
-        : []),
-      ...(applianceType
-        ? [
-            {
-              "@type": "PropertyValue",
-              name: "Appliance Type",
-              value: applianceType,
-            },
-          ]
-        : []),
-    ],
-  };
-}
 
 function buildItemListSchema(parts: AnyObj[], modelNumber: string) {
   const items = parts
@@ -218,10 +180,6 @@ export default async function ModelPage({
     ? buildBreadcrumbSchema(model, modelNumber)
     : null;
 
-  const modelEntitySchema = modelNumber
-    ? buildModelEntitySchema(model, modelNumber, canonicalUrl)
-    : null;
-
   const itemListSchema =
     modelNumber && parts.all.length
       ? buildItemListSchema(parts.all.slice(0, 50), modelNumber)
@@ -230,7 +188,6 @@ export default async function ModelPage({
   return (
     <>
       <JsonLd data={breadcrumbSchema} />
-      <JsonLd data={modelEntitySchema} />
       <JsonLd data={itemListSchema} />
       <ModelPageClient />
     </>
