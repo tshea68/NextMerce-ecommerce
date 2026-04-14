@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import ProductPageClient, { type ProductVM } from "./ProductPage.client";
 import { resolveKeyPartFields } from "@/lib/product-detail-fields";
+import JsonLd from "@/components/seo/JsonLd";
+import { buildBreadcrumbSchema, buildProductSchema } from "@/lib/seo/schema";
 
 type Kind = "parts" | "offers";
 
@@ -313,12 +315,10 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     return toTitleCase(raw.replace(/[_-]+/g, " "));
   };
 
-  // Identity: always the route/primary record first.
   const displayMpn =
     cleanStr(primaryRow?.mpn) ||
     cleanStr(props.slug);
 
-  // Enrichment only.
   const brand =
     cleanStr(primaryRow?.brand) ||
     cleanStr(effectivePart?.brand) ||
@@ -421,5 +421,26 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     reliable: null,
   };
 
-  return <ProductPageClient vm={vm} />;
+  const SITE_URL =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://next.appliancepartgeeks.com";
+
+  const schemaMpn = vm?.mpn || vm?.part_number || "";
+  const detailPath = vm?.is_refurb
+    ? `/offers/${encodeURIComponent(schemaMpn)}`
+    : `/parts/${encodeURIComponent(schemaMpn)}`;
+
+  const canonicalUrl = `${SITE_URL.replace(/\/+$/, "")}${detailPath}`;
+
+  const productSchema = buildProductSchema(vm, canonicalUrl);
+  const breadcrumbSchema = buildBreadcrumbSchema(vm?.breadcrumb_items || null, SITE_URL);
+
+  return (
+    <>
+      <JsonLd data={productSchema} />
+      <JsonLd data={breadcrumbSchema} />
+      <ProductPageClient vm={vm} />
+    </>
+  );
 }
