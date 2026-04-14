@@ -10,11 +10,7 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
 
   // ✅ stop template lint from failing builds while we refactor
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
-  // ✅ stop template TS errors from failing builds while we refactor
+// ✅ stop template TS errors from failing builds while we refactor
   typescript: {
     ignoreBuildErrors: true,
   },
