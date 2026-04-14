@@ -45,6 +45,44 @@ function isNlaishStatus(stockStatusCanon: any) {
   );
 }
 
+function getNewPartAvailability(item: any): {
+  label: string;
+  qty: number | null;
+  tone: "in_stock" | "special_order" | "nla";
+} {
+  const canon = String(item?.stock_status_canon ?? "").trim().toLowerCase();
+  const rank = Number(item?.availability_rank ?? NaN);
+  const qtyRaw = Number(item?.inventory_total ?? NaN);
+  const qty = Number.isFinite(qtyRaw) && qtyRaw > 0 ? qtyRaw : null;
+
+  const isNla =
+    rank === 9 ||
+    canon.includes("nla") ||
+    canon.includes("no longer available") ||
+    canon.includes("discontinued") ||
+    canon.includes("obsolete") ||
+    canon.includes("unavailable");
+
+  if (isNla) {
+    return { label: "No Longer Available", qty: null, tone: "nla" };
+  }
+
+  if (qty && qty > 0) {
+    return {
+      label: `In Stock · ${qty} Available`,
+      qty,
+      tone: "in_stock",
+    };
+  }
+
+  return {
+    label: newPartAvailability?.label ?? "Special Order",
+    qty: null,
+    tone: "special_order",
+  };
+}
+
+
 function titleCaseWords(s: string) {
   return String(s || "")
     .split(/\s+/)
@@ -201,6 +239,10 @@ type CartItemInput = {
 };
 
 export default function ProductCard({ item }: ProductCardProps) {
+  const newPartAvailability = !item?.is_refurb
+    ? getNewPartAvailability(item)
+    : null;
+
   const router = useRouter();
   const { addToCart } = useCart() as {
     addToCart: (item: CartItemInput) => void;
@@ -338,10 +380,7 @@ export default function ProductCard({ item }: ProductCardProps) {
         price: item?.price ?? null,
         status: asStatusForBadge(item, isOfferLike),
         qty:
-          Number(item?.availability_rank) === 1 &&
-          Number.isFinite(Number(item?.inventory_total))
-            ? Number(item.inventory_total)
-            : null,
+          getNewPartAvailability(item).qty,
         url: mpn ? `/parts/${encodeURIComponent(mpn)}` : null,
       },
       savings: {

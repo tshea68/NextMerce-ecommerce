@@ -609,7 +609,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
                 {!vm.is_refurb && isOrderable(vm) ? (
                   <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                    Special order item. Availability may depend on supplier lead time.
+                    Special order item. Usually ships within 30 days.
                   </div>
                 ) : null}
 
