@@ -8,7 +8,11 @@ export const metadata = {
     "The largest selection of new and refurbished OEM appliance parts anywhere.",
 };
 
-export default function HomePage() {
+export default function HomePage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <main className="flex-grow">
@@ -99,7 +103,30 @@ export default function HomePage() {
           <div className="w-[90%] max-w-[1200px] mx-auto">
             <div className="border-t border-white/10 mb-4" />
             <Suspense fallback={null}>
-              <PartsExplorer />
+              <PartsExplorer
+                initial={{
+                  condition:
+                    typeof searchParams?.condition === "string"
+                      ? searchParams.condition
+                      : "refurb",
+                  availability:
+                    typeof searchParams?.availability === "string"
+                      ? searchParams.availability
+                      : "all",
+                  q:
+                    typeof searchParams?.q === "string"
+                      ? searchParams.q
+                      : "",
+                  applianceType:
+                    typeof searchParams?.appliance_type === "string"
+                      ? searchParams.appliance_type
+                      : "",
+                  brands: [],
+                  partTypes: [],
+                  page: 1,
+                  perPage: 30,
+                }}
+              />
             </Suspense>
           </div>
           <div className="pb-10" />
