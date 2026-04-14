@@ -433,7 +433,47 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
 
   const canonicalUrl = `${SITE_URL.replace(/\/+$/, "")}${detailPath}`;
 
-  const productSchema = buildProductSchema(vm, canonicalUrl);
+  const productSchema = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+
+  name:
+    vm.title_display ||
+    vm.feed_title ||
+    vm.title ||
+    vm.part_type ||
+    vm.mpn ||
+    "Appliance Part",
+
+  sku: vm.mpn,
+
+  image: vm.image_url ? [vm.image_url] : undefined,
+
+  brand: vm.brand
+    ? {
+        "@type": "Brand",
+        name: vm.brand,
+      }
+    : undefined,
+
+  offers: {
+    "@type": "Offer",
+    url: canonicalUrl,
+    priceCurrency: "USD",
+    price: vm.price ?? "0",
+
+    availability:
+      vm.inventory_total && vm.inventory_total > 0
+        ? "https://schema.org/InStock"
+        : vm.availability_rank === 2
+        ? "https://schema.org/PreOrder"
+        : "https://schema.org/OutOfStock",
+
+    itemCondition: vm.is_refurb
+      ? "https://schema.org/RefurbishedCondition"
+      : "https://schema.org/NewCondition",
+  },
+};
   const breadcrumbSchema = buildBreadcrumbSchema(vm?.breadcrumb_items || null, SITE_URL);
 
   return (
