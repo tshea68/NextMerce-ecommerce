@@ -76,7 +76,7 @@ function getNewPartAvailability(item: any): {
   }
 
   return {
-    label: newPartAvailability?.label ?? "Special Order",
+    label: "Usually ships within 30 days",
     qty: null,
     tone: "special_order",
   };
