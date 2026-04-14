@@ -128,15 +128,14 @@ function isNlaish(vm: ProductVM) {
   );
 }
 
+function hasPositiveInventory(vm: ProductVM) {
+  return (asNumber(vm.inventory_total) ?? 0) > 0;
+}
+
 function isOrderable(vm: ProductVM) {
-  const s = normalize(vm.stock_status_canon);
-  return (
-    s.includes("special") ||
-    s.includes("order") ||
-    s.includes("backorder") ||
-    s.includes("preorder") ||
-    vm.availability_rank === 2
-  );
+  if (vm.is_refurb) return hasPositiveInventory(vm);
+  if (isNlaish(vm)) return false;
+  return !hasPositiveInventory(vm);
 }
 
 function titleFor(vm: ProductVM) {
@@ -293,7 +292,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
   const conditionText = vm.condition || (vm.is_refurb ? "Refurbished" : "Genuine OEM");
 
   const canPurchase = vm.is_refurb
-    ? (vm.inventory_total ?? 0) > 0
+    ? hasPositiveInventory(vm)
     : !isNlaish(vm);
 
   const badgeProps = useMemo(() => {
@@ -325,6 +324,13 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
       };
     }
 
+    const partQty = asNumber(vm.inventory_total);
+    const newStatus = isNlaish(vm)
+      ? "discontinued"
+      : partQty != null && partQty > 0
+      ? "in_stock"
+      : "special_order";
+
     return {
       mode: "part" as const,
       refurbSummary: {
@@ -342,15 +348,8 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
       },
       newSummary: {
         price: asNumber(vm.price),
-        status: isNlaish(vm)
-          ? "discontinued"
-          : isOrderable(vm)
-          ? "special_order"
-          : normalize(vm.stock_status_canon).includes("in stock") ||
-            (vm.inventory_total ?? 0) > 0
-          ? "in_stock"
-          : "unknown",
-        qty: vm.inventory_total,
+        status: newStatus,
+        qty: partQty != null && partQty > 0 ? partQty : null,
         url: mpn ? `/parts/${encodeURIComponent(mpn)}` : null,
       },
       savings: {
