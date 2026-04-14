@@ -67,9 +67,9 @@ function getNewPartAvailability(item: any): {
     return { label: "No Longer Available", qty: null, tone: "nla" };
   }
 
-  if (qty && qty > 0) {
+  if (qty) {
     return {
-      label: `In Stock · ${qty} Available`,
+      label: `In Stock · ${fmtCount(qty)} Available`,
       qty,
       tone: "in_stock",
     };
@@ -188,40 +188,16 @@ function asStatusForBadge(
 ): "in_stock" | "special_order" | "discontinued" | "unavailable" | "unknown" {
   if (isOfferLike) return "unknown";
 
-  if (item?.is_nla === true || isNlaishStatus(item?.stock_status_canon)) {
+  const qty = Number(item?.inventory_total ?? NaN);
+  const hasQty = Number.isFinite(qty) && qty > 0;
+
+  if (item?.is_nla === true || isNlaishStatus(item?.stock_status_canon) || Number(item?.availability_rank) === 9) {
     return "discontinued";
   }
 
-  const rank = Number(item?.availability_rank);
-  if (rank === 1) return "in_stock";
-  if (rank === 2) return "special_order";
+  if (hasQty) return "in_stock";
 
-  const canon = normalize(item?.stock_status_canon);
-  if (
-    canon.includes("discontinued") ||
-    canon.includes("unavailable") ||
-    canon.includes("nla") ||
-    canon.includes("no longer")
-  ) {
-    return "discontinued";
-  }
-  if (
-    canon.includes("special") ||
-    canon.includes("order") ||
-    canon.includes("backorder") ||
-    canon.includes("preorder")
-  ) {
-    return "special_order";
-  }
-  if (
-    canon.includes("in stock") ||
-    canon.includes("instock") ||
-    canon.includes("available")
-  ) {
-    return "in_stock";
-  }
-
-  return "unknown";
+  return "special_order";
 }
 
 type ProductCardProps = {
@@ -379,8 +355,7 @@ export default function ProductCard({ item }: ProductCardProps) {
       newSummary: {
         price: item?.price ?? null,
         status: asStatusForBadge(item, isOfferLike),
-        qty:
-          getNewPartAvailability(item).qty,
+        qty: getNewPartAvailability(item).qty,
         url: mpn ? `/parts/${encodeURIComponent(mpn)}` : null,
       },
       savings: {
