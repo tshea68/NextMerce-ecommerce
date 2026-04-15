@@ -7,7 +7,11 @@ type LogoItem = {
   name: string;
 };
 
-const ENDPOINT = "/api/brand-logos";
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com"
+).replace(/\/+$/, "");
+
+const ENDPOINT = `${API_BASE}/api/brand-logos`;
 
 function coerceLogos(data: any): LogoItem[] {
   const arr = Array.isArray(data)
@@ -57,7 +61,6 @@ export default function BrandLogoSliderVertical() {
         setErr(null);
 
         const r = await fetch(ENDPOINT, {
-          credentials: "same-origin",
           cache: "no-store",
         });
 
