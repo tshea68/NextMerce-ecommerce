@@ -241,5 +241,9 @@ export default async function GridPage({
         }
       : undefined;
 
-  return <PartsExplorer initial={initial} initialError={initialError} ssr={ssr} />;
+  return (
+    <div className="bg-white text-black min-h-screen">
+      <PartsExplorer initial={initial} initialError={initialError} ssr={ssr} />
+    </div>
+  );
 }
