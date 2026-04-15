@@ -75,17 +75,6 @@ function getBrandName(item: AnyItem) {
   return item?.brand || item?.brand_name || item?.manufacturer || "";
 }
 
-function getPartImageUrl(item: AnyItem) {
-  return (
-    item?.image_url ||
-    item?.image ||
-    item?.picture ||
-    item?.thumbnail ||
-    item?.photo_url ||
-    ""
-  );
-}
-
 function getModelImageUrl(item: AnyItem) {
   return item?.model_image_url || item?.image_url || item?.image || "";
 }
@@ -158,7 +147,7 @@ function SearchThumb({
   const canTryPartImage = !!(imageUrl || imageKey || mpn);
 
   return (
-    <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-white">
+    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
       {!useLogoFallback && canTryPartImage ? (
         <PartImage
           imageUrl={imageUrl}
@@ -173,7 +162,7 @@ function SearchThumb({
         <img
           src={logoFallback}
           alt={title}
-          className="max-h-10 max-w-[60px] object-contain"
+          className="max-h-12 max-w-[70px] object-contain"
           loading="lazy"
         />
       ) : (
@@ -334,35 +323,48 @@ export default function SearchOverlay({ open, onClose }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 p-4 md:p-8">
-      <div className="relative mx-auto mt-6 w-full max-w-5xl">
-        <div className="overflow-hidden rounded-2xl bg-white shadow-xl">
-          <div className="border-b px-6 pt-6 pb-4 md:px-8 md:pt-8">
-            <div className="flex items-center rounded-lg border px-4 py-3">
-              <Search size={17} className="text-gray-600" />
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm p-4 md:p-8">
+      <div className="relative mx-auto mt-8 w-full max-w-6xl">
+        <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <div className="border-b border-black/10 px-6 pt-6 pb-5 md:px-10 md:pt-8 md:pb-6">
+            <div className="mb-4">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-blue-700">
+                Search Appliance Part Geeks
+              </div>
+              <h2 className="mt-2 text-2xl font-bold text-black md:text-3xl">
+                Find your model or part fast
+              </h2>
+              <p className="mt-2 text-sm text-black/60 md:text-[15px]">
+                Search by model number, part number, brand, appliance type, or
+                part type.
+              </p>
+            </div>
+
+            <div className="flex items-center rounded-2xl border border-black/15 bg-white px-5 py-4 shadow-sm transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+              <Search size={20} className="shrink-0 text-black/60" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="ml-2 flex-1 bg-transparent text-black outline-none"
-                placeholder="Search by model number, MPN, brand, appliance type, or part type"
+                className="ml-3 flex-1 bg-transparent text-[16px] text-black outline-none placeholder:text-black/40"
+                placeholder="Search by model number, part number (MPN), brand, or appliance type"
               />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
               {[
-                { key: "all", label: "All" },
+                { key: "all", label: "All Results" },
                 { key: "models", label: "Models" },
                 { key: "products", label: "Parts" },
               ].map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
-                  className={`rounded-md border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                     activeTab === tab.key
-                      ? "border-blue-700 bg-blue-100 text-blue-700"
-                      : "border-gray-400 text-black hover:border-blue-700 hover:bg-blue-100"
+                      ? "border-blue-700 bg-blue-700 text-white shadow-sm"
+                      : "border-gray-300 bg-white text-black hover:border-blue-700 hover:text-blue-700"
                   }`}
                 >
                   {tab.label}
@@ -371,33 +373,41 @@ export default function SearchOverlay({ open, onClose }: Props) {
             </div>
           </div>
 
-          <div className="max-h-[65vh] overflow-y-auto px-6 py-6 md:px-8 md:py-8">
+          <div className="max-h-[70vh] overflow-y-auto px-8 py-8 md:px-10 md:py-10">
             {loading && !hasAny ? (
-              <div className="flex min-h-[180px] items-center justify-center">
-                <p className="italic text-gray-500">Searching…</p>
+              <div className="flex min-h-[220px] items-center justify-center">
+                <p className="text-[15px] text-gray-500">Searching…</p>
               </div>
             ) : showEmptyPrompt ? (
-              <div className="flex min-h-[220px] items-center justify-center">
-                <p className="text-center italic text-gray-500">
-                  Start typing a model number, part number, or keyword.
-                </p>
+              <div className="flex min-h-[260px] items-center justify-center">
+                <div className="max-w-xl text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                    <Search size={22} />
+                  </div>
+                  <p className="text-[16px] text-gray-600">
+                    Start typing a model number, part number, or keyword to see
+                    matching models and parts.
+                  </p>
+                </div>
               </div>
             ) : showNoResults ? (
-              <div className="flex min-h-[220px] items-center justify-center">
-                <p className="text-center italic text-gray-500">
-                  No matching results found.
-                </p>
+              <div className="flex min-h-[260px] items-center justify-center">
+                <div className="max-w-xl text-center">
+                  <p className="text-[16px] text-gray-600">
+                    No matching results found.
+                  </p>
+                </div>
               </div>
             ) : showResults ? (
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {(activeTab === "all" || activeTab === "models") && (
                   <section>
-                    <h3 className="mb-4 text-[20px] font-bold text-black/80">
+                    <h3 className="mb-5 text-[22px] font-semibold text-black">
                       Models
                     </h3>
 
                     {modelResults.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {modelResults.map((m, i) => {
                           const model =
                             m?.model_number || m?.model || m?.number || "";
@@ -413,7 +423,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                               onClick={onClose}
                               className="block"
                             >
-                              <div className="group cursor-pointer rounded-lg border border-gray-100 p-3 hover:bg-gray-100">
+                              <div className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-md">
                                 <div className="flex items-start gap-4">
                                   {modelImage ? (
                                     <SearchThumb
@@ -423,16 +433,16 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                       isModel
                                     />
                                   ) : logoFallback ? (
-                                    <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-white">
+                                    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                                       <img
                                         src={logoFallback}
                                         alt={brand || "Brand"}
-                                        className="max-h-10 max-w-[60px] object-contain"
+                                        className="max-h-12 max-w-[70px] object-contain"
                                         loading="lazy"
                                       />
                                     </div>
                                   ) : (
-                                    <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-white">
+                                    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                                       <div className="text-[11px] text-gray-400">
                                         No image
                                       </div>
@@ -440,7 +450,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                   )}
 
                                   <div className="min-w-0 flex-1">
-                                    <div className="text-lg font-medium text-gray-900 group-hover:text-blue-700">
+                                    <div className="text-lg font-semibold text-gray-900 group-hover:text-blue-700">
                                       {model}
                                     </div>
                                     <div className="mt-1 text-sm text-gray-600">
@@ -459,7 +469,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                         })}
                       </div>
                     ) : (
-                      <p className="italic text-gray-500">
+                      <p className="text-[15px] text-gray-500">
                         No matching models found.
                       </p>
                     )}
@@ -468,7 +478,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
 
                 {(activeTab === "all" || activeTab === "products") && (
                   <section>
-                    <h3 className="mb-4 text-[20px] font-bold text-black/80">
+                    <h3 className="mb-5 text-[22px] font-semibold text-black">
                       Parts
                     </h3>
 
@@ -476,7 +486,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                       ? combinedPartResults
                       : partsTabResults
                     ).length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {(activeTab === "all"
                           ? combinedPartResults
                           : partsTabResults
@@ -490,7 +500,6 @@ export default function SearchOverlay({ open, onClose }: Props) {
                           const title = makePartTitle(p, mpn) || mpn;
                           const price =
                             p?.price ?? p?.sale_price ?? p?.current_price;
-                          const brand = getBrandName(p);
                           const logoFallback = getBrandLogoUrl(p);
                           const label = partStatusLabel(p);
                           const refurbStyle = detectRefurb(p);
@@ -502,7 +511,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                               onClick={onClose}
                               className="block"
                             >
-                              <div className="group cursor-pointer rounded-lg border border-gray-100 p-3 hover:bg-gray-100">
+                              <div className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-md">
                                 <div className="flex items-start gap-4">
                                   <SearchThumb
                                     item={p}
@@ -511,15 +520,15 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                   />
 
                                   <div className="min-w-0 flex-1">
-                                    <div className="text-lg font-medium text-gray-900 group-hover:text-blue-700">
+                                    <div className="text-lg font-semibold text-gray-900 group-hover:text-blue-700">
                                       {title}
                                     </div>
                                     <div className="mt-1 text-sm text-gray-600">
                                       {mpn}
                                     </div>
-                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-500">
                                       <span
-                                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                                           refurbStyle
                                             ? "bg-red-100 text-red-700"
                                             : "bg-blue-100 text-blue-700"
@@ -527,7 +536,11 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                       >
                                         {label}
                                       </span>
-                                      {price ? <span>{priceFmt(price)}</span> : null}
+                                      {price ? (
+                                        <span className="text-[15px] font-semibold text-green-700">
+                                          {priceFmt(price)}
+                                        </span>
+                                      ) : null}
                                     </div>
                                   </div>
                                 </div>
@@ -537,7 +550,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                         })}
                       </div>
                     ) : (
-                      <p className="italic text-gray-500">
+                      <p className="text-[15px] text-gray-500">
                         No matching parts found.
                       </p>
                     )}
@@ -550,7 +563,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
 
         <button
           onClick={onClose}
-          className="absolute -top-4 -right-4 rounded-full border border-gray-300 bg-white p-2 shadow-md hover:bg-gray-100"
+          className="absolute -top-4 -right-4 rounded-full border border-gray-300 bg-white p-2.5 shadow-md transition hover:bg-gray-100"
           aria-label="Close search"
         >
           <X size={20} className="text-black" />
