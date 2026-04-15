@@ -38,24 +38,18 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  className="group flex h-14 w-full max-w-[960px] items-center rounded-2xl border border-black/15 bg-white px-5 text-left shadow-sm transition-all duration-200 hover:border-blue-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="group flex h-14 w-full max-w-[960px] items-center rounded-2xl border-2 border-black/25 bg-white px-5 text-left shadow-md transition-all duration-200 hover:border-black/45 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 >
-                  <Search className="mr-3 h-5 w-5 shrink-0 text-black/50 transition-colors duration-200 group-hover:text-blue-600" />
+                  <Search className="mr-3 h-5 w-5 shrink-0 text-black/65 transition-colors duration-200 group-hover:text-blue-700" />
 
-                  <span className="truncate text-[15px] text-black/65">
+                  <span className="truncate text-[15px] font-medium text-black/70">
                     Search by model number, part number (MPN), brand, or appliance type
                   </span>
 
-                  <span className="ml-auto hidden items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 lg:inline-flex">
+                  <span className="ml-auto hidden items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 lg:inline-flex">
                     Search
                   </span>
                 </button>
-
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-black/55">
-                  <span>New OEM parts</span>
-                  <span>Refurbished savings</span>
-                  <span>Model + MPN lookup</span>
-                </div>
               </div>
             </div>
 
@@ -76,7 +70,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl border border-black/15 bg-white px-3 py-2.5 text-sm font-medium text-black shadow-sm transition hover:bg-black/[0.03]"
+                className="inline-flex items-center gap-2 rounded-xl border border-black/20 bg-white px-3 py-2.5 text-sm font-medium text-black shadow-sm transition hover:bg-black/[0.03]"
                 aria-label="Open search"
               >
                 <Search className="h-4 w-4" />
