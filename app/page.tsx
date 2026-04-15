@@ -8,11 +8,13 @@ export const metadata = {
     "The largest selection of new and refurbished OEM appliance parts anywhere.",
 };
 
-export default function HomePage({
+export default async function HomePage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const sp = (await searchParams) ?? {};
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <main className="flex-grow">
@@ -106,20 +108,15 @@ export default function HomePage({
               <PartsExplorer
                 initial={{
                   condition:
-                    typeof searchParams?.condition === "string"
-                      ? searchParams.condition
-                      : "refurb",
+                    typeof sp.condition === "string" ? sp.condition : "refurb",
                   availability:
-                    typeof searchParams?.availability === "string"
-                      ? searchParams.availability
+                    typeof sp.availability === "string"
+                      ? sp.availability
                       : "all",
-                  q:
-                    typeof searchParams?.q === "string"
-                      ? searchParams.q
-                      : "",
+                  q: typeof sp.q === "string" ? sp.q : "",
                   applianceType:
-                    typeof searchParams?.appliance_type === "string"
-                      ? searchParams.appliance_type
+                    typeof sp.appliance_type === "string"
+                      ? sp.appliance_type
                       : "",
                   brands: [],
                   partTypes: [],
