@@ -1,5 +1,6 @@
 import ModelPageClient from "./ModelPage.client";
 import JsonLd from "@/components/seo/JsonLd";
+import { buildModelItemListSchema } from "@/lib/seo/schema";
 
 const API_BASE = (
   process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com"
@@ -102,37 +103,6 @@ function buildBreadcrumbSchema(model: AnyObj | null, modelNumber: string) {
 }
 
 
-function buildItemListSchema(parts: AnyObj[], modelNumber: string) {
-  const items = parts
-    .map((p, idx) => {
-      const mpn =
-        cleanStr(p?.mpn) ||
-        cleanStr(p?.MPN) ||
-        cleanStr(p?.part_number) ||
-        cleanStr(p?.partNumber) ||
-        cleanStr(p?.mpn_raw);
-
-      if (!mpn) return null;
-
-      return {
-        "@type": "ListItem",
-        position: idx + 1,
-        url: `${SITE_URL}/parts/${encodeURIComponent(mpn)}`,
-        name:
-          cleanStr(p?.title) ||
-          cleanStr(p?.name) ||
-          mpn,
-      };
-    })
-    .filter(Boolean);
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: `${modelNumber} replacement parts`,
-    itemListElement: items,
-  };
-}
 
 export async function generateMetadata({
   searchParams,
@@ -182,7 +152,7 @@ export default async function ModelPage({
 
   const itemListSchema =
     modelNumber && parts.all.length
-      ? buildItemListSchema(parts.all.slice(0, 50), modelNumber)
+      ? buildModelItemListSchema(parts.all.slice(0, 50), SITE_URL, modelNumber)
       : null;
 
   return (

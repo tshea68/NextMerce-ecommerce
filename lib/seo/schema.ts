@@ -124,3 +124,49 @@ export function buildBreadcrumbSchema(
     })),
   };
 }
+
+export function buildModelItemListSchema(
+  parts: Array<Record<string, any>> | null | undefined,
+  siteUrl: string,
+  modelNumber: string
+): Record<string, any> | null {
+  const rows = Array.isArray(parts) ? parts : [];
+  if (!rows.length || !modelNumber) return null;
+
+  const itemListElement = rows
+    .map((p, idx) => {
+      const mpn =
+        String(
+          p?.mpn ??
+          p?.MPN ??
+          p?.part_number ??
+          p?.partNumber ??
+          p?.mpn_raw ??
+          ""
+        ).trim();
+
+      if (!mpn) return null;
+
+      const name =
+        String(p?.title ?? p?.name ?? mpn).trim() || mpn;
+
+      return {
+        "@type": "ListItem",
+        position: idx + 1,
+        url: `${siteUrl.replace(/\/+$/, "")}/parts/${encodeURIComponent(mpn)}`,
+        name,
+      };
+    })
+    .filter(Boolean);
+
+  if (!itemListElement.length) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `Replacement parts for ${modelNumber}`,
+    numberOfItems: itemListElement.length,
+    itemListElement,
+  };
+}
+
