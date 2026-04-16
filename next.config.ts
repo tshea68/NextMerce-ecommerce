@@ -1,18 +1,22 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // ✅ makes `next build` generate a static site in /out
-
-  // ✅ Cloudflare Pages + static export + next/image
   images: { unoptimized: true },
 
-  // ✅ avoids edge cases on some static hosts (safe on Pages)
   trailingSlash: false,
 
-  // ✅ stop template lint from failing builds while we refactor
-// ✅ stop template TS errors from failing builds while we refactor
   typescript: {
     ignoreBuildErrors: true,
+  },
+
+  async redirects() {
+    return [
+      {
+        source: "/refurbs/:mpn",
+        destination: "/offers/:mpn",
+        permanent: true,
+      },
+    ];
   },
 };
 
