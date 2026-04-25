@@ -3,14 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 
 export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const result: any = {
     hasSupabaseUrl: !!supabaseUrl,
-    hasSupabaseAnonKey: !!supabaseKey,
+    hasSupabaseServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    usingServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     offersCount: null,
     offersSample: null,
     offersError: null,
+    sampleError: null,
   };
 
   if (!supabaseUrl || !supabaseKey) {
@@ -26,7 +31,8 @@ export async function GET() {
     .select("*", { count: "exact", head: true })
     .gt("price", 0)
     .gt("inventory_total", 0)
-    .not("mpn_norm", "is", null);
+    .not("mpn_norm", "is", null)
+    .not("mpn_norm", "eq", "");
 
   result.offersCount = count;
   result.offersError = countError
@@ -40,10 +46,11 @@ export async function GET() {
 
   const { data, error: sampleError } = await supabase
     .from("offers")
-    .select("mpn, mpn_norm, price, inventory_total")
+    .select("mpn, mpn_norm, price, inventory_total, created_at")
     .gt("price", 0)
     .gt("inventory_total", 0)
     .not("mpn_norm", "is", null)
+    .not("mpn_norm", "eq", "")
     .limit(5);
 
   result.offersSample = data;
