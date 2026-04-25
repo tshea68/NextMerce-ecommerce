@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const baseUrl = "https://appliancepartgeeks.com";
 
-export const revalidate = 86400;
+export const revalidate = 86400; // refresh daily
 
 function enc(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -26,15 +26,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseKey) return urls;
+  if (!supabaseUrl || !supabaseKey) {
+    return urls;
+  }
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false },
   });
 
-  const { data: offers } = await supabase
+  const { data: offers, error: offersError } = await supabase
     .from("offers")
     .select("mpn_norm, mpn, created_at")
     .not("mpn_norm", "is", null)
@@ -44,16 +48,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .gt("inventory_total", 0)
     .limit(10000);
 
-  for (const offer of offers || []) {
-    const mpn = enc(offer.mpn_norm || offer.mpn);
-    if (!mpn) continue;
+  if (!offersError) {
+    const seen = new Set<string>();
 
-    urls.push({
-      url: `${baseUrl}/offers/${mpn}`,
-      lastModified: offer.created_at || now,
-      changeFrequency: "daily",
-      priority: 0.8,
-    });
+    for (const offer of offers || []) {
+      const mpn = enc(offer.mpn_norm || offer.mpn);
+      if (!mpn) continue;
+
+      const url = `${baseUrl}/offers/${mpn}`;
+      if (seen.has(url)) continue;
+      seen.add(url);
+
+      urls.push({
+        url,
+        lastModified: offer.created_at || now,
+        changeFrequency: "daily",
+        priority: 0.8,
+      });
+    }
   }
 
   return urls;
