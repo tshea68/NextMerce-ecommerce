@@ -11,14 +11,29 @@ function cleanUrl(u: unknown) {
   return s.length ? s : null;
 }
 
-type PartImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+type PartImageProps = Omit<
+  React.ImgHTMLAttributes<HTMLImageElement>,
+  "onClick"
+> & {
   imageUrl?: string | null;
+
+  /**
+   * Hides the hover overlay text only.
+   * Does not disable fullscreen when enableFullscreenPreview is true.
+   */
   disableHoverPreview?: boolean;
+
+  /**
+   * Fullscreen preview is opt-in.
+   * Use this on cards and product pages where we want a large image modal.
+   */
+  enableFullscreenPreview?: boolean;
 };
 
 export default function PartImage({
   imageUrl,
-  disableHoverPreview,
+  disableHoverPreview = false,
+  enableFullscreenPreview = false,
   alt = "",
   className = "",
   ...rest
@@ -35,6 +50,7 @@ export default function PartImage({
     () => cleanUrl(imageUrl) || FALLBACK_IMG,
     [imageUrl]
   );
+
   const [src, setSrc] = useState(initialSrc);
 
   useEffect(() => {
@@ -45,13 +61,38 @@ export default function PartImage({
     setSrc((prev) => (prev === FALLBACK_IMG ? prev : FALLBACK_IMG));
   };
 
+  const canOpenPreview = enableFullscreenPreview && src !== FALLBACK_IMG;
+
+  const openPreview = () => {
+    if (!canOpenPreview) return;
+    setModalOpen(true);
+  };
+
+  const closePreview = () => {
+    setModalOpen(false);
+  };
+
   return (
     <>
       <div
-        className={`relative inline-flex h-full w-full items-center justify-center overflow-hidden ${className}`}
-        onMouseEnter={() => setIsHovering(true)}
+        className={`relative inline-flex h-full w-full items-center justify-center overflow-hidden ${
+          canOpenPreview ? "cursor-zoom-in" : "cursor-default"
+        } ${className}`}
+        onMouseEnter={() => {
+          if (canOpenPreview) setIsHovering(true);
+        }}
         onMouseLeave={() => setIsHovering(false)}
-        onClick={() => setModalOpen(true)}
+        onClick={openPreview}
+        role={canOpenPreview ? "button" : undefined}
+        tabIndex={canOpenPreview ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (!canOpenPreview) return;
+
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setModalOpen(true);
+          }
+        }}
       >
         <img
           src={src}
@@ -61,7 +102,7 @@ export default function PartImage({
           {...rest}
         />
 
-        {!disableHoverPreview && (
+        {canOpenPreview && !disableHoverPreview && (
           <div
             className={[
               "pointer-events-none absolute inset-0 flex items-center justify-center",
@@ -77,31 +118,34 @@ export default function PartImage({
         )}
       </div>
 
-      {modalOpen &&
+      {canOpenPreview &&
+        modalOpen &&
         portalRoot &&
         createPortal(
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
-            onClick={() => setModalOpen(false)}
+            onClick={closePreview}
           >
             <div
-              className="relative w-[min(92vw,1100px)]"
+              className="relative w-[min(96vw,1350px)]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 type="button"
-                className="absolute -top-3 -right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-black text-sm font-bold text-white shadow-lg"
-                onClick={() => setModalOpen(false)}
+                className="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-black text-sm font-bold text-white shadow-lg"
+                onClick={closePreview}
+                aria-label="Close image preview"
               >
                 ×
               </button>
 
-              <div className="flex h-[min(85vh,800px)] w-full items-center justify-center overflow-hidden rounded-lg bg-white">
+              <div className="flex h-[min(90vh,950px)] w-full items-center justify-center overflow-hidden rounded-lg bg-white">
                 <img
                   src={src}
                   alt={alt}
-                  className="max-h-full max-w-full object-contain"
+                  className="h-full w-full object-contain p-6"
                   onError={handleImgError}
+                  draggable={false}
                 />
               </div>
             </div>
