@@ -26,3 +26,4 @@ _legacy/
 
 # local artifacts
 repo-snapshot.zip
+.vercel
