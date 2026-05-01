@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import HeaderMenu from "@/components/site/HeaderMenu";
 import SearchOverlay from "@/components/search/SearchOverlay";
+import TopBar from "@/components/site/TopBar";
 
 export default function Header() {
   const { cartItems } = useCart();
@@ -20,7 +21,8 @@ export default function Header() {
 
   return (
     <>
-      <header className="border-b border-black/10 bg-white text-black shadow-sm">
+      <TopBar />
+<header className="border-b border-black/10 bg-white text-black shadow-sm">
         <div className="mx-auto w-[96%] max-w-[1700px] px-4">
           <div className="flex min-h-[124px] items-center justify-between gap-4">
             <Link href="/" className="shrink-0">

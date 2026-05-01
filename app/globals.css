@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+@keyframes heroLogoPulse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -10px, 0) scale(1.03);
+  }
+}
+
+@keyframes heroLogoBloom {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.18);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-hero-logo-bloom {
+  animation: heroLogoBloom 11s ease-in-out both;
+}
+
+@keyframes brandLogoScroll {
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-brand-logo-scroll {
+  animation: brandLogoScroll 38s linear infinite;
+}
