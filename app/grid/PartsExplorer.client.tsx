@@ -384,6 +384,28 @@ function RadioDot({ checked }: { checked: boolean }) {
   );
 }
 
+
+
+function safeAvailabilityForCondition(condition: string, availability: string) {
+  // The backend combo condition=both&availability=in_stock can timeout.
+  // When showing combined new + refurbished results, force availability broad.
+  if (condition === "both") return "all";
+
+  if (condition === "new") {
+    return availability === "all" || availability === "in_stock"
+      ? availability
+      : "in_stock";
+  }
+
+  if (condition === "refurb") {
+    return availability === "all" || availability === "in_stock"
+      ? availability
+      : "in_stock";
+  }
+
+  return availability || "all";
+}
+
 export default function PartsExplorer(props: PartsExplorerProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -422,7 +444,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       100
     );
 
-    return { condition, q, availability, applianceType, brands, partTypes, page, perPage };
+    return { condition, q, availability: safeAvailabilityForCondition(condition, availability), applianceType, brands, partTypes, page, perPage };
   }, [props?.initial, searchParams]);
 
   const [condition, setCondition] = useState<Condition>(init.condition);
@@ -627,7 +649,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
     if (!searchMode) {
       sp.set("condition", condition);
-      sp.set("availability", availability);
+      sp.set("availability", safeAvailabilityForCondition(condition, availability));
 
       if (applianceType) sp.set("appliance_type", applianceType);
       for (const b of selectedBrands) sp.append("brands", b);
@@ -1044,6 +1066,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                   onClick={() => {
                     if (filtersDisabled) return;
                     setCondition(opt.value);
+                    if (opt.value === "both") setAvailability("all");
                     if (opt.value === "new") setAvailability("in_stock");
                     setPage(1);
                   }}

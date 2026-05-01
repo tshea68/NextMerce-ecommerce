@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
 import PartImage from "@/components/PartImage";
-import ComparisonBadge from "@/components/ComparisonBadge.client";
 
 function priceFmt(n: any) {
   const x =
@@ -299,10 +298,10 @@ export default function ProductCard({ item }: ProductCardProps) {
   }
 
   const cardBg = isNla
-    ? "bg-amber-50 border-amber-300"
+    ? "bg-amber-50 border-orange-300"
     : isOfferLike
-      ? "bg-blue-50 border-blue-300"
-      : "bg-white border-gray-200";
+      ? "bg-slate-50 border-orange-200"
+      : "bg-white border-orange-200";
 
   const badgeProps = useMemo(() => {
     if (isOfferLike) {
@@ -366,17 +365,8 @@ export default function ProductCard({ item }: ProductCardProps) {
   }, [isOfferLike, item, mpn]);
 
   return (
-    <div className={`border shadow-sm overflow-hidden ${cardBg}`}>
-      <ComparisonBadge
-        mode={badgeProps.mode}
-        variant="card"
-        mpn={mpn}
-        refurbSummary={badgeProps.refurbSummary}
-        newSummary={badgeProps.newSummary}
-        savings={badgeProps.savings}
-      />
-
-      <div className="px-4 py-3 flex flex-col lg:flex-row gap-4">
+    <div className={`overflow-hidden rounded-xl border shadow-sm transition-shadow hover:shadow-md ${cardBg}`}>
+      <div className="px-4 py-4 flex flex-col lg:flex-row gap-4">
         <div
           className="relative flex-shrink-0 flex flex-col items-center"
           style={{ width: "110px" }}
@@ -387,8 +377,20 @@ export default function ProductCard({ item }: ProductCardProps) {
               imageUrl={img}
               alt={headline}
               disableHoverPreview
-              className="w-[100px] h-[100px] border border-gray-200 rounded bg-white flex items-center justify-center"
+              className="w-[100px] h-[100px] border border-orange-200 rounded-lg bg-white flex items-center justify-center"
             />
+          </div>
+
+          <div className="mt-2 flex w-full justify-center text-center">
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide ${
+                isOfferLike
+                  ? "bg-orange-100 text-orange-800"
+                  : "bg-[#06254a] text-white"
+              }`}
+            >
+              {isOfferLike ? "OEM Refurbished" : "OEM New"}
+            </span>
           </div>
         </div>
 
@@ -397,38 +399,74 @@ export default function ProductCard({ item }: ProductCardProps) {
             <a
               href={detailHref}
               onClick={goToDetail}
-              className="text-[15px] font-semibold text-blue-700 leading-snug hover:text-blue-900 hover:underline focus:underline focus:outline-none cursor-pointer"
+              className="text-[15px] font-semibold text-[#06254a] leading-snug hover:text-orange-700 hover:underline focus:underline focus:outline-none cursor-pointer"
               aria-label={`View ${headline}`}
             >
-              {headline}
+              {headline}{" "}
+              <span className="text-[#06254a]">
+                [{isOfferLike ? "Refurbished" : "New"}]
+              </span>
             </a>
           </div>
 
           {compatibleBrands.length > 0 && (
-            <div className="text-[15px] font-semibold text-gray-900 leading-snug break-words">
+            <div className="text-[15px] font-semibold text-slate-900 leading-snug break-words">
               Compatible brands: {compatibleBrands.join(", ")}
             </div>
           )}
 
           {replaces.length > 0 && (
-            <div className="text-[12px] text-gray-700 leading-snug break-words">
-              <span className="font-semibold text-gray-900">Replaces:</span>{" "}
+            <div className="text-[12px] text-slate-700 leading-snug break-words">
+              <span className="font-semibold text-slate-900">Replaces:</span>{" "}
               {replaces.join(", ")}
             </div>
           )}
 
           {replacedBy && (
-            <div className="text-[12px] text-gray-700 leading-snug break-words">
-              <span className="font-semibold text-gray-900">Replaced by:</span>{" "}
-              <Link href={replacementHref} className="text-blue-700 underline font-semibold">
+            <div className="text-[12px] text-slate-700 leading-snug break-words">
+              <span className="font-semibold text-slate-900">Replaced by:</span>{" "}
+              <Link href={replacementHref} className="text-[#06254a] underline font-semibold hover:text-orange-700">
                 {replacedBy}
               </Link>
             </div>
           )}
 
+          {!isNla && (
+            <div className="mt-1 rounded-lg border border-orange-200 bg-white/80 p-2 text-[12px] leading-snug text-slate-700">
+              <div className="font-semibold text-emerald-700">
+                Inventory:{" "}
+                {isOfferLike
+                  ? Number.isFinite(Number(item?.inventory_total)) && Number(item?.inventory_total) > 0
+                    ? `${fmtCount(item.inventory_total)} available`
+                    : "Special order · generally ships within 30 days"
+                  : newPartAvailability?.qty
+                    ? `${fmtCount(newPartAvailability.qty)} available`
+                    : "Special order · generally ships within 30 days"}
+              </div>
+
+              <div className="mt-1 font-bold text-slate-950">
+                {isOfferLike ? (
+                  <>
+                    New OEM alternative:{" "}
+                    {item?.has_new_part === true ? "available" : "not currently available"}
+                  </>
+                ) : (
+                  <>
+                    Refurbished alternative:{" "}
+                    {Number.isFinite(Number(item?.refurb_count)) && Number(item?.refurb_count) > 0
+                      ? `${fmtCount(item.refurb_count)} available`
+                      : Number.isFinite(Number(item?.alternatives_count)) && Number(item?.alternatives_count) > 0
+                        ? `${fmtCount(item.alternatives_count)} available`
+                        : "not currently available"}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {compatibleModels.length > 0 && (
-            <div className="rounded border border-gray-200 bg-gray-50 p-2">
-              <div className="text-[12px] font-semibold text-gray-900 mb-1">
+            <div className="rounded border border-slate-200 bg-slate-50 p-2">
+              <div className="text-[12px] font-semibold text-slate-900 mb-1">
                 Compatible models ({fmtCount(compatibleModels.length)})
               </div>
               <div className="max-h-[84px] overflow-y-auto pr-1">
@@ -436,7 +474,7 @@ export default function ProductCard({ item }: ProductCardProps) {
                   {compatibleModels.map((model) => (
                     <span
                       key={model}
-                      className="inline-flex rounded border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700"
+                      className="inline-flex rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-700"
                     >
                       {model}
                     </span>
@@ -486,8 +524,8 @@ export default function ProductCard({ item }: ProductCardProps) {
                 isNla
                   ? "bg-gray-400 cursor-not-allowed"
                   : isOfferLike
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-blue-700 hover:bg-blue-800"
+                    ? "bg-[#06254a] hover:bg-[#031a35]"
+                    : "bg-[#06254a] hover:bg-[#031a35]"
               } text-white text-[12px] font-semibold rounded px-3 py-2`}
               onClick={handleAddToCart}
               disabled={isNla}
@@ -500,7 +538,7 @@ export default function ProductCard({ item }: ProductCardProps) {
           <a
             href={detailHref}
             onClick={goToDetail}
-            className="underline text-blue-700 text-[11px] font-medium hover:text-blue-900"
+            className="underline text-[#06254a] text-[11px] font-medium hover:text-orange-700"
           >
             View part
           </a>
