@@ -383,6 +383,7 @@ export default function ProductCard({ item }: ProductCardProps) {
         >
           <div className="relative flex items-center justify-center overflow-visible">
             <PartImage
+              enableFullscreenPreview
               imageUrl={img}
               alt={headline}
               disableHoverPreview

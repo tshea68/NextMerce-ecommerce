@@ -405,6 +405,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
           <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
               <PartImage
+              enableFullscreenPreview
                 imageUrl={vm.image_url || ""}
                 alt={title}
                 className="h-auto w-full object-contain"
