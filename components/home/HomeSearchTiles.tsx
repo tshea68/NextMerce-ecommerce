@@ -179,22 +179,52 @@ export default function HomeSearchTiles() {
   }, []);
 
   const topBrands = useMemo(() => {
-    const logoByNorm = new Map(
-      logos.map((logo) => [normalizeBrand(logo.name), logo]),
-    );
+    const logoByNorm = new Map<string, BrandLogo>();
 
-    return facets
+    for (const logo of logos) {
+      const key = normalizeBrand(logo.name);
+      if (!key || !logo.image_url) continue;
+
+      if (!logoByNorm.has(key)) {
+        logoByNorm.set(key, logo);
+      }
+    }
+
+    const seenBrands = new Set<string>();
+    const seenUrls = new Set<string>();
+
+    const rows = facets
+      .filter((facet) => Number(facet.count || 0) > 0)
       .map((facet) => {
-        const logo = logoByNorm.get(normalizeBrand(facet.value));
-        if (!logo) return null;
+        const brandKey = normalizeBrand(facet.value);
+        if (!brandKey || seenBrands.has(brandKey)) return null;
+
+        const logo = logoByNorm.get(brandKey);
+        if (!logo?.image_url) return null;
+
+        const urlKey = logo.image_url.trim().toLowerCase();
+        if (seenUrls.has(urlKey)) return null;
+
+        seenBrands.add(brandKey);
+        seenUrls.add(urlKey);
 
         return {
-          ...facet,
+          value: facet.value,
+          count: facet.count,
           logo,
         };
       })
-      .filter(Boolean)
-      .slice(0, 28) as Array<BrandFacet & { logo: BrandLogo }>;
+      .filter(Boolean) as Array<{
+        value: string;
+        count: number;
+        logo: BrandLogo;
+      }>;
+
+    return rows.sort((a, b) => {
+      const an = String(a.logo.name || a.value || "").toLowerCase();
+      const bn = String(b.logo.name || b.value || "").toLowerCase();
+      return an.localeCompare(bn);
+    });
   }, [facets, logos]);
 
   return (
@@ -247,9 +277,9 @@ export default function HomeSearchTiles() {
               </h3>
             </div>
 
-            <div className="max-h-[300px] overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="animate-brand-logo-scroll grid grid-cols-2 gap-x-3 gap-y-4 px-4 py-4">
-                {[...topBrands, ...topBrands].map((brand, index) => (
+            <div className="max-h-[300px] overflow-y-auto rounded-2xl border border-slate-200 bg-white pr-1">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 px-4 py-4">
+                {topBrands.map((brand, index) => (
                   <Link
                     key={`${brand.value}-${index}`}
                     href={`/?brands=${encodeURIComponent(brand.value)}`}
