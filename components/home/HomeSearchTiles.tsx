@@ -26,72 +26,72 @@ type BrandFacet = {
 const applianceTiles = [
   {
     label: "Washers",
-    value: "Washer",
+    value: "washer",
     img: `${ICON_BASE}/washer2.png`,
   },
   {
     label: "Dryers",
-    value: "Dryer",
+    value: "dryer",
     img: `${ICON_BASE}/dryer2.png`,
   },
   {
     label: "Refrigerators",
-    value: "Refrigerator",
+    value: "refrigerator",
     img: `${ICON_BASE}/fridge2.png`,
   },
   {
     label: "Dishwashers",
-    value: "Dishwasher",
+    value: "dishwasher",
     img: `${ICON_BASE}/dishwasher2.png`,
   },
   {
     label: "Ranges",
-    value: "Range",
+    value: "range",
     img: `${ICON_BASE}/range2.png`,
   },
   {
     label: "Microwaves",
-    value: "Microwave",
+    value: "microwave",
     img: `${ICON_BASE}/microwave2.png`,
   },
   {
     label: "Icemakers",
-    value: "Icemaker",
+    value: "ice maker",
     img: `${ICON_BASE}/icemaker2.png`,
   },
   {
     label: "Freezers",
-    value: "Freezer",
+    value: "freezer",
     img: `${ICON_BASE}/freezer2.png`,
   },
   {
     label: "Cooktops",
-    value: "Cooktop",
+    value: "cooktop",
     img: `${ICON_BASE}/cooktop2.png`,
   },
   {
     label: "Range Hoods",
-    value: "Range Hood",
+    value: "range hood",
     img: `${ICON_BASE}/hood2.png`,
   },
   {
     label: "Air Conditioners",
-    value: "Air Conditioner",
+    value: "airconditioner",
     img: `${ICON_BASE}/airconditioner2.png`,
   },
   {
     label: "Furnaces",
-    value: "Furnace",
+    value: "furnace",
     img: `${ICON_BASE}/furnace2.png`,
   },
   {
     label: "Humidifiers",
-    value: "Humidifier",
+    value: "humidifier",
     img: `${ICON_BASE}/humid2.png`,
   },
   {
     label: "Dehumidifiers",
-    value: "Dehumidifier",
+    value: "dehumidifier",
     img: `${ICON_BASE}/dehumid2.png`,
   },
 ];
@@ -267,11 +267,11 @@ export default function HomeSearchTiles() {
               {applianceTiles.map((tile) => (
                 <Link
                   key={tile.value}
-                  href={`/?condition=both&availability=all&appliance_type=${encodeURIComponent(tile.value)}&page=1&per_page=30`}
+                  href={`/?condition=refurb&availability=all&appliance_type=${encodeURIComponent(tile.value)}&page=1&per_page=30`}
                   onClick={(e) =>
                     handleBrowseClick(
                       e,
-                      `/?condition=both&availability=all&appliance_type=${encodeURIComponent(tile.value)}&page=1&per_page=30`,
+                      `/?condition=refurb&availability=all&appliance_type=${encodeURIComponent(tile.value)}&page=1&per_page=30`,
                     )
                   }
                   className="group flex h-[132px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-orange-400 hover:shadow-md"
@@ -308,11 +308,11 @@ export default function HomeSearchTiles() {
                 {topBrands.map((brand, index) => (
                   <Link
                     key={`${brand.value}-${index}`}
-                    href={`/?condition=both&availability=all&brands=${encodeURIComponent(brand.value)}&page=1&per_page=30`}
+                    href={`/?condition=refurb&availability=all&brands=${encodeURIComponent(brand.value)}&page=1&per_page=30`}
                     onClick={(e) =>
                       handleBrowseClick(
                         e,
-                        `/?condition=both&availability=all&brands=${encodeURIComponent(brand.value)}&page=1&per_page=30`,
+                        `/?condition=refurb&availability=all&brands=${encodeURIComponent(brand.value)}&page=1&per_page=30`,
                       )
                     }
                     className="group flex h-20 items-center justify-center rounded-xl px-3 transition hover:bg-orange-50"
