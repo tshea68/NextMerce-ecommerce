@@ -147,7 +147,7 @@ function SearchThumb({
   const canTryPartImage = !!(imageUrl || imageKey || mpn);
 
   return (
-    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
       {!useLogoFallback && canTryPartImage ? (
         <PartImage
           imageUrl={imageUrl}
@@ -162,7 +162,7 @@ function SearchThumb({
         <img
           src={logoFallback}
           alt={title}
-          className="max-h-12 max-w-[70px] object-contain"
+          className="max-h-10 max-w-[54px] object-contain"
           loading="lazy"
         />
       ) : (
@@ -323,10 +323,10 @@ export default function SearchOverlay({ open, onClose }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm p-4 md:p-8">
-      <div className="relative mx-auto mt-8 w-full max-w-6xl">
-        <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
-          <div className="border-b border-black/10 px-6 pt-6 pb-5 md:px-10 md:pt-8 md:pb-6">
+    <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm p-4 md:p-8">
+      <div className="relative mx-auto mt-3 flex max-h-[calc(100vh-2rem)] w-full max-w-6xl flex-col md:mt-4">
+        <div className="relative flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <div className="shrink-0 border-b border-black/10 px-6 pb-4 pt-5 md:px-10 md:pb-5 md:pt-6">
             <div className="mb-4">
               <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-blue-700">
                 Search Appliance Part Geeks
@@ -373,25 +373,24 @@ export default function SearchOverlay({ open, onClose }: Props) {
             </div>
           </div>
 
-          <div className="max-h-[70vh] overflow-y-auto px-8 py-8 md:px-10 md:py-10">
+
+            <div className="pointer-events-none absolute bottom-0 right-8 z-30 overflow-visible opacity-95">
+              <img
+                src="https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/geeklogos/geek_hero_logo.png"
+                alt=""
+                className="h-72 w-auto sm:h-80 md:h-[22rem]"
+                loading="lazy"
+              />
+            </div>
+          <div className="relative min-h-0 flex-1 overflow-y-auto px-8 py-5 pb-28 md:px-10 md:py-6 md:pb-32">
             {loading && !hasAny ? (
-              <div className="flex min-h-[220px] items-center justify-center">
+              <div className="flex min-h-[130px] items-center justify-center">
                 <p className="text-[15px] text-gray-500">Searching…</p>
               </div>
             ) : showEmptyPrompt ? (
-              <div className="flex min-h-[260px] items-center justify-center">
-                <div className="max-w-xl text-center">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-700">
-                    <Search size={22} />
-                  </div>
-                  <p className="text-[16px] text-gray-600">
-                    Start typing a model number, part number, or keyword to see
-                    matching models and parts.
-                  </p>
-                </div>
-              </div>
+              <div className="min-h-[70px]" />
             ) : showNoResults ? (
-              <div className="flex min-h-[260px] items-center justify-center">
+              <div className="relative z-20 flex min-h-[110px] items-center justify-center">
                 <div className="max-w-xl text-center">
                   <p className="text-[16px] text-gray-600">
                     No matching results found.
@@ -399,15 +398,15 @@ export default function SearchOverlay({ open, onClose }: Props) {
                 </div>
               </div>
             ) : showResults ? (
-              <div className="space-y-10">
+              <div className="relative z-40 space-y-6">
                 {(activeTab === "all" || activeTab === "models") && (
                   <section>
-                    <h3 className="mb-5 text-[22px] font-semibold text-black">
+                    <h3 className="mb-3 text-[19px] font-semibold text-black">
                       Models
                     </h3>
 
                     {modelResults.length > 0 ? (
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {modelResults.map((m, i) => {
                           const model =
                             m?.model_number || m?.model || m?.number || "";
@@ -423,7 +422,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                               onClick={onClose}
                               className="block"
                             >
-                              <div className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-md">
+                              <div className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300 hover:shadow-md">
                                 <div className="flex items-start gap-4">
                                   {modelImage ? (
                                     <SearchThumb
@@ -433,16 +432,16 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                       isModel
                                     />
                                   ) : logoFallback ? (
-                                    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                                       <img
                                         src={logoFallback}
                                         alt={brand || "Brand"}
-                                        className="max-h-12 max-w-[70px] object-contain"
+                                        className="max-h-10 max-w-[54px] object-contain"
                                         loading="lazy"
                                       />
                                     </div>
                                   ) : (
-                                    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                                       <div className="text-[11px] text-gray-400">
                                         No image
                                       </div>
@@ -450,10 +449,10 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                   )}
 
                                   <div className="min-w-0 flex-1">
-                                    <div className="text-lg font-semibold text-gray-900 group-hover:text-blue-700">
+                                    <div className="text-[15px] font-semibold leading-snug text-gray-900 group-hover:text-blue-700">
                                       {model}
                                     </div>
-                                    <div className="mt-1 text-sm text-gray-600">
+                                    <div className="mt-0.5 text-xs text-gray-600">
                                       {[brand, applianceType]
                                         .filter(Boolean)
                                         .join(" • ")}
@@ -468,17 +467,17 @@ export default function SearchOverlay({ open, onClose }: Props) {
                           );
                         })}
                       </div>
-                    ) : (
+                    ) : activeTab === "models" ? (
                       <p className="text-[15px] text-gray-500">
                         No matching models found.
                       </p>
-                    )}
+                    ) : null}
                   </section>
                 )}
 
                 {(activeTab === "all" || activeTab === "products") && (
                   <section>
-                    <h3 className="mb-5 text-[22px] font-semibold text-black">
+                    <h3 className="mb-3 text-[19px] font-semibold text-black">
                       Parts
                     </h3>
 
@@ -486,7 +485,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                       ? combinedPartResults
                       : partsTabResults
                     ).length > 0 ? (
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {(activeTab === "all"
                           ? combinedPartResults
                           : partsTabResults
@@ -511,7 +510,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                               onClick={onClose}
                               className="block"
                             >
-                              <div className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-md">
+                              <div className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300 hover:shadow-md">
                                 <div className="flex items-start gap-4">
                                   <SearchThumb
                                     item={p}
@@ -520,13 +519,13 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                   />
 
                                   <div className="min-w-0 flex-1">
-                                    <div className="text-lg font-semibold text-gray-900 group-hover:text-blue-700">
+                                    <div className="text-[15px] font-semibold leading-snug text-gray-900 group-hover:text-blue-700">
                                       {title}
                                     </div>
-                                    <div className="mt-1 text-sm text-gray-600">
+                                    <div className="mt-0.5 text-xs text-gray-600">
                                       {mpn}
                                     </div>
-                                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                                       <span
                                         className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                                           refurbStyle
@@ -537,7 +536,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                         {label}
                                       </span>
                                       {price ? (
-                                        <span className="text-[15px] font-semibold text-green-700">
+                                        <span className="text-sm font-semibold text-green-700">
                                           {priceFmt(price)}
                                         </span>
                                       ) : null}
@@ -549,11 +548,11 @@ export default function SearchOverlay({ open, onClose }: Props) {
                           );
                         })}
                       </div>
-                    ) : (
+                    ) : activeTab === "products" ? (
                       <p className="text-[15px] text-gray-500">
                         No matching parts found.
                       </p>
-                    )}
+                    ) : null}
                   </section>
                 )}
               </div>
@@ -563,10 +562,10 @@ export default function SearchOverlay({ open, onClose }: Props) {
 
         <button
           onClick={onClose}
-          className="absolute -top-4 -right-4 rounded-full border border-gray-300 bg-white p-2.5 shadow-md transition hover:bg-gray-100"
+          className="absolute right-3 top-3 z-[120] flex h-14 w-14 items-center justify-center rounded-full border border-gray-300 bg-white shadow-xl transition hover:bg-gray-100"
           aria-label="Close search"
         >
-          <X size={20} className="text-black" />
+          <X size={34} className="text-black" />
         </button>
       </div>
     </div>
