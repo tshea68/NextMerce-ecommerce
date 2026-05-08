@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const ICON_BASE =
@@ -140,8 +141,27 @@ function coerceLogos(data: any): BrandLogo[] {
 }
 
 export default function HomeSearchTiles() {
+  const router = useRouter();
   const [logos, setLogos] = useState<BrandLogo[]>([]);
   const [facets, setFacets] = useState<BrandFacet[]>([]);
+
+  function scrollToGrid() {
+    window.setTimeout(() => {
+      document.getElementById("parts-grid")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+  }
+
+  function handleBrowseClick(
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) {
+    e.preventDefault();
+    router.push(href, { scroll: false });
+    scrollToGrid();
+  }
 
   useEffect(() => {
     let live = true;
@@ -247,7 +267,13 @@ export default function HomeSearchTiles() {
               {applianceTiles.map((tile) => (
                 <Link
                   key={tile.value}
-                  href={`/?appliance_type=${encodeURIComponent(tile.value)}`}
+                  href={`/?condition=both&availability=all&appliance_type=${encodeURIComponent(tile.value)}&page=1&per_page=30`}
+                  onClick={(e) =>
+                    handleBrowseClick(
+                      e,
+                      `/?condition=both&availability=all&appliance_type=${encodeURIComponent(tile.value)}&page=1&per_page=30`,
+                    )
+                  }
                   className="group flex h-[132px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-orange-400 hover:shadow-md"
                 >
                   <div className="flex min-h-0 flex-1 items-center justify-center px-3 pt-3">
@@ -282,7 +308,13 @@ export default function HomeSearchTiles() {
                 {topBrands.map((brand, index) => (
                   <Link
                     key={`${brand.value}-${index}`}
-                    href={`/?brands=${encodeURIComponent(brand.value)}`}
+                    href={`/?condition=both&availability=all&brands=${encodeURIComponent(brand.value)}&page=1&per_page=30`}
+                    onClick={(e) =>
+                      handleBrowseClick(
+                        e,
+                        `/?condition=both&availability=all&brands=${encodeURIComponent(brand.value)}&page=1&per_page=30`,
+                      )
+                    }
                     className="group flex h-20 items-center justify-center rounded-xl px-3 transition hover:bg-orange-50"
                   >
                     <img

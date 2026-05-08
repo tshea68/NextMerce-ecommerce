@@ -517,9 +517,45 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   const [activeModelLoading, setActiveModelLoading] = useState(false);
   const [activeModelError, setActiveModelError] = useState<string | null>(null);
 
+  const lastAppliedUrlKey = useRef<string>("");
+
   useEffect(() => {
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (activeModel) return;
+
+    const spString = searchParams?.toString() ?? "";
+    const nextKey = stableKeyFromSearchParamsString(spString);
+
+    if (!spString || nextKey === lastAppliedUrlKey.current) return;
+    lastAppliedUrlKey.current = nextKey;
+
+    const sp = new URLSearchParams(spString);
+
+    const conditionRaw = (sp.get("condition") || "").toLowerCase();
+    const nextCondition: Condition =
+      conditionRaw === "new" || conditionRaw === "refurb" || conditionRaw === "both"
+        ? (conditionRaw as Condition)
+        : DEFAULT_LANDING_CONDITION;
+
+    const nextAvailability = safeAvailabilityForCondition(
+      nextCondition,
+      parseAvailability(sp),
+    );
+
+    setCondition(nextCondition);
+    setAvailability(nextAvailability);
+    setQ((sp.get("q") || "").trim());
+    setApplianceType((sp.get("appliance_type") || "").trim());
+    setSelectedBrands(parseCsvMulti(sp, "brands"));
+    setSelectedPartTypes(parseCsvMulti(sp, "part_types"));
+    setPage(Math.max(parseInt(sp.get("page") || "1", 10) || 1, 1));
+    setModelCards([]);
+    closeModelParts();
+  }, [hydrated, searchParams, activeModel]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -910,7 +946,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   const hasAnyResults = modelCards.length > 0 || items.length > 0;
 
   return (
-    <div className="max-w-[1250px] mx-auto px-4 py-8">
+    <div id="parts-grid" className="scroll-mt-28 max-w-[1250px] mx-auto px-4 py-8">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
         <div className="flex flex-col gap-2">
           <div className="text-[18px] font-bold text-gray-900">
