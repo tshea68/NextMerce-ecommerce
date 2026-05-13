@@ -1,0 +1,10 @@
+seller_key,seller_name,seller_type,parent_operator,domain,search_url_template,fetch_strategy,adapter_type,status,priority,enabled,notes
+samsungparts,SamsungParts,oem_storefront,unknown,https://samsungparts.com,https://samsungparts.com/search?q={mpn},curl,shopify_search,working,10,true,Working Shopify-style search extraction
+lgparts,LG Parts,oem_storefront,Encompass,https://lgparts.com,https://lgparts.com/search?type=product&options%5Bunavailable_products%5D=last&options%5Bprefix%5D=none&q={mpn}*,curl,shopify_search,working,20,true,Working Shopify-style search extraction; powered by Encompass
+genuinereplacementparts,Genuine Replacement Parts,distributor,unknown,https://genuinereplacementparts.com,https://genuinereplacementparts.com/search?type=product&options%5Bunavailable_products%5D=last&options%5Bprefix%5D=none&q={mpn}*,curl,shopify_search,working,30,true,Working Shopify-style search extraction
+apg_internal,APG Internal,internal,APG,,postgres,postgres,working,1,true,Use public.parts and public.offers,
+ebay,eBay,marketplace,eBay,https://www.ebay.com,,api,ebay_browse_api,working_existing,90,true,Use existing Browse API/download scheme
+encompass,Encompass,distributor,Encompass,https://encompass.com,https://encompass.com/search?searchTerm={mpn},blocked,blocked_cloudflare,defer,50,false,Cloudflare blocked in curl evidence pass
+sears,Sears PartsDirect,distributor,Sears,https://www.searspartsdirect.com,https://www.searspartsdirect.com/search?q={mpn},blocked,blocked_cloudflare_challenge,defer,60,false,Cloudflare JS challenge
+partselect,PartSelect,distributor,PartSelect,https://www.partselect.com,https://www.partselect.com/nsearchresult/?ModelID={mpn}&nofuzzy=1,blocked,blocked_akamai,defer,70,false,Akamai/EdgeSuite access denied
+whirlpoolparts,WhirlpoolParts,oem_storefront,unknown,https://www.whirlpoolparts.com,https://www.whirlpoolparts.com/Shop-For-Parts/w1-xUNKNOWN/{mpn}-Parts,blocked,blocked_or_unknown,defer,80,false,Curl returned small unusable page; needs separate strategy

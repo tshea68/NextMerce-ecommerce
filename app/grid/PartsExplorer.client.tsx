@@ -42,6 +42,30 @@ import ModelCard from "@/components/cards/ModelCard";
 const API_BASE = "";
 const DEFAULT_PER_PAGE = 30;
 
+const APPLIANCE_ICON_BASE =
+  "https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/app_type_icons/appliance%20symbols";
+
+const APPLIANCE_ICONS: Record<string, string> = {
+  washer: `${APPLIANCE_ICON_BASE}/washer2.png`,
+  dryer: `${APPLIANCE_ICON_BASE}/dryer2.png`,
+  refrigerator: `${APPLIANCE_ICON_BASE}/fridge2.png`,
+  dishwasher: `${APPLIANCE_ICON_BASE}/dishwasher2.png`,
+  range: `${APPLIANCE_ICON_BASE}/range2.png`,
+  oven: `${APPLIANCE_ICON_BASE}/range2.png`,
+  microwave: `${APPLIANCE_ICON_BASE}/microwave2.png`,
+  "air conditioner": `${APPLIANCE_ICON_BASE}/airconditioner2.png`,
+  airconditioner: `${APPLIANCE_ICON_BASE}/airconditioner2.png`,
+  cooktop: `${APPLIANCE_ICON_BASE}/cooktop2.png`,
+  freezer: `${APPLIANCE_ICON_BASE}/freezer2.png`,
+  "ice maker": `${APPLIANCE_ICON_BASE}/icemaker2.png`,
+  icemaker: `${APPLIANCE_ICON_BASE}/icemaker2.png`,
+  grill: `${APPLIANCE_ICON_BASE}/range2.png`,
+};
+
+function applianceIconUrl(value: string) {
+  return APPLIANCE_ICONS[normalize(value)];
+}
+
 type Condition = "both" | "new" | "refurb";
 type Availability = "in_stock" | "orderable" | "all";
 
@@ -498,6 +522,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   });
 
   const [facetsMeta, setFacetsMeta] = useState<FacetsMeta | null>(null);
+  const [brandLogos, setBrandLogos] = useState<any[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   const initialMetaProvided =
@@ -522,6 +547,55 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   useEffect(() => {
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    let live = true;
+
+    async function loadBrandLogos() {
+      try {
+        const res = await fetch("https://api.appliancepartgeeks.com/api/brand-logos", {
+          cache: "no-store",
+        });
+        const json = res.ok ? await res.json() : [];
+        if (!live) return;
+        setBrandLogos(Array.isArray(json) ? json : Array.isArray(json?.logos) ? json.logos : []);
+      } catch {
+        if (!live) return;
+        setBrandLogos([]);
+      }
+    }
+
+    loadBrandLogos();
+
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const brandLogoByNorm = useMemo(() => {
+    const map = new Map<string, string>();
+
+    for (const logo of brandLogos) {
+      const name = String(
+        logo?.name || logo?.brand || logo?.brand_long || logo?.title || "",
+      ).trim();
+      const imageUrl = String(
+        logo?.image_url || logo?.logo_url || logo?.url || logo?.src || "",
+      ).trim();
+
+      const key = normalize(name).replace(/[^a-z0-9]+/g, "");
+      if (key && imageUrl && !map.has(key)) {
+        map.set(key, imageUrl);
+      }
+    }
+
+    return map;
+  }, [brandLogos]);
+
+  function getBrandLogoForFacet(value: string) {
+    const key = normalize(value).replace(/[^a-z0-9]+/g, "");
+    return brandLogoByNorm.get(key) || "";
+  }
 
   useEffect(() => {
     if (!hydrated) return;
@@ -946,7 +1020,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   const hasAnyResults = modelCards.length > 0 || items.length > 0;
 
   return (
-    <div id="parts-grid" className="scroll-mt-28 max-w-[1250px] mx-auto px-4 py-8">
+    <div id="parts-grid" className="scroll-mt-28 max-w-none px-0 py-0">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
         <div className="flex flex-col gap-2">
           <div className="text-[18px] font-bold text-gray-900">
@@ -1063,7 +1137,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
         <aside
           ref={asideRef}
-          className={`border border-gray-200 rounded-lg bg-white p-4 ${filtersDisabled ? "opacity-60" : ""}`}
+          className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${filtersDisabled ? "opacity-60" : ""}`}
         >
           <div className="flex items-center justify-between mb-3">
             <div className="text-[13px] font-bold text-gray-800">Filters</div>
@@ -1088,9 +1162,9 @@ export default function PartsExplorer(props: PartsExplorerProps) {
           <div className="mb-4">
             <div className="text-[12px] font-semibold text-gray-700 mb-2">Item type</div>
             {[
-              { value: "both" as const, label: "All (New + Refurbished)" },
-              { value: "new" as const, label: "New only" },
-              { value: "refurb" as const, label: "Refurbished only" },
+              { value: "both" as const, label: "All" },
+              { value: "new" as const, label: "New" },
+              { value: "refurb" as const, label: "Refurbished" },
             ].map((opt) => {
               const checked = condition === opt.value;
               return (
@@ -1098,12 +1172,17 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                   key={opt.value}
                   type="button"
                   disabled={filtersDisabled}
-                  className="w-full flex items-center gap-2 py-1 text-[12px] text-gray-800 hover:bg-gray-50 disabled:hover:bg-transparent rounded px-1 disabled:cursor-not-allowed"
+                  className={`mb-1 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-[12px] font-semibold transition disabled:cursor-not-allowed ${
+                    checked
+                      ? "border-orange-400 bg-orange-50 text-slate-950 shadow-sm"
+                      : "border-slate-200 bg-slate-50 text-slate-800 hover:border-orange-300 hover:bg-white"
+                  }`}
                   onClick={() => {
                     if (filtersDisabled) return;
                     setCondition(opt.value);
                     if (opt.value === "both") setAvailability("all");
                     if (opt.value === "new") setAvailability("in_stock");
+                    if (opt.value === "refurb") setAvailability("all");
                     setPage(1);
                   }}
                   aria-pressed={checked}
@@ -1116,65 +1195,127 @@ export default function PartsExplorer(props: PartsExplorerProps) {
           </div>
 
           <div className="mb-4">
-            <div className="text-[12px] font-semibold text-gray-700 mb-2">Appliance Type</div>
-            <select
-              value={applianceType}
-              disabled={filtersDisabled}
-              onChange={(e) => {
-                setApplianceType(e.target.value);
-                setPage(1);
-              }}
-              className="w-full border border-gray-300 rounded px-2 py-2 text-[13px] text-black disabled:cursor-not-allowed"
-            >
-              <option value="">All</option>
-              {applianceFacet.map((x) => (
-                <option key={x.value} value={x.value}>
-                  {facetLabel("appliance", x.value)} ({fmtCount(x.count)})
-                </option>
-              ))}
-            </select>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-[12px] font-semibold text-gray-700">Appliance Type</div>
+              {applianceType ? (
+                <button
+                  type="button"
+                  disabled={filtersDisabled}
+                  className="text-[11px] font-semibold text-blue-700 underline disabled:text-gray-400"
+                  onClick={() => {
+                    setApplianceType("");
+                    setPage(1);
+                  }}
+                >
+                  All
+                </button>
+              ) : null}
+            </div>
+
+            <div className="max-h-[360px] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+              <div className="grid grid-cols-1 gap-2">
+                {applianceFacet.map((x) => {
+                  const selected = normalize(applianceType) === normalize(x.value);
+                  const icon = applianceIconUrl(x.value);
+
+                  return (
+                    <button
+                      key={x.value}
+                      type="button"
+                      disabled={filtersDisabled}
+                      className={`flex h-14 items-center gap-3 rounded-xl border px-3 text-left transition disabled:cursor-not-allowed ${
+                        selected
+                          ? "border-orange-400 bg-orange-50 shadow-sm"
+                          : "border-slate-200 bg-slate-50 hover:border-orange-300 hover:bg-white"
+                      }`}
+                      onClick={() => {
+                        if (filtersDisabled) return;
+                        setApplianceType(selected ? "" : x.value);
+                        setPage(1);
+                      }}
+                    >
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
+                        {icon ? (
+                          <img
+                            src={icon}
+                            alt=""
+                            className="h-9 w-9 object-contain"
+                            loading="lazy"
+                          />
+                        ) : null}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-bold text-slate-900">
+                          {facetLabel("appliance", x.value)}
+                        </span>
+                        <span className="block text-[11px] font-semibold text-slate-500">
+                          {fmtCount(x.count)} parts
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="mb-4">
-            <div className="text-[12px] font-semibold text-gray-700 mb-2">Brands</div>
-            <div className="max-h-[240px] overflow-auto pr-1">
-              {brandFacetShown.length === 0 ? (
-                <div className="text-[12px] text-gray-500">No facets yet.</div>
-              ) : (
-                brandFacetShown.map((x) => {
-                  const checked = selectedBrands.some((b) => normalize(b) === normalize(x.value));
-                  return (
-                    <label key={x.value} className="flex items-center justify-between gap-2 py-1 text-[12px] text-gray-800">
-                      <span className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={filtersDisabled}
-                          onChange={() => {
-                            if (filtersDisabled) return;
-                            setSelectedBrands((prev) => toggleInList(prev, x.value));
-                            setPage(1);
-                          }}
-                        />
-                        {facetLabel("brand", x.value)}
-                      </span>
-                      <span className="text-gray-500">{fmtCount(x.count)}</span>
-                    </label>
-                  );
-                })
-              )}
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-[12px] font-semibold text-gray-700">Brands</div>
+              {selectedBrands.length > 0 ? (
+                <button
+                  type="button"
+                  disabled={filtersDisabled}
+                  className="text-[11px] font-semibold text-blue-700 underline disabled:text-gray-400"
+                  onClick={() => {
+                    setSelectedBrands([]);
+                    setPage(1);
+                  }}
+                >
+                  All
+                </button>
+              ) : null}
             </div>
 
-            {brandFacet.length > 10 && (
-              <button
-                type="button"
-                disabled={filtersDisabled}
-                className="mt-2 text-[12px] text-blue-700 underline disabled:cursor-not-allowed disabled:text-gray-400"
-                onClick={() => setShowAllBrands((v) => !v)}
-              >
-                {showAllBrands ? "Show top 10" : "Show all"}
-              </button>
-            )}
+            <div className="max-h-[220px] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+              <div className="grid grid-cols-2 gap-2">
+                {brandFacet.map((x) => {
+                  const checked = selectedBrands.some((b) => normalize(b) === normalize(x.value));
+                  const logo = getBrandLogoForFacet(x.value);
+
+                  return (
+                    <button
+                      key={x.value}
+                      type="button"
+                      disabled={filtersDisabled}
+                      title={`${facetLabel("brand", x.value)} (${fmtCount(x.count)})`}
+                      aria-label={`${facetLabel("brand", x.value)} (${fmtCount(x.count)})`}
+                      className={`flex h-[78px] items-center justify-center rounded-xl border px-2 transition disabled:cursor-not-allowed ${
+                        checked
+                          ? "border-orange-400 bg-orange-50 shadow-sm"
+                          : "border-slate-200 bg-slate-50 hover:border-orange-300 hover:bg-white"
+                      }`}
+                      onClick={() => {
+                        if (filtersDisabled) return;
+                        setSelectedBrands((prev) => toggleInList(prev, x.value));
+                        setPage(1);
+                      }}
+                    >
+                      {logo ? (
+                        <img
+                          src={logo}
+                          alt={facetLabel("brand", x.value)}
+                          className="max-h-14 max-w-[104px] object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span className="h-2 w-2 rounded-full bg-slate-300" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="mb-2">
@@ -1232,7 +1373,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
           {isModelFocused ? (
             <div
-              className="border border-gray-200 rounded-lg bg-white flex flex-col min-h-0 overflow-hidden"
+              className="rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col min-h-0 overflow-hidden"
               style={isLg && asideHeight ? { height: asideHeight } : undefined}
             >
               <div className="shrink-0 p-4 border-b border-gray-200 bg-white">
@@ -1290,7 +1431,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
               {hasAnyResults && (
                 <div
-                  className="border border-gray-200 rounded-lg bg-white flex flex-col min-h-0"
+                  className="rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col min-h-0"
                   style={isLg && asideHeight ? { height: asideHeight } : undefined}
                 >
                   <div className="flex-1 min-h-0 overflow-y-auto p-4">

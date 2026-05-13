@@ -113,7 +113,7 @@ function LogoBackground({ logos }: { logos: HeroLogo[] }) {
   if (cleanLogos.length === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[25] overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 z-[25] hidden overflow-hidden min-[800px]:block">
       {logoSlots.map((slot, slotIndex) => {
         const pool = [0, 1, 2, 3]
           .map((poolIndex) => {

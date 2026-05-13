@@ -27,3 +27,10 @@ _legacy/
 # local artifacts
 repo-snapshot.zip
 .vercel
+
+# local/generated scratch files
+tmp/
+*.pyc
+__pycache__/
+tmp_next_dev.log
+tmp_next_webpack.log

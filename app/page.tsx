@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import PartsExplorer from "@/app/grid/PartsExplorer.client";
 import HomeHeroRebuild from "@/components/home/HomeHeroRebuild";
-import HomeSearchTiles from "@/components/home/HomeSearchTiles";
 import { getHeroLogos } from "@/lib/home/getHeroLogos";
 
 export const metadata = {
@@ -23,12 +22,8 @@ export default async function HomePage({
       <main className="flex-grow">
         <HomeHeroRebuild heroLogos={heroLogos} />
 
-        <HomeSearchTiles />
-
-        <section className="relative">
-          <div className="h-6" />
-
-          <div className="w-[90%] max-w-[1200px] mx-auto">
+        <section className="bg-white py-6">
+          <div className="mx-auto w-[96%] max-w-[1500px] rounded-[2rem] border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
             <Suspense fallback={null}>
               <PartsExplorer
                 initial={{
@@ -51,8 +46,6 @@ export default async function HomePage({
               />
             </Suspense>
           </div>
-
-          <div className="pb-10" />
         </section>
       </main>
     </div>

@@ -50,19 +50,19 @@ const applianceTiles = [
     img: `${ICON_BASE}/range2.png`,
   },
   {
+    label: "Ovens",
+    value: "oven",
+    img: `${ICON_BASE}/range2.png`,
+  },
+  {
     label: "Microwaves",
     value: "microwave",
     img: `${ICON_BASE}/microwave2.png`,
   },
   {
-    label: "Icemakers",
-    value: "ice maker",
-    img: `${ICON_BASE}/icemaker2.png`,
-  },
-  {
-    label: "Freezers",
-    value: "freezer",
-    img: `${ICON_BASE}/freezer2.png`,
+    label: "Air Conditioners",
+    value: "air conditioner",
+    img: `${ICON_BASE}/airconditioner2.png`,
   },
   {
     label: "Cooktops",
@@ -70,34 +70,28 @@ const applianceTiles = [
     img: `${ICON_BASE}/cooktop2.png`,
   },
   {
-    label: "Range Hoods",
-    value: "range hood",
-    img: `${ICON_BASE}/hood2.png`,
+    label: "Freezers",
+    value: "freezer",
+    img: `${ICON_BASE}/freezer2.png`,
   },
   {
-    label: "Air Conditioners",
-    value: "airconditioner",
-    img: `${ICON_BASE}/airconditioner2.png`,
+    label: "Icemakers",
+    value: "ice maker",
+    img: `${ICON_BASE}/icemaker2.png`,
   },
   {
-    label: "Furnaces",
-    value: "furnace",
-    img: `${ICON_BASE}/furnace2.png`,
-  },
-  {
-    label: "Humidifiers",
-    value: "humidifier",
-    img: `${ICON_BASE}/humid2.png`,
-  },
-  {
-    label: "Dehumidifiers",
-    value: "dehumidifier",
-    img: `${ICON_BASE}/dehumid2.png`,
+    label: "Grills",
+    value: "grill",
+    img: `${ICON_BASE}/range2.png`,
   },
 ];
 
 function normalizeBrand(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function normalizeFacetValue(value: string) {
+  return String(value || "").trim().toLowerCase();
 }
 
 function formatCount(count: number) {
@@ -144,6 +138,7 @@ export default function HomeSearchTiles() {
   const router = useRouter();
   const [logos, setLogos] = useState<BrandLogo[]>([]);
   const [facets, setFacets] = useState<BrandFacet[]>([]);
+  const [applianceFacets, setApplianceFacets] = useState<BrandFacet[]>([]);
 
   function scrollToGrid() {
     window.setTimeout(() => {
@@ -183,11 +178,13 @@ export default function HomeSearchTiles() {
 
         setLogos(coerceLogos(logoJson));
         setFacets(Array.isArray(facetJson?.brands) ? facetJson.brands : []);
+        setApplianceFacets(Array.isArray(facetJson?.appliances) ? facetJson.appliances : []);
       } catch (err) {
         console.error("Failed to load home search tiles data:", err);
         if (!live) return;
         setLogos([]);
         setFacets([]);
+        setApplianceFacets([]);
       }
     }
 
@@ -247,80 +244,108 @@ export default function HomeSearchTiles() {
     });
   }, [facets, logos]);
 
-  return (
-    <section className="bg-white py-8 text-slate-950">
-      <div className="mx-auto w-[96%] max-w-[1700px] px-4">
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,4fr)_minmax(280px,1fr)]">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-600">
-                  Browse by appliance
-                </p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight text-[#001f3e]">
-                  Shop appliance part types
-                </h2>
-              </div>
-            </div>
+  const applianceCountByValue = useMemo(() => {
+    const map = new Map<string, number>();
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-              {applianceTiles.map((tile) => (
+    for (const facet of applianceFacets) {
+      const key = normalizeFacetValue(facet.value);
+      if (key) map.set(key, Number(facet.count || 0));
+    }
+
+    return map;
+  }, [applianceFacets]);
+
+  const availableApplianceTiles = useMemo(() => {
+    if (applianceCountByValue.size === 0) return applianceTiles;
+
+    return applianceTiles.filter((tile) =>
+      applianceCountByValue.has(normalizeFacetValue(tile.value)),
+    );
+  }, [applianceCountByValue]);
+
+  return (
+    <section className="w-full text-slate-950">
+      <div className="w-full">
+        <aside className="w-full max-w-[235px] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="mb-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-600">
+              Browse by appliance
+            </p>
+            <h2 className="mt-1 text-base font-black tracking-tight text-[#001f3e]">
+              Appliance types
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            {availableApplianceTiles.map((tile) => {
+              const count =
+                applianceCountByValue.get(normalizeFacetValue(tile.value)) ?? null;
+              const href = `/?condition=refurb&availability=all&appliance_type=${encodeURIComponent(
+                tile.value,
+              )}&page=1&per_page=30`;
+
+              return (
                 <Link
                   key={tile.value}
-                  href={`/?condition=refurb&availability=all&appliance_type=${encodeURIComponent(tile.value)}&page=1&per_page=30`}
-                  onClick={(e) =>
-                    handleBrowseClick(
-                      e,
-                      `/?condition=refurb&availability=all&appliance_type=${encodeURIComponent(tile.value)}&page=1&per_page=30`,
-                    )
-                  }
-                  className="group flex h-[132px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-orange-400 hover:shadow-md"
+                  href={href}
+                  onClick={(e) => handleBrowseClick(e, href)}
+                  className="group flex h-10 items-center gap-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 px-2.5 transition hover:border-orange-400 hover:bg-orange-50 hover:shadow-sm"
                 >
-                  <div className="flex min-h-0 flex-1 items-center justify-center px-3 pt-3">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center">
                     <img
                       src={tile.img}
                       alt={`${tile.label} parts`}
-                      className="h-full max-h-[88px] w-full object-contain transition group-hover:scale-105"
+                      className="h-6 w-6 object-contain transition group-hover:scale-105"
                       loading="lazy"
                     />
                   </div>
 
-                  <div className="px-2 pb-3 pt-2 text-center text-[13px] font-black leading-tight text-[#001f3e]">
-                    {tile.label}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-left text-[12px] font-black leading-tight text-[#001f3e]">
+                      {tile.label}
+                    </div>
+                    {count != null ? (
+                      <div className="text-[9px] font-semibold leading-tight text-slate-500">
+                        {formatCount(count)} parts
+                      </div>
+                    ) : null}
                   </div>
                 </Link>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-            <div className="mb-3">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-600">
-                Top brands
-              </p>
-              <h3 className="mt-1 text-xl font-black tracking-tight text-[#001f3e]">
-                Search by manufacturer
-              </h3>
-            </div>
+          <div className="mt-4 border-t border-slate-200 pt-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-600">
+              Top brands
+            </p>
+            <h3 className="mt-1 text-base font-black tracking-tight text-[#001f3e]">
+              Manufacturers
+            </h3>
 
-            <div className="max-h-[300px] overflow-y-auto rounded-2xl border border-slate-200 bg-white pr-1">
-              <div className="grid grid-cols-2 gap-x-3 gap-y-4 px-4 py-4">
+            <div className="mt-3 max-h-[280px] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <div className="flex flex-col gap-2">
                 {topBrands.map((brand, index) => (
                   <Link
                     key={`${brand.value}-${index}`}
-                    href={`/?condition=refurb&availability=all&brands=${encodeURIComponent(brand.value)}&page=1&per_page=30`}
+                    href={`/?condition=refurb&availability=all&brands=${encodeURIComponent(
+                      brand.value,
+                    )}&page=1&per_page=30`}
                     onClick={(e) =>
                       handleBrowseClick(
                         e,
-                        `/?condition=refurb&availability=all&brands=${encodeURIComponent(brand.value)}&page=1&per_page=30`,
+                        `/?condition=refurb&availability=all&brands=${encodeURIComponent(
+                          brand.value,
+                        )}&page=1&per_page=30`,
                       )
                     }
-                    className="group flex h-20 items-center justify-center rounded-xl px-3 transition hover:bg-orange-50"
+                    className="group flex h-[62px] items-center justify-center rounded-lg px-2 transition hover:bg-orange-50"
+                    title={`${brand.logo.name} parts`}
                   >
                     <img
                       src={brand.logo.image_url}
                       alt={brand.logo.name}
-                      className="h-full max-h-16 w-full max-w-[160px] object-contain"
+                      className="max-h-11 w-full object-contain transition group-hover:scale-105"
                       loading="lazy"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
@@ -331,7 +356,7 @@ export default function HomeSearchTiles() {
               </div>
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </section>
   );
