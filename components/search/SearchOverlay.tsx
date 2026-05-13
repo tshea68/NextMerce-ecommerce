@@ -374,7 +374,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
           </div>
 
 
-            <div className="pointer-events-none absolute bottom-0 right-8 z-30 overflow-visible opacity-95">
+            <div className="pointer-events-none absolute bottom-0 right-8 z-[80] overflow-visible opacity-95">
               <img
                 src="https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/geeklogos/geek_hero_logo.png"
                 alt=""
