@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
-const baseUrl = "https://appliancepartgeeks.com";
+const baseUrl = "https://www.appliancepartgeeks.com";
 
 export const revalidate = 86400; // refresh daily
 
@@ -40,19 +40,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const { data: offers, error: offersError } = await supabase
     .from("offers")
-    .select("mpn_norm, mpn, created_at")
+    .select("mpn, mpn_norm, created_at")
     .not("mpn_norm", "is", null)
     .not("mpn_norm", "eq", "")
     .not("mpn", "is", null)
     .gt("price", 0)
     .gt("inventory_total", 0)
+    .order("inventory_total", { ascending: false, nullsFirst: false })
     .limit(10000);
 
   if (!offersError) {
     const seen = new Set<string>();
 
     for (const offer of offers || []) {
-      const mpn = enc(offer.mpn_norm || offer.mpn);
+      // Use display/canonical MPN, not mpn_norm.
+      // Product metadata now canonicalizes to /offers/{display MPN}.
+      const mpn = enc(offer.mpn || offer.mpn_norm);
       if (!mpn) continue;
 
       const url = `${baseUrl}/offers/${mpn}`;
