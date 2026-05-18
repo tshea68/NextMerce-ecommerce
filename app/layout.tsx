@@ -11,9 +11,6 @@ export const metadata: Metadata = {
   title: "Appliance Part Geeks | OEM Appliance Parts & Refurbished Parts",
   description:
     "Shop new OEM and refurbished appliance parts by model number, part number, brand, appliance type, or part type.",
-  alternates: {
-    canonical: "/",
-  },
 };
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
