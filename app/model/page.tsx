@@ -9,7 +9,7 @@ const API_BASE = (
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   process.env.NEXT_PUBLIC_APP_URL ||
-  "https://next.appliancepartgeeks.com";
+  "https://www.appliancepartgeeks.com";
 
 type AnyObj = Record<string, any>;
 

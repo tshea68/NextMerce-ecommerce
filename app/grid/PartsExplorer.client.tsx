@@ -710,7 +710,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
     setActiveModel({
       ...model,
-      href: model?.href || `/models/${encodeURIComponent(modelNumber)}`,
+      href: model?.href || `/model?model=${encodeURIComponent(modelNumber)}`,
     });
     setActiveModelParts([]);
     setActiveModelError(null);
@@ -1447,7 +1447,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                               model={{
                                 ...row,
                                 href: row?.model_number
-                                  ? `/models/${encodeURIComponent(String(row.model_number))}`
+                                  ? `/model?model=${encodeURIComponent(String(row.model_number))}`
                                   : "#",
                               }}
                               onViewParts={openModelParts}

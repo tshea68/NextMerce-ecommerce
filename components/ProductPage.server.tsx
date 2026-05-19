@@ -424,7 +424,7 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
   const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://next.appliancepartgeeks.com";
+    "https://www.appliancepartgeeks.com";
 
   const schemaMpn = vm?.mpn || vm?.part_number || "";
   const detailPath = vm?.is_refurb

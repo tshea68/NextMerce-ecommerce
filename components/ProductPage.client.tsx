@@ -438,7 +438,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                     {compatibleModels.map((model) => (
                       <Link
                         key={model}
-                        href={`/models/${encodeURIComponent(model)}`}
+                        href={`/model?model=${encodeURIComponent(model)}`}
                         className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50"
                       >
                         {model}

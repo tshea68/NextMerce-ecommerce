@@ -374,7 +374,7 @@ function mapModelRow(row: any) {
 
     exploded_views: Array.isArray(row?.exploded_views) ? row.exploded_views : [],
 
-    href: row?.model_number ? `/models/${encodeURIComponent(String(row.model_number))}` : null,
+    href: row?.model_number ? `/model?model=${encodeURIComponent(String(row.model_number))}` : null,
   };
 }
 
