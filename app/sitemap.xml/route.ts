@@ -40,7 +40,10 @@ function getSupabaseClient() {
 
 export async function GET() {
   const now = new Date().toISOString();
-  const entries: string[] = [sitemapEntry(`${baseUrl}/sitemaps/static`, now)];
+  const entries: string[] = [
+    sitemapEntry(`${baseUrl}/sitemaps/static`, now),
+    sitemapEntry(`${baseUrl}/sitemaps/grid`, now),
+  ];
 
   const supabase = getSupabaseClient();
 
