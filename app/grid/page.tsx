@@ -109,13 +109,17 @@ async function getRequestOrigin() {
   if (process.env.CODESPACES === "true") return localOrigin;
   if (host && isCodespacesHost(host)) return localOrigin;
 
+  // Prefer the actual public request host for SSR self-fetches.
+  // This avoids stale/protected env origins causing /api/grid SSR fetches to return 401
+  // while the public same-host API route works normally.
+  if (host) return `${proto}://${host}`;
+
   const envOrigin =
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
 
   if (envOrigin) return envOrigin;
-  if (host) return `${proto}://${host}`;
 
   return localOrigin;
 }
@@ -188,7 +192,7 @@ export default async function GridPage({
   const origin = await getRequestOrigin();
 
   // ✅ IMPORTANT: use trailing slash to avoid 308 -> HTML -> bad JSON in SSR
-  const itemsUrl = new URL(`/api/grid/?${itemsParams.toString()}`, origin).toString();
+  const itemsUrl = new URL(`/api/grid?${itemsParams.toString()}`, origin).toString();
 
   // SSR only the ITEMS. Meta facets intentionally client-side.
   let itemsRes: Response | null = null;
