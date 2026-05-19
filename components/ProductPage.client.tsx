@@ -439,26 +439,25 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     vm.brand
       ? {
           label: `Browse more ${vm.brand} parts`,
-          href: gridHref({ condition: "both", brand: vm.brand }),
+          href: gridHref({ brand: vm.brand }),
         }
       : null,
     vm.appliance_type
       ? {
           label: `Browse ${vm.appliance_type.toLowerCase()} parts`,
-          href: gridHref({ condition: "both", applianceType: vm.appliance_type }),
+          href: gridHref({ applianceType: vm.appliance_type }),
         }
       : null,
     partTypeText
       ? {
           label: `Browse ${partTypeText.toLowerCase()} parts`,
-          href: gridHref({ condition: "both", partType: partTypeText }),
+          href: gridHref({ partType: partTypeText }),
         }
       : null,
     vm.brand && vm.appliance_type
       ? {
           label: `Browse ${vm.brand} ${vm.appliance_type.toLowerCase()} parts`,
           href: gridHref({
-            condition: "both",
             brand: vm.brand,
             applianceType: vm.appliance_type,
           }),
@@ -468,7 +467,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
       ? {
           label: `Browse ${vm.brand} ${partTypeText.toLowerCase()} parts`,
           href: gridHref({
-            condition: "both",
             brand: vm.brand,
             partType: partTypeText,
           }),
