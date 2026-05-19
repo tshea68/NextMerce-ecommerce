@@ -380,6 +380,41 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     router.push("/checkout");
   }
 
+  const partTypeText = vm.specific_part_type || vm.part_type || null;
+  const availabilityText = isNlaish(vm)
+    ? "No Longer Available"
+    : vm.is_refurb
+      ? hasPositiveInventory(vm)
+        ? `${asNumber(vm.inventory_total)?.toLocaleString("en-US") || vm.inventory_total} units available`
+        : "Currently unavailable"
+      : hasPositiveInventory(vm)
+        ? `${asNumber(vm.inventory_total)?.toLocaleString("en-US") || vm.inventory_total} units available`
+        : isOrderable(vm)
+          ? "Special order / orderable"
+          : "Availability varies";
+
+  const identityRows = [
+    ["Part Number / MPN", mpn],
+    ["Brand", vm.brand],
+    ["Condition", conditionText],
+    ["Appliance Type", vm.appliance_type],
+    ["Part Type", partTypeText],
+    ["Availability", availabilityText],
+    [
+      "Compatible Models",
+      compatibleModels.length
+        ? `${compatibleModels.length.toLocaleString("en-US")} published model${compatibleModels.length === 1 ? "" : "s"}`
+        : vm.compatible_models_count
+          ? `${Number(vm.compatible_models_count).toLocaleString("en-US")} published model${Number(vm.compatible_models_count) === 1 ? "" : "s"}`
+          : null,
+    ],
+    [
+      "Replaces Previous Parts",
+      previousParts.length ? previousParts.join(", ") : null,
+    ],
+    ["Replaced By", vm.replaced_by],
+  ].filter((row): row is [string, string] => Boolean(row[1]));
+
   return (
     <div className="bg-zinc-50">
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -530,6 +565,36 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                     This part may fit other brands known to be compatible with{" "}
                     <span className="font-medium">{vm.brand}</span>.
                   </div>
+                ) : null}
+
+                {identityRows.length > 0 ? (
+                  <section
+                    aria-labelledby="product-details-heading"
+                    className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+                  >
+                    <h2
+                      id="product-details-heading"
+                      className="text-sm font-semibold uppercase tracking-wide text-zinc-700"
+                    >
+                      Product Details
+                    </h2>
+
+                    <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                      {identityRows.map(([label, value]) => (
+                        <div
+                          key={label}
+                          className="rounded-xl border border-zinc-200 bg-white px-3 py-2"
+                        >
+                          <dt className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                            {label}
+                          </dt>
+                          <dd className="mt-1 break-words text-sm font-medium text-zinc-950">
+                            {value}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </section>
                 ) : null}
               </div>
             </div>
