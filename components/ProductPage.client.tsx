@@ -415,6 +415,89 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     ["Replaced By", vm.replaced_by],
   ].filter((row): row is [string, string] => Boolean(row[1]));
 
+  function gridHref(params: {
+    condition?: "new" | "refurb" | "both";
+    availability?: "all" | "in_stock";
+    brand?: string | null;
+    applianceType?: string | null;
+    partType?: string | null;
+    q?: string | null;
+  }) {
+    const sp = new URLSearchParams();
+    sp.set("condition", params.condition || (vm.is_refurb ? "refurb" : "new"));
+    sp.set("availability", params.availability || "all");
+
+    if (params.q) sp.set("q", params.q);
+    if (params.brand) sp.append("brands", params.brand);
+    if (params.applianceType) sp.set("appliance_type", params.applianceType);
+    if (params.partType) sp.append("part_types", params.partType);
+
+    return `/grid?${sp.toString()}`;
+  }
+
+  const relatedLinks = [
+    vm.brand
+      ? {
+          label: `Browse more ${vm.brand} parts`,
+          href: gridHref({ condition: "both", brand: vm.brand }),
+        }
+      : null,
+    vm.appliance_type
+      ? {
+          label: `Browse ${vm.appliance_type.toLowerCase()} parts`,
+          href: gridHref({ condition: "both", applianceType: vm.appliance_type }),
+        }
+      : null,
+    partTypeText
+      ? {
+          label: `Browse ${partTypeText.toLowerCase()} parts`,
+          href: gridHref({ condition: "both", partType: partTypeText }),
+        }
+      : null,
+    vm.brand && vm.appliance_type
+      ? {
+          label: `Browse ${vm.brand} ${vm.appliance_type.toLowerCase()} parts`,
+          href: gridHref({
+            condition: "both",
+            brand: vm.brand,
+            applianceType: vm.appliance_type,
+          }),
+        }
+      : null,
+    vm.brand && partTypeText
+      ? {
+          label: `Browse ${vm.brand} ${partTypeText.toLowerCase()} parts`,
+          href: gridHref({
+            condition: "both",
+            brand: vm.brand,
+            partType: partTypeText,
+          }),
+        }
+      : null,
+    {
+      label: vm.is_refurb
+        ? "Browse all refurbished appliance parts"
+        : "Browse all new OEM appliance parts",
+      href: gridHref({ condition: vm.is_refurb ? "refurb" : "new" }),
+    },
+    {
+      label: `Search for ${mpn} alternatives`,
+      href: gridHref({ condition: "both", q: mpn }),
+    },
+    {
+      label: "Shipping information",
+      href: "/shipping",
+    },
+    {
+      label: "Returns policy",
+      href: "/returns",
+    },
+    {
+      label: "Request a rare part",
+      href: "/rare-part-request",
+    },
+  ].filter((link): link is { label: string; href: string } => Boolean(link));
+
   return (
     <div className="bg-zinc-50">
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -664,6 +747,32 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                       ))}
                     </div>
                   </div>
+                ) : null}
+
+                {relatedLinks.length > 0 ? (
+                  <section
+                    aria-labelledby="related-links-heading"
+                    className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+                  >
+                    <h2
+                      id="related-links-heading"
+                      className="text-sm font-semibold uppercase tracking-wide text-zinc-700"
+                    >
+                      Explore Related Appliance Parts
+                    </h2>
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {relatedLinks.map((link) => (
+                        <Link
+                          key={`${link.href}-${link.label}`}
+                          href={link.href}
+                          className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:border-zinc-400 hover:bg-white"
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
                 ) : null}
               </div>
 
