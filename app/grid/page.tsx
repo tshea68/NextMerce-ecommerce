@@ -2,6 +2,7 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+import type { Metadata } from "next";
 import PartsExplorer from "./PartsExplorer.client";
 import { headers } from "next/headers";
 
@@ -45,6 +46,113 @@ function parseAvailability(raw: string): Availability {
   if (v === "orderable") return "orderable";
   if (v === "all") return "all";
   return DEFAULT_AVAILABILITY;
+}
+
+function titleCase(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function conditionLabel(condition: Condition) {
+  if (condition === "new") return "New OEM";
+  if (condition === "refurb") return "Refurbished";
+  return "New and Refurbished";
+}
+
+function buildGridMetadataTitle(parts: string[]) {
+  const clean = parts.map((p) => p.trim()).filter(Boolean);
+  if (!clean.length) return "Appliance Parts | Appliance Part Geeks";
+  return `${clean.join(" ")} Parts | Appliance Part Geeks`;
+}
+
+function buildGridCanonical(sp: URLSearchParams) {
+  const baseUrl =
+    (process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://www.appliancepartgeeks.com").replace(/\/+$/, "");
+
+  const keep = new URLSearchParams();
+
+  for (const key of ["q", "condition", "availability", "brands", "appliance_type", "part_types"]) {
+    const values = sp.getAll(key).filter(Boolean);
+    for (const value of values) keep.append(key, value);
+  }
+
+  const qs = keep.toString();
+  return `${baseUrl}/grid${qs ? `?${qs}` : ""}`;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: SP | Promise<SP>;
+}): Promise<Metadata> {
+  const spObj = (await Promise.resolve(searchParams)) || {};
+
+  const q = asStr(spObj.q).trim();
+  const condition = parseCondition(asStr(spObj.condition));
+  const availability = parseAvailability(asStr(spObj.availability));
+  const brands = asArr(spObj.brands);
+  const applianceType = asStr(spObj.appliance_type).trim();
+  const partTypes = asArr(spObj.part_types);
+
+  const canonicalParams = new URLSearchParams();
+
+  if (q) {
+    canonicalParams.set("q", q);
+    canonicalParams.set("condition", "both");
+    canonicalParams.set("availability", "all");
+  } else {
+    canonicalParams.set("condition", condition);
+    canonicalParams.set("availability", availability);
+
+    for (const brand of brands) canonicalParams.append("brands", brand);
+    if (applianceType) canonicalParams.set("appliance_type", applianceType);
+    for (const partType of partTypes) canonicalParams.append("part_types", partType);
+  }
+
+  const firstBrand = brands[0] ? titleCase(brands[0]) : "";
+  const firstPartType = partTypes[0] ? titleCase(partTypes[0]) : "";
+  const appliance = applianceType ? titleCase(applianceType) : "";
+  const cond = q ? "New and Refurbished" : conditionLabel(condition);
+
+  const titleParts = q
+    ? [`${q}`, "Appliance Part Search Results"]
+    : [firstBrand, appliance, cond, firstPartType];
+
+  const title = q
+    ? `${q} Appliance Part Search Results | Appliance Part Geeks`
+    : buildGridMetadataTitle(titleParts);
+
+  const description = q
+    ? `Search Appliance Part Geeks for ${q}. Compare new OEM and refurbished appliance parts, compatible models, pricing, and availability.`
+    : `Shop ${[firstBrand, appliance, cond.toLowerCase(), firstPartType.toLowerCase()]
+        .filter(Boolean)
+        .join(" ")} appliance parts. Compare part numbers, compatible models, pricing, and availability.`;
+
+  const canonical = buildGridCanonical(canonicalParams);
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
 }
 
 async function readJsonSafe(res: Response) {
