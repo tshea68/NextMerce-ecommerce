@@ -127,11 +127,18 @@ export async function generateMetadata({
     ? `${q} Appliance Part Search Results | Appliance Part Geeks`
     : buildGridMetadataTitle(titleParts);
 
+  const descriptionPhrase = [
+    firstBrand,
+    appliance ? appliance.toLowerCase() : "",
+    cond === "New OEM" ? "new OEM" : cond.toLowerCase(),
+    firstPartType ? firstPartType.toLowerCase() : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   const description = q
     ? `Search Appliance Part Geeks for ${q}. Compare new OEM and refurbished appliance parts, compatible models, pricing, and availability.`
-    : `Shop ${[firstBrand, appliance, cond.toLowerCase(), firstPartType.toLowerCase()]
-        .filter(Boolean)
-        .join(" ")} appliance parts. Compare part numbers, compatible models, pricing, and availability.`;
+    : `Shop ${descriptionPhrase} appliance parts. Compare part numbers, compatible models, pricing, and availability.`;
 
   const canonical = buildGridCanonical(canonicalParams);
 
