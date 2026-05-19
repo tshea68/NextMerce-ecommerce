@@ -40,6 +40,20 @@ import ModelCard from "@/components/cards/ModelCard";
    CONFIG
    ================================ */
 const API_BASE = "";
+
+function titleCaseLabel(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function conditionHeadingLabel(condition: string) {
+  if (condition === "new") return "New OEM";
+  if (condition === "refurb") return "Refurbished";
+  return "New and Refurbished";
+}
 const DEFAULT_PER_PAGE = 30;
 
 const APPLIANCE_ICON_BASE =
@@ -1019,6 +1033,32 @@ export default function PartsExplorer(props: PartsExplorerProps) {
   const isModelFocused = !!activeModel;
   const hasAnyResults = modelCards.length > 0 || items.length > 0;
 
+  const firstBrand = selectedBrands[0] ? titleCaseLabel(selectedBrands[0]) : "";
+  const applianceHeading = applianceType ? titleCaseLabel(applianceType) : "";
+  const partTypeHeading = selectedPartTypes[0] ? titleCaseLabel(selectedPartTypes[0]) : "";
+  const conditionHeading = conditionHeadingLabel(searchMode ? "both" : condition);
+
+  const seoHeading = searchMode
+    ? q.trim()
+      ? `${q.trim()} Appliance Part Search Results`
+      : "Appliance Part Search Results"
+    : [firstBrand, applianceHeading, conditionHeading, partTypeHeading, "Appliance Parts"]
+        .filter(Boolean)
+        .join(" ");
+
+  const seoDescription = searchMode
+    ? q.trim()
+      ? `Search results for ${q.trim()}. Compare new OEM and refurbished appliance parts, compatible models, pricing, and availability.`
+      : "Search Appliance Part Geeks by model number, part number, brand, appliance type, or part type."
+    : `Shop ${[
+        firstBrand,
+        applianceHeading ? applianceHeading.toLowerCase() : "",
+        conditionHeading === "New OEM" ? "new OEM" : conditionHeading.toLowerCase(),
+        partTypeHeading ? partTypeHeading.toLowerCase() : "",
+      ]
+        .filter(Boolean)
+        .join(" ")} appliance parts. Compare part numbers, compatible models, pricing, and availability.`;
+
   return (
     <div id="parts-grid" className="scroll-mt-28 max-w-none px-0 py-0">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
@@ -1033,10 +1073,15 @@ export default function PartsExplorer(props: PartsExplorerProps) {
               </>
             ) : (
               <>
-                Models and Parts Results{" "}
+                <h1 className="text-[22px] font-bold leading-tight text-gray-900">
+                  {seoHeading}
+                </h1>
+                <p className="mt-1 max-w-3xl text-[13px] leading-5 text-gray-600">
+                  {seoDescription}
+                </p>
                 {searchMode ? (
                   typeof totalCount === "number" ? (
-                    <span className="font-normal text-gray-500">
+                    <span className="block font-normal text-gray-500">
                       (showing {fmtCount(modelCards.length + items.length)} of {fmtCount(totalCount)})
                     </span>
                   ) : (
