@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
 import PartImage from "@/components/PartImage";
@@ -218,7 +217,6 @@ export default function ProductCard({ item }: ProductCardProps) {
     ? getNewPartAvailability(item)
     : null;
 
-  const router = useRouter();
   const { addToCart } = useCart() as {
     addToCart: (item: CartItemInput) => void;
   };
@@ -290,11 +288,6 @@ export default function ProductCard({ item }: ProductCardProps) {
         is_refurb: !!isOfferLike,
       });
     } catch {}
-  }
-
-  function goToDetail(e: any) {
-    e?.preventDefault?.();
-    if (detailHref && detailHref !== "#") router.push(detailHref);
   }
 
   const cardBg = isNla
@@ -396,9 +389,8 @@ export default function ProductCard({ item }: ProductCardProps) {
 
         <div className="flex-1 min-w-0 flex flex-col gap-2 text-black">
           <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
-            <a
+            <Link
               href={detailHref}
-              onClick={goToDetail}
               className="text-[15px] font-semibold text-[#06254a] leading-snug hover:text-orange-700 hover:underline focus:underline focus:outline-none cursor-pointer"
               aria-label={`View ${headline}`}
             >
@@ -406,7 +398,7 @@ export default function ProductCard({ item }: ProductCardProps) {
               <span className="text-[#06254a]">
                 [{isOfferLike ? "Refurbished" : "New"}]
               </span>
-            </a>
+            </Link>
           </div>
 
           {compatibleBrands.length > 0 && (
@@ -535,13 +527,12 @@ export default function ProductCard({ item }: ProductCardProps) {
             </button>
           </div>
 
-          <a
+          <Link
             href={detailHref}
-            onClick={goToDetail}
             className="underline text-[#06254a] text-[11px] font-medium hover:text-orange-700"
           >
             View part
-          </a>
+          </Link>
         </div>
       </div>
     </div>
