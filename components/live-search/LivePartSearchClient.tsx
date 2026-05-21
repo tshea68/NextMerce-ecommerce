@@ -36,8 +36,11 @@ type LivePartResult = {
 type LivePartResponse = {
   searched_mpn: string;
   searched_mpn_norm: string;
+  saved_run_id?: number;
   result_count: number;
+  source_count?: number;
   results: LivePartResult[];
+  sources?: SourceHealth[];
 };
 
 type SourceHealth = {
@@ -147,28 +150,44 @@ export default function LivePartSearchClient() {
     setSearched(clean);
 
     try {
-      const [resultRes, sourceRes] = await Promise.all([
-        fetch(`${API_BASE}/api/live-part-search/${encodeURIComponent(clean)}`, {
+      const refreshRes = await fetch(
+        `${API_BASE}/api/live-part-search/${encodeURIComponent(clean)}/refresh`,
+        {
+          method: "POST",
           cache: "no-store",
-        }),
-        fetch(`${API_BASE}/api/live-part-search/${encodeURIComponent(clean)}/sources`, {
-          cache: "no-store",
-        }),
-      ]);
+        }
+      );
 
-      if (!resultRes.ok) {
-        throw new Error(`Result request failed: ${resultRes.status}`);
+      if (!refreshRes.ok) {
+        let detail = "";
+        try {
+          const errJson = await refreshRes.json();
+          detail = errJson?.detail ? `: ${errJson.detail}` : "";
+        } catch {
+          // ignore JSON parse errors for error response
+        }
+
+        throw new Error(`Refresh request failed: ${refreshRes.status}${detail}`);
       }
 
-      if (!sourceRes.ok) {
-        throw new Error(`Source request failed: ${sourceRes.status}`);
-      }
+      const refreshJson = (await refreshRes.json()) as LivePartResponse;
 
-      const resultJson = (await resultRes.json()) as LivePartResponse;
-      const sourceJson = (await sourceRes.json()) as SourceHealthResponse;
+      setData({
+        searched_mpn: refreshJson.searched_mpn,
+        searched_mpn_norm: refreshJson.searched_mpn_norm,
+        saved_run_id: refreshJson.saved_run_id,
+        result_count: refreshJson.result_count,
+        source_count: refreshJson.source_count,
+        results: refreshJson.results || [],
+        sources: refreshJson.sources || [],
+      });
 
-      setData(resultJson);
-      setSources(sourceJson);
+      setSources({
+        searched_mpn: refreshJson.searched_mpn,
+        searched_mpn_norm: refreshJson.searched_mpn_norm,
+        source_count: refreshJson.source_count || refreshJson.sources?.length || 0,
+        sources: refreshJson.sources || [],
+      });
     } catch (err: any) {
       setError(err?.message || "Live part search failed.");
     } finally {
@@ -254,7 +273,7 @@ export default function LivePartSearchClient() {
 
         {loading ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-sm">
-            Searching latest saved source data…
+            Checking live sources and saving the latest result…
           </div>
         ) : null}
 
@@ -294,7 +313,7 @@ export default function LivePartSearchClient() {
               <div className="border-b border-slate-200 px-5 py-4">
                 <h2 className="text-xl font-black">Best Candidates</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  User-facing comparison rows from the latest saved run.
+                  User-facing comparison rows from the latest live refresh.
                 </p>
               </div>
 
