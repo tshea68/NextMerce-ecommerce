@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 const API_BASE = (
-  process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com"
+  process.env.LEGACY_REDIRECT_API_BASE ||
+  process.env.NEXT_PUBLIC_API_BASE ||
+  "https://api.appliancepartgeeks.com"
 ).replace(/\/+$/, "");
 
 type SearchValue = string | string[] | undefined;
@@ -20,6 +22,39 @@ function firstValue(value: SearchValue): string {
   return value || "";
 }
 
+async function resolveLegacyRefurbRedirect(
+  legacyPath: string,
+  offer: string
+): Promise<string> {
+  const qs = new URLSearchParams();
+  qs.set("path", legacyPath);
+  if (offer) qs.set("offer", offer);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/legacy/refurb-redirect?${qs.toString()}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!res.ok) return "/grid?condition=refurbished";
+
+    const data = await res.json();
+
+    if (typeof data?.redirect_to === "string" && data.redirect_to.startsWith("/")) {
+      return data.redirect_to;
+    }
+
+    return "/grid?condition=refurbished";
+  } catch {
+    return "/grid?condition=refurbished";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default async function LegacyRefurbRedirectPage({
   params,
   searchParams,
@@ -30,25 +65,7 @@ export default async function LegacyRefurbRedirectPage({
   const slug = (resolvedParams.slug || []).join("/");
   const offer = firstValue(resolvedSearchParams.offer);
 
-  const qs = new URLSearchParams();
-  qs.set("path", slug);
-  if (offer) qs.set("offer", offer);
+  const destination = await resolveLegacyRefurbRedirect(slug, offer);
 
-  try {
-    const res = await fetch(`${API_BASE}/api/legacy/refurb-redirect?${qs.toString()}`, {
-      cache: "no-store",
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-
-      if (typeof data?.redirect_to === "string" && data.redirect_to.startsWith("/")) {
-        redirect(data.redirect_to);
-      }
-    }
-  } catch {
-    // Fall through to safe catalog redirect.
-  }
-
-  redirect("/grid?condition=refurbished");
+  redirect(destination);
 }
