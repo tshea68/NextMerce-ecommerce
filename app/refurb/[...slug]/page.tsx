@@ -21,6 +21,20 @@ function firstValue(value: SearchValue): string {
   return value || "";
 }
 
+function fallbackGridUrl(legacyPath: string): string {
+  const cleaned = legacyPath.trim();
+
+  if (!cleaned) {
+    return fallbackGridUrl(legacyPath);
+  }
+
+  const qs = new URLSearchParams();
+  qs.set("condition", "refurbished");
+  qs.set("q", cleaned);
+
+  return `/grid?${qs.toString()}`;
+}
+
 async function resolveLegacyRefurbRedirect(
   legacyPath: string,
   offer: string
@@ -38,7 +52,7 @@ async function resolveLegacyRefurbRedirect(
       signal: controller.signal,
     });
 
-    if (!res.ok) return "/grid?condition=refurbished";
+    if (!res.ok) return fallbackGridUrl(legacyPath);
 
     const data = await res.json();
 
@@ -46,9 +60,9 @@ async function resolveLegacyRefurbRedirect(
       return data.redirect_to;
     }
 
-    return "/grid?condition=refurbished";
+    return fallbackGridUrl(legacyPath);
   } catch {
-    return "/grid?condition=refurbished";
+    return fallbackGridUrl(legacyPath);
   } finally {
     clearTimeout(timer);
   }
