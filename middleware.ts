@@ -19,12 +19,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Legacy refurb URLs now live under /offers.
-  if (pathname.startsWith("/refurb/")) {
-    const url = req.nextUrl.clone();
-    url.pathname = pathname.replace(/^\/refurb\//, "/offers/");
-    return NextResponse.redirect(url, 308);
-  }
 
   return NextResponse.next();
 }
