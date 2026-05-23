@@ -2,11 +2,10 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-const API_BASE = (
-  process.env.LEGACY_REDIRECT_API_BASE ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "https://api.appliancepartgeeks.com"
-).replace(/\/+$/, "");
+// Use the public FastAPI domain directly for legacy SEO redirects.
+// Do not depend on NEXT_PUBLIC_API_BASE here; that may point at a frontend-relative
+// or stale environment value and cause this route to fall back.
+const API_BASE = "https://api.appliancepartgeeks.com";
 
 type SearchValue = string | string[] | undefined;
 
