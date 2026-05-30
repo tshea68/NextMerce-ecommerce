@@ -711,7 +711,7 @@ export async function GET(req: Request) {
 
       if (q) {
         const like = `%${q}%`;
-        qCount = qCount.or(`mpn.ilike.${like},title.ilike.${like},compatible_models.ilike.${like}`);
+        qCount = qCount.or(`mpn.ilike.${like},title.ilike.${like}`);
       }
 
       const { count } = await qCount;
@@ -746,7 +746,7 @@ export async function GET(req: Request) {
 
       if (q) {
         const like = `%${q}%`;
-        qCount = qCount.or(`mpn.ilike.${like},title.ilike.${like},compatible_models.ilike.${like}`);
+        qCount = qCount.or(`mpn.ilike.${like},title.ilike.${like}`);
       }
 
       const { count } = await qCount;
@@ -1126,7 +1126,7 @@ export async function GET(req: Request) {
 
     if (q) {
       const like = `%${q}%`;
-      qb = qb.or(`mpn.ilike.${like},title.ilike.${like},compatible_models.ilike.${like}`);
+      qb = qb.or(`mpn.ilike.${like},title.ilike.${like}`);
     }
 
     const s = sort || "";
@@ -1246,7 +1246,7 @@ export async function GET(req: Request) {
 
     if (q) {
       const like = `%${q}%`;
-      query = query.or(`mpn.ilike.${like},title.ilike.${like},compatible_models.ilike.${like}`);
+      query = query.or(`mpn.ilike.${like},title.ilike.${like}`);
     }
 
     return query;
