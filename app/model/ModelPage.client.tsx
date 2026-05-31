@@ -270,6 +270,7 @@ function ModelPageContent() {
     all: [],
   });
   const [brandLogos, setBrandLogos] = useState<AnyObj[]>([]);
+  const [activeExplodedView, setActiveExplodedView] = useState<AnyObj | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [bulk, setBulk] = useState<Record<string, AnyObj>>({});
@@ -575,24 +576,75 @@ function ModelPageContent() {
               </div>
 
               <div className="flex flex-1 gap-2 overflow-x-auto overflow-y-hidden">
-                {model.exploded_views?.map((v: AnyObj, i: number) => (
-                  <div key={i} className="w-24 shrink-0">
-                    <div className="w-full rounded border bg-white p-1">
-                      <PartImage
-                        imageUrl={v.image_url}
-                        alt={v.label}
-                        disableHoverPreview
-                        className="h-14 w-full object-contain"
-                      />
-                      <p className="mt-1 truncate text-center text-[10px] leading-tight text-black">
-                        {v.label}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                {model.exploded_views?.map((v: AnyObj, i: number) => {
+                  const label = v.label || `View ${i + 1}`;
+
+                  return (
+                    <button
+                      key={`${v.image_url || label}-${i}`}
+                      type="button"
+                      onClick={() => setActiveExplodedView({ ...v, label })}
+                      className="group w-28 shrink-0 cursor-pointer text-left"
+                      title={`Open ${label}`}
+                    >
+                      <div className="relative w-full overflow-hidden rounded-lg border border-gray-200 bg-white p-1 transition duration-150 group-hover:border-orange-500 group-hover:shadow-md">
+                        <PartImage
+                          imageUrl={v.image_url}
+                          alt={label}
+                          disableHoverPreview
+                          className="h-16 w-full object-contain transition duration-150 group-hover:scale-110"
+                        />
+
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-150 group-hover:bg-black/30 group-hover:opacity-100">
+                          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-gray-900 shadow">
+                            View
+                          </span>
+                        </div>
+
+                        <p className="mt-1 truncate text-center text-[10px] leading-tight text-black group-hover:text-orange-700">
+                          {label}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
+
+          {activeExplodedView && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+              onClick={() => setActiveExplodedView(null)}
+            >
+              <div
+                className="relative max-h-[90vh] w-full max-w-6xl rounded-2xl bg-white p-4 text-black shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveExplodedView(null)}
+                  className="absolute right-3 top-3 z-10 rounded-full bg-gray-100 px-3 py-1 text-lg font-bold leading-none text-gray-700 hover:bg-gray-200"
+                  aria-label="Close exploded view"
+                >
+                  ×
+                </button>
+
+                <h3 className="mb-3 pr-10 text-lg font-bold text-gray-900">
+                  {activeExplodedView.label || "Exploded View"}
+                </h3>
+
+                <div className="flex max-h-[75vh] items-center justify-center overflow-auto rounded-xl bg-gray-50 p-3">
+                  <PartImage
+                    imageUrl={activeExplodedView.image_url}
+                    alt={activeExplodedView.label || "Exploded view"}
+                    disableHoverPreview
+                    className="max-h-[72vh] w-auto max-w-full object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <ModelNumberNote model={model} />
 
