@@ -275,8 +275,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
   const hasPrice = asNumber(vm.price) != null;
   const priceText = money(vm.price);
-  const conditionText = vm.condition || (vm.is_refurb ? "Refurbished" : "Genuine OEM");
-
   const canPurchase = vm.is_refurb ? hasPositiveInventory(vm) : !isNlaish(vm);
 
   const badgeProps = useMemo(() => {
@@ -365,27 +363,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
   }
 
   const partTypeText = vm.specific_part_type || vm.part_type || null;
-  const availabilityText = isNlaish(vm)
-    ? "No Longer Available"
-    : vm.is_refurb
-      ? hasPositiveInventory(vm)
-        ? `${asNumber(vm.inventory_total)?.toLocaleString("en-US") || vm.inventory_total} units available`
-        : "Currently unavailable"
-      : hasPositiveInventory(vm)
-        ? `${asNumber(vm.inventory_total)?.toLocaleString("en-US") || vm.inventory_total} units available`
-        : isOrderable(vm)
-          ? "Special order / orderable"
-          : "Availability varies";
-
-  const identityRows = [
-    ["Part Number / MPN", mpn],
-    ["Brand", vm.brand],
-    ["Condition", conditionText],
-    ["Appliance Type", vm.appliance_type],
-    ["Part Type", partTypeText],
-    ["Availability", availabilityText],
-  ].filter((row): row is [string, string] => Boolean(row[1]));
-
   function gridHref(params: {
     condition?: "new" | "refurb" | "both";
     availability?: "all" | "in_stock";
@@ -517,35 +494,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                   {title}
                 </h1>
 
-                {identityRows.length > 0 ? (
-                  <section
-                    aria-labelledby="product-details-heading"
-                    className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
-                  >
-                    <h2
-                      id="product-details-heading"
-                      className="text-sm font-semibold uppercase tracking-wide text-zinc-700"
-                    >
-                      Product Details
-                    </h2>
-
-                    <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {identityRows.map(([label, value]) => (
-                        <div
-                          key={label}
-                          className="rounded-xl border border-zinc-200 bg-white px-3 py-2"
-                        >
-                          <dt className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                            {label}
-                          </dt>
-                          <dd className="mt-1 break-words text-sm font-medium text-zinc-950">
-                            {value}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </section>
-                ) : null}
               </div>
             </div>
 
