@@ -804,6 +804,13 @@ export async function GET(req: Request) {
   async function runModelsSearch() {
     if (!searchMode || !q) return { data: [], error: null };
 
+    const normalizedModelCandidate = q.replace(/[^a-zA-Z0-9]/g, "");
+    const shouldSearchModels =
+      normalizedModelCandidate.length >= 5 &&
+      /\d/.test(normalizedModelCandidate);
+
+    if (!shouldSearchModels) return { data: [], error: null };
+
     const like = `%${q}%`;
 
     const cols = [
@@ -817,10 +824,12 @@ export async function GET(req: Request) {
       "refurb_count",
     ].join(",");
 
+    // Keep this narrow. Broad OR searches over model title/brand/appliance_type
+    // cause expensive PostgREST scans on public.models.
     let qb: any = supabase
       .from("models")
       .select(cols)
-      .or(`model_number.ilike.${like},title.ilike.${like},brand.ilike.${like},appliance_type.ilike.${like}`);
+      .ilike("model_number", like);
 
     if (itemsApplianceType) {
       qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
