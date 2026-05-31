@@ -200,16 +200,21 @@ function compareStatusToNewSummaryStatus(
 function MiniScrollSection({
   title,
   children,
+  note,
 }: {
   title: string;
   children: React.ReactNode;
+  note?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-      <div className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
-        {title}
+    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+          {title}
+        </div>
       </div>
-      <div className="max-h-[108px] overflow-y-auto pr-1">{children}</div>
+      {note ? <p className="mb-2 text-xs leading-5 text-zinc-600">{note}</p> : null}
+      <div className="max-h-[104px] overflow-y-auto pr-1">{children}</div>
     </div>
   );
 }
@@ -237,9 +242,31 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
   );
 
   const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
-    if (vm.breadcrumb_items?.length) return vm.breadcrumb_items;
-    return [{ label: "Home", href: "/" }, ...(mpn ? [{ label: mpn }] : [])];
-  }, [vm.breadcrumb_items, mpn]);
+    const sectionLabel = vm.is_refurb ? "Refurbished Part" : "Part";
+
+    if (vm.breadcrumb_items?.length) {
+      const items = [...vm.breadcrumb_items];
+      const hasSection = items.some((item) =>
+        String(item.label || "").toLowerCase().includes("part")
+      );
+
+      if (!hasSection && items.length >= 2) {
+        return [
+          items[0],
+          { label: sectionLabel, href: vm.is_refurb ? "/grid?condition=refurb" : "/grid?condition=new" },
+          ...items.slice(1),
+        ];
+      }
+
+      return items;
+    }
+
+    return [
+      { label: "Home", href: "/" },
+      { label: sectionLabel, href: vm.is_refurb ? "/grid?condition=refurb" : "/grid?condition=new" },
+      ...(mpn ? [{ label: mpn }] : []),
+    ];
+  }, [vm.breadcrumb_items, mpn, vm.is_refurb]);
 
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -385,8 +412,8 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
   return (
     <div className="bg-zinc-50">
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <Breadcrumbs items={breadcrumbItems} className="mb-6 text-zinc-500" />
+      <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
+        <Breadcrumbs items={breadcrumbItems} className="mb-4 text-sm text-zinc-500" />
 
         {vm.replaced_by ? (
           <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
@@ -404,25 +431,26 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
           </div>
         ) : null}
 
-        <section className="grid gap-6 lg:grid-cols-[1.05fr_1.25fr]">
-          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
-            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+        <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:p-4">
+            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
               <PartImage
                 enableFullscreenPreview
                 imageUrl={vm.image_url || ""}
                 alt={title}
-                className="h-auto w-full object-contain"
+                className="max-h-[340px] w-full object-contain"
                 disableHoverPreview={false}
               />
             </div>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-3 space-y-3">
               <MiniScrollSection
                 title={
                   compatibleModels.length
                     ? `Fits ${compatibleModels.length.toLocaleString("en-US")} Published Models`
                     : "Compatible Models"
                 }
+                note="Published model numbers currently linked to this part. Always match your full model number when possible."
               >
                 {compatibleModels.length ? (
                   <div className="flex flex-wrap gap-2">
@@ -446,7 +474,10 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
               {vm.replaced_by || previousParts.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   {vm.replaced_by ? (
-                    <MiniScrollSection title="Replaced By">
+                    <MiniScrollSection
+                      title="Replaced By"
+                      note="This means a newer part number may supersede this one."
+                    >
                       <Link
                         href={`/parts/${encodeURIComponent(vm.replaced_by)}`}
                         className="inline-flex rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50"
@@ -457,7 +488,10 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                   ) : null}
 
                   {previousParts.length > 0 ? (
-                    <MiniScrollSection title="Replaces Previous Parts">
+                    <MiniScrollSection
+                      title="Replaces Previous Parts"
+                      note="These are older part numbers this part may replace."
+                    >
                       <div className="flex flex-wrap gap-2">
                         {previousParts.map((part) => (
                           <Link
@@ -476,10 +510,10 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0 w-full">
-                <div className="mb-5">
+                <div className="mb-4">
                   <ComparisonBadge
                     mode={badgeProps.mode}
                     variant="product"
@@ -490,47 +524,25 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                   />
                 </div>
 
-                <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
+                <h1 className="max-w-3xl text-2xl font-bold leading-tight tracking-tight text-zinc-950 sm:text-3xl">
                   {title}
                 </h1>
 
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_360px]">
-              <div className="space-y-5">
+            <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_315px]">
+              <div className="space-y-4">
                 {vm.description ? (
                   <div>
                     <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
                       Description
                     </div>
-                    <div className="text-base leading-7 text-zinc-700">
+                    <div className="text-sm leading-6 text-zinc-700">
                       {vm.description}
                     </div>
                   </div>
                 ) : null}
-
-                <div>
-                  <div className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                    Need another part?
-                  </div>
-
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                    <div className="text-sm font-semibold text-zinc-950">
-                      Search Appliance Part Geeks
-                    </div>
-                    <p className="mt-1 text-sm leading-6 text-zinc-600">
-                      Search by model number, part number, brand, appliance type, or part type.
-                    </p>
-
-                    <Link
-                      href="/grid"
-                      className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-zinc-950 px-4 text-sm font-semibold text-white hover:bg-zinc-800"
-                    >
-                      Open parts search
-                    </Link>
-                  </div>
-                </div>
 
                 {alternateNumbers.length > 0 ? (
                   <div>
@@ -552,9 +564,9 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
               </div>
 
-              <aside className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+              <aside className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                 <div className="text-sm text-zinc-500">Price</div>
-                <div className="mt-1 text-4xl font-bold tracking-tight text-zinc-950">
+                <div className="mt-1 text-3xl font-bold tracking-tight text-zinc-950">
                   {priceText}
                 </div>
 
@@ -623,15 +635,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                   >
                     Buy Now
                   </button>
-                </div>
-
-                <div className="mt-5 space-y-2 text-sm text-zinc-700">
-                  <div>• Compatibility and replacement data shown under the image</div>
-                  {!vm.is_refurb ? (
-                    <div>• Availability shown above when applicable</div>
-                  ) : (
-                    <div>• Refurbished inventory shown in the badge above</div>
-                  )}
                 </div>
 
                 {!hasPrice ? (
