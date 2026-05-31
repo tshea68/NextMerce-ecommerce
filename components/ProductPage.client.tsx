@@ -253,7 +253,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
       if (!hasSection && items.length >= 2) {
         return [
           items[0],
-          { label: sectionLabel, href: vm.is_refurb ? "/grid?condition=refurb" : "/grid?condition=new" },
+          { label: sectionLabel },
           ...items.slice(1),
         ];
       }
@@ -263,7 +263,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
     return [
       { label: "Home", href: "/" },
-      { label: sectionLabel, href: vm.is_refurb ? "/grid?condition=refurb" : "/grid?condition=new" },
+      { label: sectionLabel },
       ...(mpn ? [{ label: mpn }] : []),
     ];
   }, [vm.breadcrumb_items, mpn, vm.is_refurb]);

@@ -530,7 +530,7 @@ function ModelPageContent() {
         />
 
         <div className="rounded-md bg-white px-4 pt-8 pb-12 text-black shadow-[0_0_20px_rgba(0,0,0,0.4)] md:px-6 md:pt-10 lg:px-8">
-          <div className="mb-4 flex max-h-[110px] items-center gap-4 overflow-hidden rounded border bg-white p-3 text-black">
+          <div className="mb-4 flex min-h-[125px] items-center gap-4 overflow-hidden rounded border bg-white p-3 text-black">
             <div className="flex items-center justify-center px-4 py-2">
               {getBrandLogoUrl(model.brand) ? (
                 <img
@@ -575,7 +575,7 @@ function ModelPageContent() {
                 </p>
               </div>
 
-              <div className="flex flex-1 gap-2 overflow-x-auto overflow-y-hidden">
+              <div className="flex flex-1 gap-2 overflow-x-auto overflow-y-hidden py-1">
                 {model.exploded_views?.map((v: AnyObj, i: number) => {
                   const label = v.label || `View ${i + 1}`;
 
