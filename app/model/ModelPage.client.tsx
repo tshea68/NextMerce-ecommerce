@@ -13,6 +13,16 @@ const API_BASE = (
 
 type AnyObj = Record<string, any>;
 
+type ModelCrossref = {
+  id?: number;
+  source_brand?: string | null;
+  source_model_number?: string | null;
+  related_brand?: string | null;
+  related_model_number?: string | null;
+  relationship_type?: string | null;
+  source_model_title?: string | null;
+};
+
 const normalize = (s: any) =>
   String(s || "")
     .toLowerCase()
@@ -176,6 +186,69 @@ function buildRefurbMaps(offers: AnyObj[]) {
     bulk: byNorm,
     uniqueCount: mpnSet.size,
   };
+}
+
+function ModelNumberNote({ model }: { model: AnyObj }) {
+  const crossrefs: ModelCrossref[] = Array.isArray(model?.model_crossrefs)
+    ? model.model_crossrefs
+    : [];
+
+  if (!crossrefs.length) return null;
+
+  const aliases = new Map<string, { brand: string; modelNumber: string }>();
+
+  const addAlias = (brandValue: any, modelValue: any) => {
+    const brand = String(brandValue || "").trim();
+    const modelNumber = String(modelValue || "").trim();
+    if (!modelNumber) return;
+
+    const key = `${normalize(brand)}|${normalize(modelNumber)}`;
+    aliases.set(key, { brand, modelNumber });
+  };
+
+  addAlias(model?.brand, model?.model_number);
+
+  for (const ref of crossrefs) {
+    addAlias(ref.source_brand, ref.source_model_number);
+    addAlias(ref.related_brand, ref.related_model_number);
+  }
+
+  const aliasList = Array.from(aliases.values());
+
+  if (aliasList.length < 2) return null;
+
+  return (
+    <section className="mb-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-slate-900">
+      <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+        Model number note
+      </div>
+
+      <p className="mt-2 leading-6">
+        This appliance may appear under more than one brand or model-number
+        format. Kenmore appliances are often manufactured by other OEM brands,
+        so supplier catalogs and parts diagrams may list the same appliance
+        under a manufacturer-formatted model number.
+      </p>
+
+      <div className="mt-3">
+        <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+          Known formats
+        </div>
+
+        <div className="mt-2 flex flex-wrap gap-2">
+          {aliasList.map((alias) => (
+            <span
+              key={`${alias.brand}-${alias.modelNumber}`}
+              className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-slate-950"
+            >
+              {alias.brand ? `${alias.brand} ` : ""}
+              {alias.modelNumber}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function ModelPageContent() {
@@ -521,6 +594,8 @@ function ModelPageContent() {
             </div>
           </div>
 
+          <ModelNumberNote model={model} />
+
           {refurbMode ? (
             <RefurbOnlyGrid items={refurbItems} modelNumber={model.model_number} />
           ) : (
@@ -840,6 +915,7 @@ function OtherKnownRow({ row }: { row: AnyObj }) {
     </div>
   );
 }
+
 function ModelPageFallback() {
   return (
     <div className="w-full bg-white py-4 pb-12">

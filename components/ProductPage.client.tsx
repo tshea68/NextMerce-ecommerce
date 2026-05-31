@@ -8,7 +8,6 @@ import PartImage from "@/components/PartImage";
 import ComparisonBadge from "@/components/ComparisonBadge.client";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
-import { resolveKeyPartFields } from "@/lib/product-detail-fields";
 
 export type ProductVM = {
   mpn?: string | null;
@@ -210,9 +209,7 @@ function MiniScrollSection({
       <div className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
         {title}
       </div>
-      <div className="max-h-[108px] overflow-y-auto pr-1">
-        {children}
-      </div>
+      <div className="max-h-[108px] overflow-y-auto pr-1">{children}</div>
     </div>
   );
 }
@@ -227,11 +224,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
   const compatibleModels = useMemo(
     () => toArray(vm.compatible_models),
     [vm.compatible_models]
-  );
-
-  const compatibleBrands = useMemo(
-    () => toArray(vm.compatible_brands),
-    [vm.compatible_brands]
   );
 
   const previousParts = useMemo(
@@ -291,9 +283,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
   const priceText = money(vm.price);
   const conditionText = vm.condition || (vm.is_refurb ? "Refurbished" : "Genuine OEM");
 
-  const canPurchase = vm.is_refurb
-    ? hasPositiveInventory(vm)
-    : !isNlaish(vm);
+  const canPurchase = vm.is_refurb ? hasPositiveInventory(vm) : !isNlaish(vm);
 
   const badgeProps = useMemo(() => {
     if (vm.is_refurb) {
@@ -328,8 +318,8 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     const newStatus = isNlaish(vm)
       ? "discontinued"
       : partQty != null && partQty > 0
-      ? "in_stock"
-      : "special_order";
+        ? "in_stock"
+        : "special_order";
 
     return {
       mode: "part" as const,
@@ -400,19 +390,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     ["Appliance Type", vm.appliance_type],
     ["Part Type", partTypeText],
     ["Availability", availabilityText],
-    [
-      "Compatible Models",
-      compatibleModels.length
-        ? `${compatibleModels.length.toLocaleString("en-US")} published model${compatibleModels.length === 1 ? "" : "s"}`
-        : vm.compatible_models_count
-          ? `${Number(vm.compatible_models_count).toLocaleString("en-US")} published model${Number(vm.compatible_models_count) === 1 ? "" : "s"}`
-          : null,
-    ],
-    [
-      "Replaces Previous Parts",
-      previousParts.length ? previousParts.join(", ") : null,
-    ],
-    ["Replaced By", vm.replaced_by],
   ].filter((row): row is [string, string] => Boolean(row[1]));
 
   function gridHref(params: {
@@ -521,7 +498,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
           <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
               <PartImage
-              enableFullscreenPreview
+                enableFullscreenPreview
                 imageUrl={vm.image_url || ""}
                 alt={title}
                 className="h-auto w-full object-contain"
@@ -533,22 +510,16 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
               <span className="rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-700">
                 {conditionText}
               </span>
-
-              {vm.brand ? (
-                <span className="rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-700">
-                  {vm.brand}
-                </span>
-              ) : null}
-
-              {vm.specific_part_type || vm.part_type ? (
-                <span className="rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-700">
-                  {vm.specific_part_type || vm.part_type}
-                </span>
-              ) : null}
             </div>
 
             <div className="mt-5 space-y-4">
-              <MiniScrollSection title="Compatible Models">
+              <MiniScrollSection
+                title={
+                  compatibleModels.length
+                    ? `Fits ${compatibleModels.length.toLocaleString("en-US")} Published Models`
+                    : "Compatible Models"
+                }
+              >
                 {compatibleModels.length ? (
                   <div className="flex flex-wrap gap-2">
                     {compatibleModels.map((model) => (
@@ -568,42 +539,36 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                 )}
               </MiniScrollSection>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <MiniScrollSection title="Replaced By">
+              {vm.replaced_by || previousParts.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2">
                   {vm.replaced_by ? (
-                    <Link
-                      href={`/parts/${encodeURIComponent(vm.replaced_by)}`}
-                      className="inline-flex rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50"
-                    >
-                      {vm.replaced_by}
-                    </Link>
-                  ) : (
-                    <div className="text-sm text-zinc-600">
-                      No newer superseding part published.
-                    </div>
-                  )}
-                </MiniScrollSection>
+                    <MiniScrollSection title="Replaced By">
+                      <Link
+                        href={`/parts/${encodeURIComponent(vm.replaced_by)}`}
+                        className="inline-flex rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50"
+                      >
+                        {vm.replaced_by}
+                      </Link>
+                    </MiniScrollSection>
+                  ) : null}
 
-                <MiniScrollSection title="Replaces Previous Parts">
-                  {previousParts.length ? (
-                    <div className="flex flex-wrap gap-2">
-                      {previousParts.map((part) => (
-                        <Link
-                          key={part}
-                          href={`/parts/${encodeURIComponent(part)}`}
-                          className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50"
-                        >
-                          {part}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-zinc-600">
-                      No previous part numbers published.
-                    </div>
-                  )}
-                </MiniScrollSection>
-              </div>
+                  {previousParts.length > 0 ? (
+                    <MiniScrollSection title="Replaces Previous Parts">
+                      <div className="flex flex-wrap gap-2">
+                        {previousParts.map((part) => (
+                          <Link
+                            key={part}
+                            href={`/parts/${encodeURIComponent(part)}`}
+                            className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50"
+                          >
+                            {part}
+                          </Link>
+                        ))}
+                      </div>
+                    </MiniScrollSection>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -624,29 +589,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                 <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
                   {title}
                 </h1>
-
-                {compatibleBrands.length > 0 ? (
-                  <div className="mt-4">
-                    <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                      Compatible Brands
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {compatibleBrands.slice(0, 10).map((b) => (
-                        <span
-                          key={b}
-                          className="rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-800"
-                        >
-                          {b}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : vm.brand ? (
-                  <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-                    This part may fit other brands known to be compatible with{" "}
-                    <span className="font-medium">{vm.brand}</span>.
-                  </div>
-                ) : null}
 
                 {identityRows.length > 0 ? (
                   <section
