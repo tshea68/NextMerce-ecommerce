@@ -802,50 +802,9 @@ export async function GET(req: Request) {
   }
 
   async function runModelsSearch() {
-    if (!searchMode || !q) return { data: [], error: null };
-
-    const normalizedModelCandidate = q.replace(/[^a-zA-Z0-9]/g, "");
-    const shouldSearchModels =
-      normalizedModelCandidate.length >= 5 &&
-      /\d/.test(normalizedModelCandidate);
-
-    if (!shouldSearchModels) return { data: [], error: null };
-
-    const like = `%${q}%`;
-
-    const cols = [
-      "id",
-      "title",
-      "brand",
-      "appliance_type",
-      "model_number",
-      "total_links",
-      "priced_parts",
-      "refurb_count",
-    ].join(",");
-
-    // Keep this narrow. Broad OR searches over model title/brand/appliance_type
-    // cause expensive PostgREST scans on public.models.
-    let qb: any = supabase
-      .from("models")
-      .select(cols)
-      .ilike("model_number", like);
-
-    if (itemsApplianceType) {
-      qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
-    }
-
-    if (itemsBrands.length) {
-      qb = qb.in("brand", expandFilterValues(itemsBrands));
-    }
-
-    qb = qb
-      .order("priced_parts", { ascending: false, nullsFirst: false })
-      .order("total_links", { ascending: false, nullsFirst: false })
-      .order("model_number", { ascending: true, nullsFirst: false })
-      .limit(12);
-
-    return await qb;
+    // Disabled inside grid route to stop expensive Supabase/PostgREST model_number ILIKE scans.
+    // Model search should use the dedicated search overlay / FastAPI model endpoints.
+    return { data: [], error: null };
   }
 
   let model_cards: any[] = [];

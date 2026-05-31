@@ -981,19 +981,30 @@ export default function PartsExplorer(props: PartsExplorerProps) {
         setHasMore(!!json.has_more);
         setPageInventoryTotal(typeof json.page_inventory_total === "number" ? json.page_inventory_total : null);
       } catch (e: any) {
-        if (e?.name === "AbortError") return;
+        if (
+          e?.name === "AbortError" ||
+          ctrl.signal.aborted ||
+          String(e?.message || "").toLowerCase().includes("aborted")
+        ) {
+          return;
+        }
+
         setErr(e?.message || "Request failed");
         setItems([]);
         setModelCards([]);
         setHasMore(false);
         setPageInventoryTotal(null);
       } finally {
-        setLoading(false);
+        if (!ctrl.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
 
     runItems();
-    return () => ctrl.abort();
+    return () => {
+      ctrl.abort("PartsExplorer request superseded");
+    };
   }, [
     hydrated,
     condition,
