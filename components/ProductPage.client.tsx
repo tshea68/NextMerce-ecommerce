@@ -242,7 +242,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
   }, [vm.breadcrumb_items, mpn]);
 
   const [qty, setQty] = useState(1);
-  const [fitInput, setFitInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [compareData, setCompareData] = useState<any>(null);
 
@@ -273,11 +272,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
       cancelled = true;
     };
   }, [mpn]);
-
-  const fitResult = useMemo(() => {
-    if (!fitInput.trim()) return null;
-    return modelMatch(fitInput, compatibleModels);
-  }, [fitInput, compatibleModels]);
 
   const hasPrice = asNumber(vm.price) != null;
   const priceText = money(vm.price);
@@ -412,67 +406,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     return `/grid?${sp.toString()}`;
   }
 
-  const relatedLinks = [
-    vm.brand
-      ? {
-          label: `Browse more ${vm.brand} parts`,
-          href: gridHref({ brand: vm.brand }),
-        }
-      : null,
-    vm.appliance_type
-      ? {
-          label: `Browse ${vm.appliance_type.toLowerCase()} parts`,
-          href: gridHref({ applianceType: vm.appliance_type }),
-        }
-      : null,
-    partTypeText
-      ? {
-          label: `Browse ${partTypeText.toLowerCase()} parts`,
-          href: gridHref({ partType: partTypeText }),
-        }
-      : null,
-    vm.brand && vm.appliance_type
-      ? {
-          label: `Browse ${vm.brand} ${vm.appliance_type.toLowerCase()} parts`,
-          href: gridHref({
-            brand: vm.brand,
-            applianceType: vm.appliance_type,
-          }),
-        }
-      : null,
-    vm.brand && partTypeText
-      ? {
-          label: `Browse ${vm.brand} ${partTypeText.toLowerCase()} parts`,
-          href: gridHref({
-            brand: vm.brand,
-            partType: partTypeText,
-          }),
-        }
-      : null,
-    {
-      label: vm.is_refurb
-        ? "Browse all refurbished appliance parts"
-        : "Browse all new OEM appliance parts",
-      href: gridHref({ condition: vm.is_refurb ? "refurb" : "new" }),
-    },
-    {
-      label: `Search for ${mpn} alternatives`,
-      href: gridHref({ condition: "both", q: mpn }),
-    },
-    {
-      label: "Shipping information",
-      href: "/shipping",
-    },
-    {
-      label: "Returns policy",
-      href: "/returns",
-    },
-    {
-      label: "Request a rare part",
-      href: "/rare-part-request",
-    },
-  ].filter((link): link is { label: string; href: string } => Boolean(link));
-
   return (
     <div className="bg-zinc-50">
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -504,12 +437,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                 className="h-auto w-full object-contain"
                 disableHoverPreview={false}
               />
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-700">
-                {conditionText}
-              </span>
             </div>
 
             <div className="mt-5 space-y-4">
@@ -637,37 +564,23 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
                 <div>
                   <div className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                    Check Fit by Model Number
+                    Need another part?
                   </div>
 
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                    <input
-                      type="text"
-                      value={fitInput}
-                      onChange={(e) => setFitInput(e.target.value)}
-                      placeholder="Enter your model number to check fit"
-                      className="h-12 w-full rounded-xl border border-zinc-300 bg-white px-4 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-zinc-500"
-                    />
+                    <div className="text-sm font-semibold text-zinc-950">
+                      Search Appliance Part Geeks
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-zinc-600">
+                      Search by model number, part number, brand, appliance type, or part type.
+                    </p>
 
-                    {fitInput.trim() ? (
-                      <div className="mt-3">
-                        {fitResult?.exact ? (
-                          <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
-                            Exact compatibility match found:{" "}
-                            <span className="font-semibold">{fitResult.model}</span>
-                          </div>
-                        ) : fitResult?.model ? (
-                          <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                            Partial compatibility match found:{" "}
-                            <span className="font-semibold">{fitResult.model}</span>
-                          </div>
-                        ) : (
-                          <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-900">
-                            No compatible model match found in the current data.
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
+                    <Link
+                      href="/grid"
+                      className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-zinc-950 px-4 text-sm font-semibold text-white hover:bg-zinc-800"
+                    >
+                      Open parts search
+                    </Link>
                   </div>
                 </div>
 
@@ -689,31 +602,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                   </div>
                 ) : null}
 
-                {relatedLinks.length > 0 ? (
-                  <section
-                    aria-labelledby="related-links-heading"
-                    className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
-                  >
-                    <h2
-                      id="related-links-heading"
-                      className="text-sm font-semibold uppercase tracking-wide text-zinc-700"
-                    >
-                      Explore Related Appliance Parts
-                    </h2>
-
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {relatedLinks.map((link) => (
-                        <Link
-                          key={`${link.href}-${link.label}`}
-                          href={link.href}
-                          className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:border-zinc-400 hover:bg-white"
-                        >
-                          {link.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
               </div>
 
               <aside className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
