@@ -106,3 +106,20 @@ export function trackBeginCheckout(items: GA4Item[], value?: number) {
     items,
   });
 }
+
+export function trackPurchase(args: {
+  transactionId: string;
+  items: GA4Item[];
+  value: number;
+  tax?: number;
+  shipping?: number;
+}) {
+  trackEvent("purchase", {
+    transaction_id: args.transactionId,
+    currency: "USD",
+    value: args.value,
+    tax: args.tax,
+    shipping: args.shipping,
+    items: args.items,
+  });
+}
