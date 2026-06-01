@@ -530,8 +530,8 @@ function ModelPageContent() {
         />
 
         <div className="rounded-md bg-white px-4 pt-8 pb-12 text-black shadow-[0_0_20px_rgba(0,0,0,0.4)] md:px-6 md:pt-10 lg:px-8">
-          <div className="mb-4 flex min-h-[125px] items-center gap-4 overflow-hidden rounded border bg-white p-3 text-black">
-            <div className="flex items-center justify-center px-4 py-2">
+          <div className="mb-4 flex flex-col gap-3 overflow-hidden rounded border bg-white p-3 text-black lg:flex-row lg:items-center">
+            <div className="flex w-full items-center justify-center px-3 py-2 lg:w-[22%] lg:justify-start">
               {getBrandLogoUrl(model.brand) ? (
                 <img
                   src={getBrandLogoUrl(model.brand)!}
@@ -545,8 +545,8 @@ function ModelPageContent() {
               )}
             </div>
 
-            <div className="flex flex-1 items-center gap-3 overflow-hidden rounded bg-gray-100 p-3 text-black">
-              <div className="w-1/3 leading-tight">
+            <div className="flex w-full flex-col gap-3 overflow-hidden rounded bg-gray-100 p-3 text-black md:flex-row md:items-center lg:flex-1">
+              <div className="w-full leading-tight md:w-[34%] lg:w-1/3">
                 <div className="flex flex-wrap items-baseline gap-2 text-xs font-medium text-slate-900 sm:text-[13px] md:text-sm lg:text-base">
                   {model.brand && <span>{model.brand}</span>}
                   {model.brand && model.model_number && (
@@ -575,7 +575,7 @@ function ModelPageContent() {
                 </p>
               </div>
 
-              <div className="flex flex-1 gap-2 overflow-x-auto overflow-y-hidden py-1">
+              <div className="flex w-full gap-2 overflow-x-auto overflow-y-hidden py-1 md:flex-1">
                 {model.exploded_views?.map((v: AnyObj, i: number) => {
                   const label = v.label || `View ${i + 1}`;
 
@@ -584,7 +584,7 @@ function ModelPageContent() {
                       key={`${v.image_url || label}-${i}`}
                       type="button"
                       onClick={() => setActiveExplodedView({ ...v, label })}
-                      className="group w-28 shrink-0 cursor-pointer text-left"
+                      className="group w-24 shrink-0 cursor-pointer text-left sm:w-28"
                       title={`Open ${label}`}
                     >
                       <div className="relative w-full overflow-hidden rounded-lg border border-gray-200 bg-white p-1 transition duration-150 group-hover:border-orange-500 group-hover:shadow-md">
