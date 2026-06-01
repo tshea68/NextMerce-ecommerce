@@ -377,7 +377,7 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
         ? cleanStr(primaryRow?.feed_title) || null
         : null,
 
-    description: null,
+    description: cleanStr(primaryRow?.description) || null,
 
     brand,
     brand_logo_url: getBrandLogoUrl(brand),
