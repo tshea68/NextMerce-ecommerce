@@ -414,29 +414,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     <div className="bg-zinc-50">
       <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
         <Breadcrumbs items={breadcrumbItems} className="mb-4 text-sm text-zinc-500" />
-
-        {vm.replaced_by ? (
-          <div className="mb-5 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-zinc-800">
-            <div className="text-sm font-semibold">Replacement Reference</div>
-            <div className="mt-1 text-sm leading-6">
-              This part may have a newer or alternate part number, but the original
-              part can still be a valid match. You can use either the original part
-              number or the replacement part number when it matches your appliance —
-              choose whichever is available and makes the most sense on price.
-            </div>
-            <div className="mt-2 text-sm">
-              Related replacement number:{" "}
-              <Link
-                href={`/parts/${encodeURIComponent(vm.replaced_by)}`}
-                className="font-semibold underline"
-              >
-                {vm.replaced_by}
-              </Link>
-            </div>
-          </div>
-        ) : null}
-
-        <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+<section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:p-4">
             <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
               <PartImage
@@ -480,8 +458,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                 <div className="grid gap-4 sm:grid-cols-2">
                   {vm.replaced_by ? (
                     <MiniScrollSection
-                      title="Replacement Reference"
-                      note="This is an alternate or newer related part number. It does not mean the original part is bad or unusable."
+                      title="Replacement"
                     >
                       <Link
                         href={`/parts/${encodeURIComponent(vm.replaced_by)}`}
@@ -495,7 +472,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                   {previousParts.length > 0 ? (
                     <MiniScrollSection
                       title="Also Replaces"
-                      note="These are related earlier part numbers. Match your original MPN and model before ordering."
                     >
                       <div className="flex flex-wrap gap-2">
                         {previousParts.map((part) => (
