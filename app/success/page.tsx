@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { trackPurchase, type GA4Item } from "@/lib/ga4";
 
 const API_BASE =
   (process.env.NEXT_PUBLIC_API_BASE || "").trim() ||
@@ -57,6 +58,7 @@ function SuccessPageInner() {
   const [order, setOrder] = useState<StripeishOrder | null>(null);
   const [orderRow, setOrderRow] = useState<OrderRow | null>(null);
   const [msg, setMsg] = useState("Finalizing…");
+  const purchaseTrackedRef = useRef<string | null>(null);
 
   const statusMeta = useMemo(() => {
     const s = (status || "").toLowerCase();
@@ -232,6 +234,50 @@ function SuccessPageInner() {
   const currency = (orderRow?.currency || order?.currency || "USD")
     .toString()
     .toUpperCase();
+
+  useEffect(() => {
+    const s = (status || "").toLowerCase();
+    if (s !== "paid" && s !== "succeeded") return;
+    if (typeof totalCents !== "number" || totalCents <= 0) return;
+
+    const transactionId =
+      String(orderRow?.id || order?.payment_intent_id || order?.payment_intent || "") ||
+      params.get("payment_intent") ||
+      params.get("sid") ||
+      "";
+
+    if (!transactionId) return;
+    if (purchaseTrackedRef.current === transactionId) return;
+    purchaseTrackedRef.current = transactionId;
+
+    const items: GA4Item[] =
+      lineItems.length > 0
+        ? lineItems.map((item: any) => ({
+            item_id: String(item.mpn || item.id || "unknown"),
+            item_name: String(item.name || item.mpn || "Item"),
+            price:
+              typeof item.unitCents === "number"
+                ? item.unitCents / 100
+                : typeof item.totalCents === "number" && Number(item.qty || 1) > 0
+                ? item.totalCents / 100 / Number(item.qty || 1)
+                : undefined,
+            quantity: Number(item.qty || 1),
+          }))
+        : [
+            {
+              item_id: transactionId,
+              item_name: "Order",
+              price: totalCents / 100,
+              quantity: 1,
+            },
+          ];
+
+    trackPurchase({
+      transactionId,
+      items,
+      value: totalCents / 100,
+    });
+  }, [status, totalCents, lineItems, order, orderRow, params]);
 
   function handlePrint() {
     try {
