@@ -515,14 +515,14 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
             <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_315px]">
               <div className="space-y-4">
                 {vm.description ? (
-                  <div>
-                    <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  <section className="rounded-xl border border-zinc-200 bg-white p-3">
+                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                       Description
-                    </div>
-                    <div className="text-sm leading-6 text-zinc-700">
+                    </h2>
+                    <div className="whitespace-pre-line text-sm leading-6 text-zinc-700">
                       {vm.description}
                     </div>
-                  </div>
+                  </section>
                 ) : null}
 
                 {alternateNumbers.length > 0 ? (
