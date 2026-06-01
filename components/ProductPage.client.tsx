@@ -8,6 +8,7 @@ import PartImage from "@/components/PartImage";
 import ComparisonBadge from "@/components/ComparisonBadge.client";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
+import { buildProductItem, trackAddToCart, trackBeginCheckout, trackViewItem } from "@/lib/ga4";
 
 export type ProductVM = {
   mpn?: string | null;
@@ -368,6 +369,18 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     };
   }, [compareData, mpn, vm]);
 
+  useEffect(() => {
+    trackViewItem(
+      {
+        ...vm,
+        mpn,
+        title,
+        price: asNumber(vm.price) ?? undefined,
+      },
+      1
+    );
+  }, [mpn, title, vm]);
+
   async function handleAddToCart() {
     try {
       setBusy(true);
@@ -379,6 +392,16 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
         qty,
         is_refurb: !!vm.is_refurb,
       });
+
+      trackAddToCart(
+        {
+          ...vm,
+          mpn,
+          title,
+          price: asNumber(vm.price) ?? undefined,
+        },
+        qty
+      );
     } finally {
       setBusy(false);
     }
@@ -386,6 +409,22 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
   async function handleBuyNow() {
     await handleAddToCart();
+
+    const item = buildProductItem(
+      {
+        ...vm,
+        mpn,
+        title,
+        price: asNumber(vm.price) ?? undefined,
+      },
+      qty
+    );
+
+    trackBeginCheckout(
+      [item],
+      item.price != null ? item.price * qty : undefined
+    );
+
     router.push("/checkout");
   }
 

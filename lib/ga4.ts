@@ -68,7 +68,10 @@ export function buildProductItem(product: any, quantity = 1): GA4Item {
     item_brand: product?.brand || undefined,
     item_category: product?.appliance_type || undefined,
     item_category2:
-      product?.canonical_part_type || product?.specific_part_type || product?.part_type || undefined,
+      product?.canonical_part_type ||
+      product?.specific_part_type ||
+      product?.part_type ||
+      undefined,
     item_variant:
       product?.is_refurb || product?.condition === "refurbished"
         ? "refurbished"
@@ -101,22 +104,5 @@ export function trackBeginCheckout(items: GA4Item[], value?: number) {
     currency: "USD",
     value,
     items,
-  });
-}
-
-export function trackPurchase(args: {
-  transactionId: string;
-  items: GA4Item[];
-  value: number;
-  tax?: number;
-  shipping?: number;
-}) {
-  trackEvent("purchase", {
-    transaction_id: args.transactionId,
-    currency: "USD",
-    value: args.value,
-    tax: args.tax,
-    shipping: args.shipping,
-    items: args.items,
   });
 }
