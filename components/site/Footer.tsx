@@ -46,10 +46,34 @@ export default function Footer() {
             </div>
 
             <p className="max-w-md text-sm leading-6 text-slate-400">
-              The only parts site built to compare brand-new OEM parts and
-              pro-tested refurbished parts side-by-side, so you can fix every
-              appliance at the price that makes sense.
+              Appliance Part Geeks sells new and refurbished OEM appliance
+              replacement parts for refrigerators, washers, dryers, dishwashers,
+              ranges, and other home appliances. Our catalog includes new parts
+              sourced through established parts suppliers and refurbished/used
+              OEM parts sourced through appliance-parts resale partners.
             </p>
+
+            <div className="space-y-1 text-sm text-slate-400">
+              <p>
+                <span className="font-semibold text-slate-300">Phone:</span>{" "}
+                <a href="tel:2028821699" className="hover:text-amber-300">
+                  202-882-1699
+                </a>
+              </p>
+              <p>
+                <span className="font-semibold text-slate-300">Email:</span>{" "}
+                <a
+                  href="mailto:support@appliancepartgeeks.com"
+                  className="hover:text-amber-300"
+                >
+                  support@appliancepartgeeks.com
+                </a>
+              </p>
+              <p>
+                <span className="font-semibold text-slate-300">Support address:</span>{" "}
+                6101 Blair Rd NW Suite C, Washington, DC
+              </p>
+            </div>
           </div>
 
           <div>
@@ -129,9 +153,11 @@ export default function Footer() {
               © {new Date().getFullYear()} AppliancePartGeeks. All rights reserved.
             </span>
 
-            <span className="text-center md:text-right">
-              Refurbished parts are tested and shipped from 6101 Blair Rd NW Suite C,
-              Washington, DC.
+            <span className="max-w-3xl text-center leading-5 md:text-right">
+              Manufacturer names, brand names, model numbers, and part numbers are used
+              only for identification and compatibility. Appliance Part Geeks is an
+              independent seller and is not affiliated with, sponsored by, or endorsed
+              by the listed appliance manufacturers.
             </span>
           </div>
         </div>

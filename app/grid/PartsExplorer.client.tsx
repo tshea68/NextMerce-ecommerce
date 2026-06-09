@@ -896,7 +896,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       sp.set("availability", "all");
       if (qDebounced) sp.set("q", qDebounced);
 
-      const url = `${API_BASE}/api/grid/?${sp.toString()}`;
+      const url = `${API_BASE}/api/grid?${sp.toString()}`;
 
       try {
         const res = await fetch(url, {
@@ -950,7 +950,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
       sp.set("per_page", String(perPage));
       sp.set("sort", DEFAULT_SORT);
 
-      const itemsUrl = `${API_BASE}/api/grid/?${sp.toString()}`;
+      const itemsUrl = `${API_BASE}/api/grid?${sp.toString()}`;
 
       try {
         const res = await fetch(itemsUrl, {
