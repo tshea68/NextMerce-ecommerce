@@ -24,7 +24,7 @@ export default function Header() {
       <TopBar />
 <header className="border-b border-black/10 bg-white text-black shadow-sm">
         <div className="mx-auto w-[96%] max-w-[1700px] px-4">
-          <div className="flex min-h-[124px] items-center justify-between gap-4">
+          <div className="flex min-h-[144px] items-center justify-between gap-4 py-5">
             <Link href="/" className="shrink-0">
               <img
                 src="https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/part_images/logofull2.png"
@@ -33,10 +33,10 @@ export default function Header() {
               />
             </Link>
 
-            <div className="hidden flex-1 lg:flex flex-col items-start justify-center gap-4 pl-6">
+            <div className="hidden flex-1 lg:flex flex-col items-start justify-center gap-5 pl-6">
               <HeaderMenu />
 
-              <div className="w-full">
+              <div className="w-full pb-1">
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}

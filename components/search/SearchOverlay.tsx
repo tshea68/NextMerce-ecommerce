@@ -117,6 +117,100 @@ function partStatusLabel(item: AnyItem) {
   return detectRefurb(item) ? "Refurbished OEM" : "New OEM";
 }
 
+function rawMpn(item: AnyItem) {
+  return (
+    item?.mpn ||
+    item?.mpn_canonical ||
+    item?.part_number ||
+    item?.manufacturer_part_number ||
+    ""
+  );
+}
+
+function normMpnKey(v: any) {
+  return String(v ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function groupKey(item: AnyItem) {
+  return (
+    normMpnKey(item?.mpn_canonical_norm) ||
+    normMpnKey(item?.mpn_norm) ||
+    normMpnKey(item?.mpn_canonical) ||
+    normMpnKey(rawMpn(item))
+  );
+}
+
+function inventoryQty(item: AnyItem) {
+  const raw =
+    item?.inventory_total ??
+    item?.total_quantity ??
+    item?.quantity ??
+    item?.qty ??
+    null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+type PartOfferGroup = {
+  key: string;
+  part: AnyItem | null;
+  offer: AnyItem | null;
+  base: AnyItem;
+};
+
+function buildPartOfferGroups(refurbRows: AnyItem[], partRows: AnyItem[]) {
+  const map = new Map<string, PartOfferGroup>();
+  const order: string[] = [];
+
+  function ensure(item: AnyItem) {
+    const key = groupKey(item);
+    if (!key) return null;
+
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        part: null,
+        offer: null,
+        base: item,
+      });
+      order.push(key);
+    }
+
+    return map.get(key)!;
+  }
+
+  // Parts/new OEM data wins as the display identity.
+  for (const item of partRows) {
+    const g = ensure(item);
+    if (!g) continue;
+    if (!g.part) g.part = item;
+    g.base = g.part || g.offer || item;
+  }
+
+  // Refurb offer becomes an option inside the same card.
+  for (const item of refurbRows) {
+    const g = ensure(item);
+    if (!g) continue;
+    if (!g.offer) g.offer = item;
+    g.base = g.part || g.offer || item;
+  }
+
+  return order
+    .map((key) => map.get(key)!)
+    .filter((g) => g.part || g.offer);
+}
+
+function optionHref(item: AnyItem, isRefurb: boolean) {
+  const mpn = rawMpn(item);
+  if (!mpn) return "#";
+  return isRefurb
+    ? `/offers/${encodeURIComponent(mpn)}`
+    : `/parts/${encodeURIComponent(mpn)}`;
+}
+
 function SearchThumb({
   item,
   title,
@@ -310,15 +404,16 @@ export default function SearchOverlay({ open, onClose }: Props) {
   const showResults = hasAny;
 
   const modelResults = models.slice(0, 4);
-  const refurbResults = refurb.slice(0, 4);
-  const newPartResults = parts.slice(0, 4);
+  const refurbResults = refurb.slice(0, 8);
+  const newPartResults = parts.slice(0, 8);
 
-  const combinedPartResults = [
-    ...refurbResults.slice(0, 2),
-    ...newPartResults.slice(0, 2),
-  ];
+  const partOfferGroups = useMemo(
+    () => buildPartOfferGroups(refurbResults, newPartResults),
+    [refurbResults, newPartResults]
+  );
 
-  const partsTabResults = [...refurbResults, ...newPartResults];
+  const combinedPartResults = partOfferGroups.slice(0, 4);
+  const partsTabResults = partOfferGroups.slice(0, 8);
 
   if (!open) return null;
 
@@ -374,7 +469,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
           </div>
 
 
-            <div className="pointer-events-none absolute bottom-0 right-8 z-[80] overflow-visible opacity-95">
+            <div className="pointer-events-none absolute bottom-0 right-8 z-[10] overflow-visible opacity-95">
               <img
                 src="https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/geeklogos/geek_hero_logo.png"
                 alt=""
@@ -485,66 +580,118 @@ export default function SearchOverlay({ open, onClose }: Props) {
                       ? combinedPartResults
                       : partsTabResults
                     ).length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="max-w-[680px] space-y-3">
                         {(activeTab === "all"
                           ? combinedPartResults
                           : partsTabResults
-                        ).map((p, i) => {
-                          const href = itemHref(p);
-                          const mpn =
-                            p?.mpn ||
-                            p?.part_number ||
-                            p?.manufacturer_part_number ||
-                            "";
-                          const title = makePartTitle(p, mpn) || mpn;
-                          const price =
-                            p?.price ?? p?.sale_price ?? p?.current_price;
-                          const logoFallback = getBrandLogoUrl(p);
-                          const label = partStatusLabel(p);
-                          const refurbStyle = detectRefurb(p);
+                        ).map((g, i) => {
+                          const part = g.part;
+                          const offer = g.offer;
+                          const base = g.base;
+                          const displayMpn = rawMpn(part || offer || base);
+                          const offerMpn = offer ? rawMpn(offer) : "";
+                          const partMpn = part ? rawMpn(part) : "";
+
+                          const title =
+                            makePartTitle(part || offer || base, displayMpn) ||
+                            (part || offer || base)?.title ||
+                            displayMpn;
+
+                          const logoFallback = getBrandLogoUrl(base);
+
+                          const offerPrice =
+                            offer?.price ?? offer?.sale_price ?? offer?.current_price;
+                          const partPrice =
+                            part?.price ?? part?.sale_price ?? part?.current_price;
+                          const offerQty = offer ? inventoryQty(offer) : null;
+
+                          const hasBoth = !!part && !!offer;
+                          const relationshipLabel =
+                            hasBoth && normMpnKey(partMpn) && normMpnKey(offerMpn)
+                              ? normMpnKey(partMpn) === normMpnKey(offerMpn)
+                                ? "Same exact part number"
+                                : `New replacement/interchange: ${partMpn}`
+                              : offer
+                                ? "Refurbished OEM option"
+                                : "New OEM option";
 
                           return (
-                            <Link
-                              key={`${mpn}-${i}`}
-                              href={href}
-                              onClick={onClose}
-                              className="block"
+                            <div
+                              key={`${g.key}-${i}`}
+                              className="group rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300 hover:shadow-md"
                             >
-                              <div className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300 hover:shadow-md">
-                                <div className="flex items-start gap-4">
-                                  <SearchThumb
-                                    item={p}
-                                    title={title}
-                                    logoFallback={logoFallback}
-                                  />
+                              <div className="flex items-start gap-4">
+                                <SearchThumb
+                                  item={base}
+                                  title={title}
+                                  logoFallback={logoFallback}
+                                />
 
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-[15px] font-semibold leading-snug text-gray-900 group-hover:text-blue-700">
-                                      {title}
-                                    </div>
-                                    <div className="mt-0.5 text-xs text-gray-600">
-                                      {mpn}
-                                    </div>
-                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                                      <span
-                                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                          refurbStyle
-                                            ? "bg-red-100 text-red-700"
-                                            : "bg-blue-100 text-blue-700"
-                                        }`}
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-[15px] font-semibold leading-snug text-gray-900">
+                                    {title}
+                                  </div>
+
+                                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                    {displayMpn ? (
+                                      <span className="font-mono">{displayMpn}</span>
+                                    ) : null}
+                                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+                                      {relationshipLabel}
+                                    </span>
+                                  </div>
+
+                                  <div className="mt-3 grid gap-2">
+                                    {offer ? (
+                                      <Link
+                                        href={optionHref(offer, true)}
+                                        onClick={onClose}
+                                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 transition hover:border-red-300 hover:bg-red-100"
                                       >
-                                        {label}
-                                      </span>
-                                      {price ? (
-                                        <span className="text-sm font-semibold text-green-700">
-                                          {priceFmt(price)}
-                                        </span>
-                                      ) : null}
-                                    </div>
+                                        <div className="flex items-center justify-between gap-3">
+                                          <span className="text-[11px] font-bold uppercase tracking-wide text-red-700">
+                                            Refurbished OEM
+                                          </span>
+                                          {offerPrice ? (
+                                            <span className="text-sm font-bold text-green-700">
+                                              {priceFmt(offerPrice)}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                        <div className="mt-1 text-xs font-medium text-red-900">
+                                          Ships Today
+                                          {offerQty != null && offerQty > 0
+                                            ? ` · ${offerQty.toLocaleString()} in stock`
+                                            : ""}
+                                        </div>
+                                      </Link>
+                                    ) : null}
+
+                                    {part ? (
+                                      <Link
+                                        href={optionHref(part, false)}
+                                        onClick={onClose}
+                                        className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 transition hover:border-blue-300 hover:bg-blue-100"
+                                      >
+                                        <div className="flex items-center justify-between gap-3">
+                                          <span className="text-[11px] font-bold uppercase tracking-wide text-blue-700">
+                                            New OEM
+                                          </span>
+                                          {partPrice ? (
+                                            <span className="text-sm font-bold text-green-700">
+                                              {priceFmt(partPrice)}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                        <div className="mt-1 text-xs font-medium text-blue-900">
+                                          View new OEM option
+                                        </div>
+                                      </Link>
+                                    ) : null}
                                   </div>
                                 </div>
                               </div>
-                            </Link>
+                            </div>
                           );
                         })}
                       </div>

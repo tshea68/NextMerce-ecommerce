@@ -530,84 +530,96 @@ function ModelPageContent() {
         />
 
         <div className="rounded-md bg-white px-4 pt-8 pb-12 text-black shadow-[0_0_20px_rgba(0,0,0,0.4)] md:px-6 md:pt-10 lg:px-8">
-          <div className="mb-4 flex flex-col gap-3 overflow-hidden rounded border bg-white p-3 text-black lg:flex-row lg:items-center">
-            <div className="flex w-full items-center justify-center px-3 py-2 lg:w-[22%] lg:justify-start">
-              {getBrandLogoUrl(model.brand) ? (
-                <img
-                  src={getBrandLogoUrl(model.brand)!}
-                  alt={`${model.brand} Logo`}
-                  className="h-10 w-auto object-contain"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : (
-                <span className="text-[10px] text-gray-500">No Logo</span>
-              )}
-            </div>
-
-            <div className="flex w-full flex-col gap-3 overflow-hidden rounded bg-gray-100 p-3 text-black md:flex-row md:items-center lg:flex-1">
-              <div className="w-full leading-tight md:w-[34%] lg:w-1/3">
-                <div className="flex flex-wrap items-baseline gap-2 text-xs font-medium text-slate-900 sm:text-[13px] md:text-sm lg:text-base">
-                  {model.brand && <span>{model.brand}</span>}
-                  {model.brand && model.model_number && (
-                    <span className="text-slate-400">•</span>
-                  )}
-                  {model.model_number && <span>{model.model_number}</span>}
-                  {model.appliance_type && (
-                    <>
+          <div className="mb-5 overflow-hidden rounded border bg-white p-3 text-black">
+            <div className="rounded bg-gray-100 p-4">
+              <div className="mb-4 flex flex-col gap-3 border-b border-gray-300 pb-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-bold leading-tight text-slate-950 md:text-xl">
+                    {model.brand && <span>{model.brand}</span>}
+                    {model.brand && model.model_number && (
                       <span className="text-slate-400">•</span>
-                      <span>{model.appliance_type}</span>
-                    </>
+                    )}
+                    {model.model_number && <span>{model.model_number}</span>}
+                    {model.appliance_type && (
+                      <>
+                        <span className="text-slate-400">•</span>
+                        <span>{model.appliance_type}</span>
+                      </>
+                    )}
+                  </h1>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-700">
+                    <span>Known Parts: {parts.all.length}</span>
+                    <span className="text-gray-400">|</span>
+                    <span>Priced Parts: {parts.priced.length}</span>
+                    <span className="text-gray-400">|</span>
+                    <span className="inline-block rounded bg-gray-900 px-2 py-0.5 text-xs font-semibold text-white">
+                      Refurbished Parts:{" "}
+                      {refurbSummaryLoading
+                        ? "…"
+                        : refurbSummaryCount != null
+                        ? refurbSummaryCount
+                        : 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="flex min-w-0 items-center justify-center rounded border bg-white p-4">
+                  {getBrandLogoUrl(model.brand) ? (
+                    <img
+                      src={getBrandLogoUrl(model.brand)!}
+                      alt={`${model.brand} Logo`}
+                      className="max-h-24 max-w-[180px] object-contain"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span className="text-[10px] text-gray-500">No Logo</span>
                   )}
                 </div>
 
-                <p className="mt-1 text-xs text-gray-700 md:text-sm">
-                  Known Parts: {parts.all.length} &nbsp;|&nbsp; Priced Parts:{" "}
-                  {parts.priced.length} {" | "}
-                  <span className="inline-block rounded bg-gray-900 px-2 py-0.5 text-white">
-                    Refurbished Parts:{" "}
-                    {refurbSummaryLoading
-                      ? "…"
-                      : refurbSummaryCount != null
-                      ? refurbSummaryCount
-                      : 0}
-                  </span>
-                </p>
-              </div>
+                <div className="min-w-0 overflow-hidden rounded bg-white p-3">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                    Parts Diagrams
+                  </div>
 
-              <div className="flex w-full gap-2 overflow-x-auto overflow-y-hidden py-1 md:flex-1">
-                {model.exploded_views?.map((v: AnyObj, i: number) => {
-                  const label = v.label || `View ${i + 1}`;
+                  <div className="flex w-full gap-2 overflow-x-auto overflow-y-hidden pb-2">
+                    {model.exploded_views?.map((v: AnyObj, i: number) => {
+                      const label = v.label || `View ${i + 1}`;
 
-                  return (
-                    <button
-                      key={`${v.image_url || label}-${i}`}
-                      type="button"
-                      onClick={() => setActiveExplodedView({ ...v, label })}
-                      className="group w-24 shrink-0 cursor-pointer text-left sm:w-28"
-                      title={`Open ${label}`}
-                    >
-                      <div className="relative w-full overflow-hidden rounded-lg border border-gray-200 bg-white p-1 transition duration-150 group-hover:border-orange-500 group-hover:shadow-md">
-                        <PartImage
-                          imageUrl={v.image_url}
-                          alt={label}
-                          disableHoverPreview
-                          className="h-16 w-full object-contain transition duration-150 group-hover:scale-110"
-                        />
+                      return (
+                        <button
+                          key={`${v.image_url || label}-${i}`}
+                          type="button"
+                          onClick={() => setActiveExplodedView({ ...v, label })}
+                          className="group w-24 shrink-0 cursor-pointer text-left sm:w-28"
+                          title={`Open ${label}`}
+                        >
+                          <div className="relative w-full overflow-hidden rounded-lg border border-gray-200 bg-white p-1 transition duration-150 group-hover:border-orange-500 group-hover:shadow-md">
+                            <PartImage
+                              imageUrl={v.image_url}
+                              alt={label}
+                              disableHoverPreview
+                              className="h-16 w-full object-contain transition duration-150 group-hover:scale-110"
+                            />
 
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-150 group-hover:bg-black/30 group-hover:opacity-100">
-                          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-gray-900 shadow">
-                            View
-                          </span>
-                        </div>
+                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-150 group-hover:bg-black/30 group-hover:opacity-100">
+                              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-gray-900 shadow">
+                                View
+                              </span>
+                            </div>
 
-                        <p className="mt-1 truncate text-center text-[10px] leading-tight text-black group-hover:text-orange-700">
-                          {label}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
+                            <p className="mt-1 truncate text-center text-[10px] leading-tight text-black group-hover:text-orange-700">
+                              {label}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -288,11 +288,29 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     const url = `${apiBase}/api/compare/xmarket/${encodeURIComponent(mpn)}`;
 
     fetch(url, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        console.log("[xmarket compare response]", {
+          mpn,
+          url,
+          ok: r.ok,
+          status: r.status,
+        });
+        return r.ok ? r.json() : null;
+      })
       .then((data) => {
+        console.log("[xmarket compare data]", {
+          mpn,
+          is_refurb: vm.is_refurb,
+          data,
+        });
         if (!cancelled) setCompareData(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("[xmarket compare failed]", {
+          mpn,
+          url,
+          err,
+        });
         if (!cancelled) setCompareData(null);
       });
 
@@ -310,6 +328,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
       return {
         mode: "offer" as const,
         refurbSummary: {
+          verified_match: true,
           price: asNumber(vm.price),
           totalQty: vm.inventory_total,
           totalOffers:
@@ -319,6 +338,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
           url: mpn ? `/offers/${encodeURIComponent(mpn)}` : null,
         },
         newSummary: {
+          verified_match: asNumber(compareData?.reliable?.price) != null,
           price: asNumber(compareData?.reliable?.price),
           status: compareStatusToNewSummaryStatus(compareData),
           qty:
@@ -344,10 +364,14 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     return {
       mode: "part" as const,
       refurbSummary: {
+        verified_match:
+          (asNumber(compareData?.refurb?.best?.price) ??
+            asNumber(compareData?.refurb?.price)) != null,
         price:
           asNumber(compareData?.refurb?.best?.price) ??
           asNumber(compareData?.refurb?.price),
         totalQty:
+          asNumber(compareData?.refurb?.total_quantity) ??
           asNumber(compareData?.refurb?.total_qty) ??
           asNumber(compareData?.refurb?.qty) ??
           asNumber(compareData?.refurb?.inventory_total),
@@ -357,6 +381,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
         url: mpn ? `/offers/${encodeURIComponent(mpn)}` : null,
       },
       newSummary: {
+        verified_match: true,
         price: asNumber(vm.price),
         status: newStatus,
         qty: partQty != null && partQty > 0 ? partQty : null,
@@ -537,6 +562,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                   <ComparisonBadge
                     mode={badgeProps.mode}
                     variant="product"
+                    display="banner"
                     mpn={mpn}
                     refurbSummary={badgeProps.refurbSummary}
                     newSummary={badgeProps.newSummary}
@@ -551,7 +577,98 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_315px]">
+            <div className="mt-5 space-y-4">
+              <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_315px]">
+                <ComparisonBadge
+                  mode={badgeProps.mode}
+                  variant="product"
+                  display="cta"
+                  mpn={mpn}
+                  refurbSummary={badgeProps.refurbSummary}
+                  newSummary={badgeProps.newSummary}
+                  savings={badgeProps.savings}
+                />
+
+                <aside className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
+                  <div className="text-sm text-zinc-500">Price</div>
+                  <div className="mt-1 text-3xl font-bold tracking-tight text-zinc-950">
+                    {priceText}
+                  </div>
+                  {!vm.is_refurb && isOrderable(vm) ? (
+                    <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                      Special order item. Usually ships within 30 days.
+                    </div>
+                  ) : null}
+
+                  {!vm.is_refurb && isNlaish(vm) ? (
+                    <div className="mt-3 rounded-xl border border-zinc-300 bg-zinc-100 p-3 text-sm text-zinc-800">
+                      This part is currently marked no longer available.
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4">
+                    <label className="mb-2 block text-sm font-medium text-zinc-900">
+                      Quantity
+                    </label>
+                    <div className="inline-flex items-center overflow-hidden rounded-xl border border-zinc-300 bg-white">
+                      <button
+                        type="button"
+                        className="h-10 w-10 text-lg text-zinc-700 hover:bg-zinc-50"
+                        onClick={() => setQty((q) => Math.max(1, q - 1))}
+                      >
+                        −
+                      </button>
+                      <div className="flex h-10 min-w-[48px] items-center justify-center border-x border-zinc-300 px-4 font-semibold text-zinc-900">
+                        {qty}
+                      </div>
+                      <button
+                        type="button"
+                        className="h-10 w-10 text-lg text-zinc-700 hover:bg-zinc-50"
+                        onClick={() => setQty((q) => Math.min(10, q + 1))}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      disabled={!canPurchase || busy}
+                      className={cn(
+                        "flex h-10 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition",
+                        canPurchase && !busy
+                          ? "bg-blue-600 hover:bg-blue-700"
+                          : "cursor-not-allowed bg-zinc-400"
+                      )}
+                    >
+                      {busy ? "Adding..." : "Add to Cart"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleBuyNow}
+                      disabled={!canPurchase || busy}
+                      className={cn(
+                        "flex h-10 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition",
+                        canPurchase && !busy
+                          ? "bg-emerald-600 hover:bg-emerald-700"
+                          : "cursor-not-allowed bg-zinc-400"
+                      )}
+                    >
+                      Buy Now
+                    </button>
+                  </div>
+
+                  {!hasPrice ? (
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                      Price not published yet.
+                    </div>
+                  ) : null}
+                </aside>
+              </div>
+
               <div className="space-y-4">
                 {vm.description ? (
                   <section className="rounded-xl border border-zinc-200 bg-white p-3">
@@ -581,88 +698,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                     </div>
                   </div>
                 ) : null}
-
               </div>
-
-              <aside className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                <div className="text-sm text-zinc-500">Price</div>
-                <div className="mt-1 text-3xl font-bold tracking-tight text-zinc-950">
-                  {priceText}
-                </div>
-
-                {!vm.is_refurb && isOrderable(vm) ? (
-                  <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                    Special order item. Usually ships within 30 days.
-                  </div>
-                ) : null}
-
-                {!vm.is_refurb && isNlaish(vm) ? (
-                  <div className="mt-3 rounded-xl border border-zinc-300 bg-zinc-100 p-3 text-sm text-zinc-800">
-                    This part is currently marked no longer available.
-                  </div>
-                ) : null}
-
-                <div className="mt-5">
-                  <label className="mb-2 block text-sm font-medium text-zinc-900">
-                    Quantity
-                  </label>
-                  <div className="inline-flex items-center overflow-hidden rounded-xl border border-zinc-300 bg-white">
-                    <button
-                      type="button"
-                      className="h-11 w-11 text-lg text-zinc-700 hover:bg-zinc-50"
-                      onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    >
-                      −
-                    </button>
-                    <div className="flex h-11 min-w-[52px] items-center justify-center border-x border-zinc-300 px-4 font-semibold text-zinc-900">
-                      {qty}
-                    </div>
-                    <button
-                      type="button"
-                      className="h-11 w-11 text-lg text-zinc-700 hover:bg-zinc-50"
-                      onClick={() => setQty((q) => Math.min(10, q + 1))}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    disabled={!canPurchase || busy}
-                    className={cn(
-                      "flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition",
-                      canPurchase && !busy
-                        ? "bg-blue-600 hover:bg-blue-700"
-                        : "cursor-not-allowed bg-zinc-400"
-                    )}
-                  >
-                    {busy ? "Adding..." : "Add to Cart"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleBuyNow}
-                    disabled={!canPurchase || busy}
-                    className={cn(
-                      "flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition",
-                      canPurchase && !busy
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : "cursor-not-allowed bg-zinc-400"
-                    )}
-                  >
-                    Buy Now
-                  </button>
-                </div>
-
-                {!hasPrice ? (
-                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                    Price not published yet.
-                  </div>
-                ) : null}
-              </aside>
             </div>
           </div>
         </section>

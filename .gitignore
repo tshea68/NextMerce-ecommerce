@@ -34,3 +34,31 @@ tmp/
 __pycache__/
 tmp_next_dev.log
 tmp_next_webpack.log
+
+# Local env files
+.env*.local
+.env.vercel
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
+# Local backups / scratch
+*.bak
+*.bak-*
+*.bak_*
+0
+o.*
+
+# Local env files
+.env*.local
+.env.vercel
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
+# Local backups / scratch
+*.bak
+*.bak-*
+*.bak_*
+0
+o.*

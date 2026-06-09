@@ -2,6 +2,7 @@
 
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import AiPartSearchSummary from "@/components/product/AiPartSearchSummary";
 
 const API_BASE =
   (process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com").replace(/\/+$/, "");
@@ -589,6 +590,12 @@ export default function LivePartSearchClient() {
                 {showSources ? "Hide diagnostics" : "Diagnostics"}
               </button>
             </div>
+
+            <AiPartSearchSummary
+              mpn={data.searched_mpn}
+              results={data.results || []}
+              sources={sources}
+            />
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
               <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">

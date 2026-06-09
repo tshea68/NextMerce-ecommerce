@@ -1053,22 +1053,13 @@ export default function PartsExplorer(props: PartsExplorerProps) {
     ? q.trim()
       ? `${q.trim()} Appliance Part Search Results`
       : "Appliance Part Search Results"
-    : [firstBrand, applianceHeading, conditionHeading, partTypeHeading, "Appliance Parts"]
-        .filter(Boolean)
-        .join(" ");
+    : "Parts Search: Find Your Part Fast, New or Refurbished";
 
   const seoDescription = searchMode
     ? q.trim()
       ? `Search results for ${q.trim()}. Compare new OEM and refurbished appliance parts, compatible models, pricing, and availability.`
       : "Search Appliance Part Geeks by model number, part number, brand, appliance type, or part type."
-    : `Shop ${[
-        firstBrand,
-        applianceHeading ? applianceHeading.toLowerCase() : "",
-        conditionHeading === "New OEM" ? "new OEM" : conditionHeading.toLowerCase(),
-        partTypeHeading ? partTypeHeading.toLowerCase() : "",
-      ]
-        .filter(Boolean)
-        .join(" ")} appliance parts. Compare part numbers, compatible models, pricing, and availability.`;
+    : "";
 
   return (
     <div id="parts-grid" className="scroll-mt-28 max-w-none px-0 py-0">
@@ -1100,14 +1091,12 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                   )
                 ) : typeof estimatedTotal === "number" ? (
                   <span className="font-normal text-gray-500">
-                    (showing {fmtCount(items.length)} of ~{fmtCount(estimatedTotal)})
                   </span>
                 ) : metaLoading ? (
                   <span className="font-normal text-gray-500">(counting…)</span>
                 ) : null}
                 {(condition === "refurb" || condition === "both") && typeof pageInventoryTotal === "number" ? (
                   <span className="ml-2 text-gray-500 font-normal">
-                    (page refurb qty total: {fmtCount(pageInventoryTotal)})
                   </span>
                 ) : null}
               </>

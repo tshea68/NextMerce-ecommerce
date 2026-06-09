@@ -6,7 +6,6 @@ import { useState } from "react";
 
 const primaryLinks = [
   { label: "Home", href: "/" },
-  { label: "Shop Parts", href: "/grid" },
   { label: "Track Order", href: "/order" },
 ];
 
