@@ -13,7 +13,7 @@ export default function TopBar() {
 
           <div className="inline-flex items-center gap-2">
             <Truck className="h-4 w-4 text-orange-300" />
-            <span>Overnight Delivery Available on All Orders</span>
+            <span>Overnight Shipping Available on Eligible In-Stock Parts</span>
           </div>
         </div>
 
