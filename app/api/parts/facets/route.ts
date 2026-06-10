@@ -66,6 +66,91 @@ function toNum(v: any) {
   return Number.isFinite(n) ? n : 0;
 }
 
+
+type ApplianceTypeMapRow = {
+  raw_appliance_type: string | null;
+  canonical_appliance_type: string | null;
+  sort_order: number | string | null;
+};
+
+type ApplianceTypeMaps = {
+  rawToCanonical: Map<string, string>;
+  canonicalSort: Map<string, number>;
+};
+
+function normApplianceKey(v: any) {
+  return String(v ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+async function fetchApplianceTypeMaps(sb: any): Promise<ApplianceTypeMaps> {
+  const rawToCanonical = new Map<string, string>();
+  const canonicalSort = new Map<string, number>();
+
+  const { data, error } = await sb
+    .from("appliance_type_map")
+    .select("raw_appliance_type,canonical_appliance_type,sort_order,is_visible")
+    .eq("is_visible", true)
+    .limit(1000);
+
+  if (error || !Array.isArray(data)) {
+    return { rawToCanonical, canonicalSort };
+  }
+
+  for (const row of data as ApplianceTypeMapRow[]) {
+    const raw = String(row?.raw_appliance_type ?? "").trim();
+    const canonical = String(row?.canonical_appliance_type ?? "").trim();
+    if (!raw || !canonical) continue;
+
+    rawToCanonical.set(normApplianceKey(raw), canonical);
+
+    const sort = Number(row?.sort_order ?? 999);
+    if (!canonicalSort.has(canonical)) {
+      canonicalSort.set(canonical, Number.isFinite(sort) ? sort : 999);
+    }
+  }
+
+  return { rawToCanonical, canonicalSort };
+}
+
+function canonicalApplianceType(raw: any, maps: ApplianceTypeMaps) {
+  const s = String(raw ?? "").trim();
+  if (!s) return "Other Appliances";
+  return maps.rawToCanonical.get(normApplianceKey(s)) ?? "Other Appliances";
+}
+
+function canonicalizeApplianceFacetRows(rows: FacetOutRow[], maps: ApplianceTypeMaps) {
+  const rolled = new Map<string, FacetOutRow>();
+
+  for (const row of rows || []) {
+    const value = canonicalApplianceType(row?.value, maps);
+    const existing =
+      rolled.get(value) ??
+      ({
+        value,
+        count: 0,
+        new_count: 0,
+        refurb_count: 0,
+      } satisfies FacetOutRow);
+
+    existing.count = toNum(existing.count) + toNum(row?.count);
+    existing.new_count = toNum(existing.new_count) + toNum(row?.new_count);
+    existing.refurb_count = toNum(existing.refurb_count) + toNum(row?.refurb_count);
+
+    rolled.set(value, existing);
+  }
+
+  return Array.from(rolled.values()).sort((a, b) => {
+    const sa = maps.canonicalSort.get(a.value) ?? 999;
+    const sb = maps.canonicalSort.get(b.value) ?? 999;
+    return sa - sb || toNum(b.count) - toNum(a.count) || a.value.localeCompare(b.value);
+  });
+}
+
+
 function estimateTotal(rows: CacheRow[], availability: "all" | "in_stock") {
   const facets = ["brands", "parts", "appliances"];
   let best = 0;
@@ -161,6 +246,7 @@ export async function GET(req: Request) {
     );
 
     const sb = getSupabase();
+    const applianceTypeMaps = await fetchApplianceTypeMaps(sb);
 
     let partsRows: CacheRow[] = [];
     let offersRows: CacheRow[] = [];
@@ -235,7 +321,18 @@ export async function GET(req: Request) {
 
     const brands = mergeFacet(partsRows, offersRows, effectiveAvailability, "brands", facetLimit, condition);
     const parts = mergeFacet(partsRows, offersRows, effectiveAvailability, "parts", facetLimit, condition);
-    const appliances = mergeFacet(partsRows, offersRows, effectiveAvailability, "appliances", facetLimit, condition);
+    const appliancesRaw = mergeFacet(
+      partsRows,
+      offersRows,
+      effectiveAvailability,
+      "appliances",
+      facetLimit,
+      condition
+    );
+    const appliances = canonicalizeApplianceFacetRows(appliancesRaw, applianceTypeMaps).slice(
+      0,
+      facetLimit
+    );
 
     const extraWarning =
       condition === "new" && availabilityRequested === "orderable"
