@@ -17,7 +17,7 @@ export default function CancellationPage() {
         "Orders can usually be canceled only before they are processed or shipped.",
         "Orders that have already shipped must be handled through the return process.",
         "Canceled orders are refunded to the original payment method.",
-        "Some orders may be canceled by us if inventory is unavailable or order details cannot be verified.",
+        "We may cancel and refund an order if inventory becomes unavailable or order details cannot be verified.",
       ]}
       sections={[
         {
@@ -36,12 +36,16 @@ export default function CancellationPage() {
         {
           title: "Canceling Before Shipment",
           body: (
-            <p>
-              Orders canceled before processing or shipment will receive a full refund
-              to the original payment method. Because many orders move quickly into
-              fulfillment, a cancellation request is not guaranteed until confirmed by
-              our support team.
-            </p>
+            <>
+              <p>
+                Orders canceled before processing or shipment will receive a full refund
+                to the original payment method.
+              </p>
+              <p className="mt-3">
+                Because many orders move quickly into fulfillment, a cancellation request
+                is not guaranteed until confirmed by our support team.
+              </p>
+            </>
           ),
         },
         {
