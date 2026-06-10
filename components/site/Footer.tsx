@@ -5,6 +5,8 @@ import Link from "next/link";
 import { BRANCH_LOCATIONS, type BranchLocation } from "@/lib/branchLocations";
 
 const MENU_LINKS = [
+  { label: "About Us", href: "/about" },
+  { label: "Contact Us", href: "/contact" },
   { label: "Rare Part Request", href: "/rare-part-request" },
   { label: "Shipping Policy", href: "/shipping" },
   { label: "Our Return Policy", href: "/returns" },
@@ -27,7 +29,7 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="mt-12 border-t border-white/10 bg-slate-950 text-slate-200">
+      <footer className="border-t border-white/10 bg-slate-950 text-slate-200">
         <div
           className="
             mx-auto max-w-7xl px-4 py-10
@@ -113,7 +115,7 @@ export default function Footer() {
 
           <div>
             <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Locations
+              Distribution Centers for In-Person Pickup
             </h4>
 
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 text-[11px]">
