@@ -66,18 +66,45 @@ const APPLIANCE_ICONS: Record<string, string> = {
   dishwasher: `${APPLIANCE_ICON_BASE}/dishwasher2.png`,
   range: `${APPLIANCE_ICON_BASE}/range2.png`,
   oven: `${APPLIANCE_ICON_BASE}/range2.png`,
+  cooktop: `${APPLIANCE_ICON_BASE}/range2.png`,
   microwave: `${APPLIANCE_ICON_BASE}/microwave2.png`,
   "air conditioner": `${APPLIANCE_ICON_BASE}/airconditioner2.png`,
   airconditioner: `${APPLIANCE_ICON_BASE}/airconditioner2.png`,
-  cooktop: `${APPLIANCE_ICON_BASE}/cooktop2.png`,
   freezer: `${APPLIANCE_ICON_BASE}/freezer2.png`,
   "ice maker": `${APPLIANCE_ICON_BASE}/icemaker2.png`,
   icemaker: `${APPLIANCE_ICON_BASE}/icemaker2.png`,
-  grill: `${APPLIANCE_ICON_BASE}/range2.png`,
+  "ice machine": `${APPLIANCE_ICON_BASE}/icemaker2.png`,
+  grill: `${APPLIANCE_ICON_BASE}/smallappliance.png`,
+  bbq: `${APPLIANCE_ICON_BASE}/smallappliance.png`,
+  "small appliances": `${APPLIANCE_ICON_BASE}/smallappliance.png`,
 };
 
-function applianceIconUrl(value: string) {
-  return APPLIANCE_ICONS[normalize(value)];
+function applianceIconUrl(value: string | null | undefined) {
+  const v = normalize(String(value ?? ""));
+
+  if (!v) return null;
+
+  if (v.includes("washer") && v.includes("dryer")) {
+    return `${APPLIANCE_ICON_BASE}/WD-Combo.png`;
+  }
+
+  if (v.includes("washing machine") || v === "washer") {
+    return `${APPLIANCE_ICON_BASE}/washer2.png`;
+  }
+
+  if (v.includes("oven") || v.includes("range") || v.includes("cooktop")) {
+    return `${APPLIANCE_ICON_BASE}/range2.png`;
+  }
+
+  if (v.includes("ice machine") || v.includes("ice maker") || v.includes("icemaker")) {
+    return `${APPLIANCE_ICON_BASE}/icemaker2.png`;
+  }
+
+  if (v.includes("small appliance") || v.includes("bbq") || v.includes("grill")) {
+    return `${APPLIANCE_ICON_BASE}/smallappliance.png`;
+  }
+
+  return APPLIANCE_ICONS[v] ?? null;
 }
 
 type Condition = "both" | "new" | "refurb";
@@ -1279,16 +1306,16 @@ export default function PartsExplorer(props: PartsExplorerProps) {
                         setPage(1);
                       }}
                     >
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
-                        {icon ? (
+                      {icon ? (
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
                           <img
                             src={icon}
                             alt=""
                             className="h-9 w-9 object-contain"
                             loading="lazy"
                           />
-                        ) : null}
-                      </span>
+                        </span>
+                      ) : null}
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-bold text-slate-900">
                           {facetLabel("appliance", x.value)}

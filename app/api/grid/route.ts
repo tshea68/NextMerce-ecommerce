@@ -510,6 +510,54 @@ async function enrichModelCardsWithPartCountsAndDiagrams(supabase: any, rows: an
   });
 }
 
+
+type ApplianceTypeMapRow = {
+  raw_appliance_type: string | null;
+  canonical_appliance_type: string | null;
+  is_visible?: boolean | null;
+};
+
+function normApplianceKey(v: any) {
+  return String(v ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+async function resolveApplianceTypeFilterValues(supabase: any, selected: string): Promise<string[]> {
+  const selectedRaw = String(selected ?? "").trim();
+  if (!selectedRaw) return [];
+
+  const selectedNorm = normApplianceKey(selectedRaw);
+
+  const { data, error } = await supabase
+    .from("appliance_type_map")
+    .select("raw_appliance_type,canonical_appliance_type,is_visible")
+    .eq("is_visible", true)
+    .limit(1000);
+
+  if (error || !Array.isArray(data)) {
+    return expandFilterValues([selectedRaw]);
+  }
+
+  const rawValues: string[] = [];
+
+  for (const row of data as ApplianceTypeMapRow[]) {
+    const raw = String(row?.raw_appliance_type ?? "").trim();
+    const canonical = String(row?.canonical_appliance_type ?? "").trim();
+
+    if (!raw || !canonical) continue;
+
+    if (normApplianceKey(canonical) === selectedNorm || normApplianceKey(raw) === selectedNorm) {
+      rawValues.push(raw);
+    }
+  }
+
+  const deduped = Array.from(new Set(rawValues.filter(Boolean)));
+  return deduped.length ? deduped : expandFilterValues([selectedRaw]);
+}
+
 export async function GET(req: Request) {
   const t0 = Date.now();
   const url = new URL(req.url);
@@ -625,6 +673,9 @@ export async function GET(req: Request) {
   const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const itemsApplianceTypeValues = itemsApplianceType
+    ? await resolveApplianceTypeFilterValues(supabase, itemsApplianceType)
+    : [];
 
   let facets: any = null;
   let facets_source: "db" | "none" | "error" = "none";
@@ -644,7 +695,7 @@ export async function GET(req: Request) {
       searchMode
         ? null
         : facets_scope === "contextual"
-          ? normalizeFacetScalar(itemsApplianceType || "")
+          ? normalizeFacetScalar((itemsApplianceTypeValues[0] || itemsApplianceType) || "")
           : null,
     p_brands:
       searchMode
@@ -701,7 +752,7 @@ export async function GET(req: Request) {
         if (condition === "new") qCount = qCount.eq("is_refurb", false);
         if (condition === "refurb") qCount = qCount.eq("is_refurb", true);
 
-        if (itemsApplianceType) qCount = qCount.in("appliance_type", expandFilterValues([itemsApplianceType]));
+        if (itemsApplianceType) qCount = qCount.in("appliance_type", itemsApplianceTypeValues);
         if (itemsBrands.length) qCount = qCount.in("brand", expandFilterValues(itemsBrands));
         if (itemsPartTypes.length) qCount = qCount.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
@@ -736,7 +787,7 @@ export async function GET(req: Request) {
         if (condition === "new") qCount = qCount.eq("is_refurb", false);
         if (condition === "refurb") qCount = qCount.eq("is_refurb", true);
 
-        if (itemsApplianceType) qCount = qCount.in("appliance_type", expandFilterValues([itemsApplianceType]));
+        if (itemsApplianceType) qCount = qCount.in("appliance_type", itemsApplianceTypeValues);
         if (itemsBrands.length) qCount = qCount.in("brand", expandFilterValues(itemsBrands));
         if (itemsPartTypes.length) qCount = qCount.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
@@ -859,7 +910,7 @@ export async function GET(req: Request) {
               .gt("inventory_total", 0);
 
             if (!searchMode) {
-              if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
+              if (itemsApplianceType) qb = qb.in("appliance_type", itemsApplianceTypeValues);
               if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
               if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
             }
@@ -877,7 +928,7 @@ export async function GET(req: Request) {
               .gt("price", 0);
 
             if (!searchMode) {
-              if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
+              if (itemsApplianceType) qb = qb.in("appliance_type", itemsApplianceTypeValues);
               if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
               if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
@@ -992,7 +1043,7 @@ export async function GET(req: Request) {
           .gt("price", 0)
           .gt("inventory_total", 0);
 
-        if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
+        if (itemsApplianceType) qb = qb.in("appliance_type", itemsApplianceTypeValues);
         if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
         if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
@@ -1006,7 +1057,7 @@ export async function GET(req: Request) {
       (async () => {
         let qb: any = supabase.from("parts").select(partCols).gt("price", 0);
 
-        if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
+        if (itemsApplianceType) qb = qb.in("appliance_type", itemsApplianceTypeValues);
         if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
         if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
@@ -1084,7 +1135,7 @@ export async function GET(req: Request) {
     let qb: any = supabase.from("parts").select(partCols).gt("price", 0);
 
     if (!searchMode) {
-      if (itemsApplianceType) qb = qb.in("appliance_type", expandFilterValues([itemsApplianceType]));
+      if (itemsApplianceType) qb = qb.in("appliance_type", itemsApplianceTypeValues);
       if (itemsBrands.length) qb = qb.in("brand", expandFilterValues(itemsBrands));
       if (itemsPartTypes.length) qb = qb.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
@@ -1204,7 +1255,7 @@ export async function GET(req: Request) {
         query = query.gt("inventory_total", 0);
       }
 
-      if (itemsApplianceType) query = query.in("appliance_type", expandFilterValues([itemsApplianceType]));
+      if (itemsApplianceType) query = query.in("appliance_type", itemsApplianceTypeValues);
       if (itemsBrands.length) query = query.in("brand", expandFilterValues(itemsBrands));
       if (itemsPartTypes.length) query = query.in("canonical_part_type", expandFilterValues(itemsPartTypes));
 
