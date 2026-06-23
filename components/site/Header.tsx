@@ -23,13 +23,13 @@ export default function Header() {
     <>
       <TopBar />
 <header className="border-b border-black/10 bg-white text-black shadow-sm">
-        <div className="mx-auto w-[96%] max-w-[1700px] px-4">
-          <div className="flex min-h-[144px] items-center justify-between gap-4 py-5">
-            <Link href="/" className="shrink-0">
+        <div className="mx-auto w-full max-w-[1700px] px-3 sm:px-4">
+          <div className="flex min-h-[104px] items-center justify-between gap-2 py-4 lg:min-h-[144px] lg:gap-4 lg:py-5">
+            <Link href="/" className="min-w-0 flex-1 lg:flex-none lg:shrink-0">
               <img
                 src="https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/part_images/logofull2.png"
                 alt="Appliance Part Geeks"
-                className="h-[100px] w-auto object-contain"
+                className="h-[72px] max-w-full object-contain lg:h-[100px]"
               />
             </Link>
 
@@ -68,7 +68,7 @@ export default function Header() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-2 lg:hidden">
+            <div className="flex shrink-0 items-center gap-2 lg:hidden">
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}

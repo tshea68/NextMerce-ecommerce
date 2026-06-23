@@ -469,7 +469,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
           </div>
 
 
-            <div className="pointer-events-none absolute bottom-0 right-8 z-[10] overflow-visible opacity-95">
+            <div className="pointer-events-none absolute bottom-0 right-8 z-[10] hidden overflow-visible opacity-95 min-[1200px]:block">
               <img
                 src="https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/geeklogos/geek_hero_logo.png"
                 alt=""
@@ -477,7 +477,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                 loading="lazy"
               />
             </div>
-          <div className="relative min-h-0 flex-1 overflow-y-auto px-8 py-5 pb-28 md:px-10 md:py-6 md:pb-32">
+          <div className="relative min-h-0 flex-1 overflow-y-auto px-6 py-5 pb-8 md:px-10 md:py-6 min-[1200px]:pb-32">
             {loading && !hasAny ? (
               <div className="flex min-h-[130px] items-center justify-center">
                 <p className="text-[15px] text-gray-500">Searching…</p>
