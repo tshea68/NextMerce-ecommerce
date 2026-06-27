@@ -270,7 +270,6 @@ function CheckoutForm({
     Boolean(stripe) &&
     Boolean(elements) &&
     Boolean(clientSecret) &&
-    paymentReady &&
     totalCents > 0 &&
     !isSubmitting;
 
@@ -317,13 +316,6 @@ function CheckoutForm({
     if (!stripe || !elements) {
       setPayError(
         "Secure payment form is still loading. Please wait a moment and try again."
-      );
-      return;
-    }
-
-    if (!paymentReady) {
-      setPayError(
-        "Secure payment form did not finish loading. Please refresh and try again."
       );
       return;
     }
@@ -467,7 +459,7 @@ function CheckoutForm({
 
         {!paymentReady ? (
           <div className="mt-2 text-xs text-gray-500">
-            Loading secure payment form...
+            Secure payment form is preparing. If the card fields are visible, you can continue.
           </div>
         ) : null}
 
