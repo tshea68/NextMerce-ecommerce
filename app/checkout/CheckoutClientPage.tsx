@@ -132,15 +132,30 @@ function shippingLabel(method: string) {
   return "Ground";
 }
 
+function isGroundMethod(method: string) {
+  const m = (method || "").trim().toLowerCase();
+  return !m || m === "gnd" || m === "ground";
+}
+
+function isRefurbOnlyCart(cartItems: any[]) {
+  return (
+    Array.isArray(cartItems) &&
+    cartItems.length > 0 &&
+    cartItems.every((item) => Boolean(item?.is_refurb))
+  );
+}
+
 /* --- UI blocks ------------------------------------------------------------ */
 function OrderSummary({
   cartItems,
   amounts,
   shippingMethod,
+  isRefurbOnly,
 }: {
   cartItems: any[];
   amounts: any;
   shippingMethod: string;
+  isRefurbOnly: boolean;
 }) {
   const cartSubtotalFallback = computeCartSubtotalCents(cartItems);
 
@@ -153,7 +168,9 @@ function OrderSummary({
   const rawShipping =
     amounts?.shipping_amount_cents ?? amounts?.shipping_amount ?? null;
   const shippingCents = rawShipping == null ? null : Number(rawShipping);
-  const shippingIsTbd = shippingCents == null || shippingCents <= 0;
+  const groundShippingIsFree = isRefurbOnly && isGroundMethod(shippingMethod);
+  const shippingIsTbd =
+    !groundShippingIsFree && (shippingCents == null || shippingCents <= 0);
 
   const rawTax = amounts?.tax_amount_cents ?? amounts?.tax_amount ?? null;
   const taxCents = rawTax == null ? null : Number(rawTax);
@@ -203,7 +220,11 @@ function OrderSummary({
             Shipping ({shippingLabel(shippingMethod)})
           </span>
           <span className="text-gray-900">
-            {shippingIsTbd ? "TBD" : `$${money(shippingCents)}`}
+            {groundShippingIsFree
+              ? "Free"
+              : shippingIsTbd
+                ? "TBD"
+                : `$${money(shippingCents)}`}
           </span>
         </div>
 
@@ -222,8 +243,9 @@ function OrderSummary({
         </div>
 
         <div className="pt-2 text-[11px] text-gray-500">
-          Shipping and sales tax are calculated after you enter your shipping
-          details and continue to payment.
+          {groundShippingIsFree
+            ? "Free ground shipping applies to refurbished parts. Sales tax is calculated after you enter your shipping details and continue to payment."
+            : "Shipping and sales tax are calculated after you enter your shipping details and continue to payment."}
         </div>
       </div>
     </div>
@@ -442,9 +464,13 @@ export default function CheckoutClientPage() {
     return queryCartItems;
   }, [contextCartItems, queryCartItems]);
 
+  const isRefurbOnly = useMemo(() => isRefurbOnlyCart(cartItems), [cartItems]);
+
   const [shippingMethod, setShippingMethod] = useState(
     params.get("ship_method") || "GND"
   );
+
+  const groundShippingIsFree = isRefurbOnly && isGroundMethod(shippingMethod);
   const [email, setEmail] = useState(params.get("email") || "");
   const [phone, setPhone] = useState(params.get("phone") || "");
   const [fullName, setFullName] = useState(params.get("full_name") || "");
@@ -542,6 +568,16 @@ export default function CheckoutClientPage() {
         throw new Error("Backend did not return client_secret.");
       }
 
+      const returnedShippingCents = Number(
+        data.shipping_amount_cents ?? data.shipping_amount ?? 0
+      );
+
+      if (groundShippingIsFree && returnedShippingCents > 0) {
+        throw new Error(
+          "Checkout pricing error: ground shipping should be free for refurbished parts. Please refresh and try again."
+        );
+      }
+
       setClientSecret(data.client_secret);
       setAmounts({
         items_subtotal_cents:
@@ -578,7 +614,7 @@ export default function CheckoutClientPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-4 text-sm text-gray-700">
+      <div className="mb-4 text-sm text-white/80">
         Review your order, choose shipping, enter your shipping details, and
         pay securely with Stripe.
       </div>
@@ -597,10 +633,10 @@ export default function CheckoutClientPage() {
               <select
                 value={shippingMethod}
                 onChange={(e) => setShippingMethod(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black cursor-pointer"
+                className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               >
                 <option value="GND" className="bg-white text-black cursor-pointer">
-                  Ground ($11.95)
+                  {isRefurbOnly ? "Ground (Free)" : "Ground ($11.95)"}
                 </option>
                 <option value="two_day" className="bg-white text-black cursor-pointer">
                   2nd Day Air ($34.95)
@@ -611,111 +647,121 @@ export default function CheckoutClientPage() {
               </select>
 
               <div className="mt-2 text-[11px] text-gray-700">
-                Reliable requires <span className="font-semibold">Ground</span>{" "}
-                on the PO payload. If you choose a faster method, we notify
-                Reliable&apos;s support desk to upgrade the shipment.
+                {isRefurbOnly ? (
+                  <>
+                    Refurbished parts include{" "}
+                    <span className="font-semibold">free ground shipping</span>.
+                    Faster shipping is available for an added premium.
+                  </>
+                ) : (
+                  <>
+                    Reliable requires <span className="font-semibold">Ground</span>{" "}
+                    on the PO payload. If you choose a faster method, we notify
+                    Reliable&apos;s support desk to upgrade the shipment.
+                  </>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs text-gray-600">
+                <label className="mb-1 block text-xs font-medium text-zinc-700">
                   Email (for confirmation)
                 </label>
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="you@example.com"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs text-gray-600">
+                <label className="mb-1 block text-xs font-medium text-zinc-700">
                   Cell phone (for updates)
                 </label>
                 <input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="2125550123"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs text-gray-600">
+                <label className="mb-1 block text-xs font-medium text-zinc-700">
                   Full name
                 </label>
                 <input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Your name"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs text-gray-600">
+                <label className="mb-1 block text-xs font-medium text-zinc-700">
                   Address line 1
                 </label>
                 <input
                   value={address1}
                   onChange={(e) => setAddress1(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Street address"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs text-gray-600">
+                <label className="mb-1 block text-xs font-medium text-zinc-700">
                   Address line 2 (optional)
                 </label>
                 <input
                   value={address2}
                   onChange={(e) => setAddress2(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Apt, suite, unit"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs text-gray-600">City</label>
+                <label className="mb-1 block text-xs font-medium text-zinc-700">City</label>
                 <input
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs text-gray-600">
+                <label className="mb-1 block text-xs font-medium text-zinc-700">
                   State
                 </label>
                 <input
                   value={state}
                   onChange={(e) => setState(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="FL"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs text-gray-600">ZIP</label>
+                <label className="mb-1 block text-xs font-medium text-zinc-700">ZIP</label>
                 <input
                   value={postal}
                   onChange={(e) => setPostal(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs text-gray-600">
+                <label className="mb-1 block text-xs font-medium text-zinc-700">
                   Country
                 </label>
                 <select
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="US">United States</option>
                 </select>
@@ -763,10 +809,11 @@ export default function CheckoutClientPage() {
             cartItems={cartItems}
             amounts={amounts}
             shippingMethod={shippingMethod}
+            isRefurbOnly={isRefurbOnly}
           />
 
           {!clientSecret ? (
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-white/80">
               Complete shipping details and click{" "}
               <span className="font-semibold">Continue to payment</span>.
             </div>
