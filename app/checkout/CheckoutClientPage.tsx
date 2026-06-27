@@ -457,12 +457,6 @@ function CheckoutForm({
           />
         </div>
 
-        {!paymentReady ? (
-          <div className="mt-2 text-xs text-gray-500">
-            Secure payment form is preparing. If the card fields are visible, you can continue.
-          </div>
-        ) : null}
-
         {payError ? (
           <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {payError}
