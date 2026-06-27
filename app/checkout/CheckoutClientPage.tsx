@@ -230,25 +230,66 @@ function OrderSummary({
   );
 }
 
-function CheckoutForm({ clientSecret }: { clientSecret: string }) {
+function CheckoutForm({
+  clientSecret,
+  totalCents,
+}: {
+  clientSecret: string;
+  totalCents: number;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payError, setPayError] = useState("");
+  const [paymentReady, setPaymentReady] = useState(false);
 
   const returnUrl =
     typeof window !== "undefined" ? `${window.location.origin}/success` : "";
+
+  const canPay =
+    Boolean(stripe) &&
+    Boolean(elements) &&
+    Boolean(clientSecret) &&
+    paymentReady &&
+    totalCents > 0 &&
+    !isSubmitting;
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setPayError("");
 
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      setPayError(
+        "Secure payment form is still loading. Please wait a moment and try again."
+      );
+      return;
+    }
+
+    if (!paymentReady) {
+      setPayError(
+        "Secure payment form did not finish loading. Please refresh and try again."
+      );
+      return;
+    }
+
+    if (!totalCents || totalCents <= 0) {
+      setPayError("Order total is missing. Please refresh and try again.");
+      return;
+    }
 
     setIsSubmitting(true);
+
     try {
+      const submitResult = await elements.submit();
+
+      if (submitResult?.error) {
+        setPayError(submitResult.error.message || "Please check your payment details.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -276,21 +317,56 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <div className="mb-3 text-sm font-semibold">Payment</div>
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="mb-1 text-lg font-semibold text-gray-950">Payment</div>
+        <div className="mb-4 text-sm text-gray-600">
+          You will be charged{" "}
+          <span className="font-semibold text-gray-950">
+            ${money(totalCents)}
+          </span>
+          .
+        </div>
 
-        <PaymentElement />
+        {!STRIPE_PK ? (
+          <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            Stripe publishable key is missing. Payment cannot load.
+          </div>
+        ) : null}
+
+        <div className="rounded-md border border-gray-200 bg-white p-3">
+          <PaymentElement
+            onReady={() => {
+              setPaymentReady(true);
+              setPayError("");
+            }}
+            onLoadError={(event: any) => {
+              setPaymentReady(false);
+              setPayError(
+                event?.error?.message ||
+                  "Secure payment form failed to load. Please refresh and try again."
+              );
+            }}
+          />
+        </div>
+
+        {!paymentReady ? (
+          <div className="mt-2 text-xs text-gray-500">
+            Loading secure payment form...
+          </div>
+        ) : null}
 
         {payError ? (
-          <div className="mt-3 text-xs text-red-600">{payError}</div>
+          <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {payError}
+          </div>
         ) : null}
 
         <button
           type="submit"
-          disabled={!stripe || !elements || isSubmitting}
-          className="mt-4 w-full rounded-md bg-green-600 px-4 py-3 text-sm font-semibold text-white cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={!canPay}
+          className="mt-4 w-full cursor-pointer rounded-md bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 active:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-600"
         >
-          {isSubmitting ? "Processing..." : "Pay"}
+          {isSubmitting ? "Processing..." : `Pay $${money(totalCents)}`}
         </button>
 
         <div className="mt-2 text-[11px] text-gray-500">
@@ -663,13 +739,21 @@ export default function CheckoutClientPage() {
 
           {clientSecret ? (
             <Elements
+              key={clientSecret}
               stripe={stripePromise}
               options={{
                 clientSecret,
                 appearance,
               }}
             >
-              <CheckoutForm clientSecret={clientSecret} />
+              <CheckoutForm
+                clientSecret={clientSecret}
+                totalCents={Number(
+                  amounts?.total_amount_cents ??
+                    amounts?.total_amount ??
+                    computeCartSubtotalCents(cartItems)
+                )}
+              />
             </Elements>
           ) : null}
         </div>
