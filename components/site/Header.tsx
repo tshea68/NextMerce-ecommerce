@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CartWidget from "@/components/cart/CartWidget.client";
 import { ShoppingCart, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCart } from "@/context/CartContext";
@@ -56,16 +57,7 @@ export default function Header() {
             </div>
 
             <div className="hidden lg:flex shrink-0">
-              <Link
-                href="/cart"
-                className="inline-flex items-center gap-2 rounded-xl border border-black/15 bg-white px-4 py-3 text-sm font-medium text-black shadow-sm transition hover:bg-black/[0.03] hover:shadow-md"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                <span>Cart</span>
-                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-black px-1.5 py-0.5 text-[11px] font-semibold text-white">
-                  {cartCount}
-                </span>
-              </Link>
+              <CartWidget variant="header" />
             </div>
 
             <div className="flex shrink-0 items-center gap-2 lg:hidden">

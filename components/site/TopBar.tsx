@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { Phone, Truck, RotateCcw, PackageSearch, ShoppingCart } from "lucide-react";
+import { Phone, Truck, RotateCcw, PackageSearch } from "lucide-react";
 
 export default function TopBar() {
   return (
@@ -26,11 +28,6 @@ export default function TopBar() {
           <Link href="/returns" className="inline-flex items-center gap-1.5 hover:text-orange-200">
             <RotateCcw className="h-4 w-4" />
             <span>Returns</span>
-          </Link>
-
-          <Link href="/cart" className="inline-flex items-center gap-1.5 hover:text-orange-200">
-            <ShoppingCart className="h-4 w-4" />
-            <span>Cart</span>
           </Link>
         </div>
       </div>
