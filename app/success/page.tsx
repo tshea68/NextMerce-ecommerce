@@ -164,7 +164,7 @@ function SuccessPageInner() {
       try {
         if (sid) {
           const r = await fetch(
-            `${API_BASE}/api/checkout/session/status?sid=${encodeURIComponent(sid)}`
+            `/api/checkout/session/status?sid=${encodeURIComponent(sid)}`
           );
           const j = (await safeJson(r)) as StripeishOrder;
 

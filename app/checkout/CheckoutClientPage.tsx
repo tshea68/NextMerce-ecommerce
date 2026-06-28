@@ -525,7 +525,7 @@ export default function CheckoutClientPage() {
         },
       };
 
-      const resp = await fetch(`${API_BASE}/api/checkout/intent-cart`, {
+      const resp = await fetch("/api/checkout/session-cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -536,43 +536,23 @@ export default function CheckoutClientPage() {
       try {
         data = JSON.parse(text);
       } catch {
-        throw new Error(text || "Failed to create PaymentIntent.");
+        throw new Error(text || "Failed to create Checkout Session.");
       }
 
       if (!resp.ok) {
         throw new Error(
-          data?.detail || data?.error || "Failed to create PaymentIntent."
+          data?.detail || data?.error || "Failed to create Checkout Session."
         );
       }
 
-      if (!data?.client_secret) {
-        throw new Error("Backend did not return client_secret.");
+      if (!data?.url) {
+        throw new Error("Backend did not return checkout URL.");
       }
 
-      const returnedShippingCents = Number(
-        data.shipping_amount_cents ?? data.shipping_amount ?? 0
-      );
-
-      if (groundShippingIsFree && returnedShippingCents > 0) {
-        throw new Error(
-          "Checkout pricing error: ground shipping should be free for refurbished parts. Please refresh and try again."
-        );
-      }
-
-      setClientSecret(data.client_secret);
-      setAmounts({
-        items_subtotal_cents:
-          data.items_subtotal_cents ?? data.items_subtotal ?? 0,
-        shipping_amount_cents:
-          data.shipping_amount_cents ?? data.shipping_amount ?? null,
-        tax_amount_cents: data.tax_amount_cents ?? data.tax_amount ?? null,
-        total_amount_cents:
-          data.total_amount_cents ??
-          data.total_amount ??
-          (data.items_subtotal_cents ?? 0),
-      });
+      window.location.href = data.url;
+      return;
     } catch (e: any) {
-      setCreateError(e?.message || "Failed to create PaymentIntent.");
+      setCreateError(e?.message || "Failed to create Checkout Session.");
     } finally {
       setCreatingIntent(false);
     }
