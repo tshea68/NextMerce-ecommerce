@@ -11,10 +11,7 @@ function cleanString(v: unknown, fallback = "") {
 
 function moneyToCents(v: unknown): number | null {
   if (v == null) return null;
-
-  if (typeof v === "number" && Number.isFinite(v)) {
-    return Math.round(v * 100);
-  }
+  if (typeof v === "number" && Number.isFinite(v)) return Math.round(v * 100);
 
   const cleaned = String(v).replace(/[^0-9.\-]/g, "");
   if (!cleaned) return null;
