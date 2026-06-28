@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, ExpressCheckoutElement, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "").replace(/\/+$/, "");
 const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
@@ -261,7 +261,6 @@ function CheckoutForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payError, setPayError] = useState("");
   const [paymentReady, setPaymentReady] = useState(false);
-  const [expressReady, setExpressReady] = useState(false);
 
   const returnUrl =
     typeof window !== "undefined" ? `${window.location.origin}/success` : "";
@@ -272,42 +271,6 @@ function CheckoutForm({
     Boolean(clientSecret) &&
     totalCents > 0 &&
     !isSubmitting;
-
-  const onExpressConfirm = async () => {
-    setPayError("");
-
-    if (!stripe || !elements || !clientSecret) {
-      setPayError(
-        "Express checkout is still loading. Please wait a moment and try again."
-      );
-      return;
-    }
-
-    if (!totalCents || totalCents <= 0) {
-      setPayError("Order total is missing. Please refresh and try again.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const result = await stripe.confirmPayment({
-        elements,
-        clientSecret,
-        confirmParams: {
-          return_url: returnUrl,
-        },
-      });
-
-      if (result.error) {
-        setPayError(result.error.message || "Express checkout failed.");
-      }
-    } catch (e: any) {
-      setPayError(e?.message || "Express checkout failed.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -379,70 +342,8 @@ function CheckoutForm({
           </div>
         ) : null}
 
-        <div className="mb-4 rounded-md border border-gray-200 bg-white p-3">
-          <div className="mb-2 text-sm font-semibold text-gray-950">
-            Express checkout
-          </div>
-
-          <ExpressCheckoutElement
-            options={{
-              paymentMethods: {
-                applePay: "always",
-                googlePay: "always",
-                link: "never",
-                paypal: "never",
-                amazonPay: "never",
-                klarna: "never",
-              },
-              buttonTheme: {
-                applePay: "black",
-                googlePay: "black",
-              },
-              buttonType: {
-                applePay: "buy",
-                googlePay: "buy",
-              },
-            }}
-            onReady={({ availablePaymentMethods }: any) => {
-              const hasExpressMethod =
-                availablePaymentMethods &&
-                Object.values(availablePaymentMethods).some(Boolean);
-
-              setExpressReady(Boolean(hasExpressMethod));
-            }}
-            onConfirm={onExpressConfirm}
-            onLoadError={(event: any) => {
-              setExpressReady(false);
-              setPayError(
-                event?.error?.message ||
-                  "Express checkout failed to load. You can still pay by card below."
-              );
-            }}
-          />
-
-          {!expressReady ? (
-            <div className="mt-2 text-xs text-gray-500">
-              Apple Pay or Google Pay appears here when available on this device.
-            </div>
-          ) : null}
-
-          <div className="my-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200" />
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              or pay by card
-            </div>
-            <div className="h-px flex-1 bg-gray-200" />
-          </div>
-        </div>
-
         <div className="rounded-md border border-gray-200 bg-white p-3">
           <PaymentElement
-            options={{
-              wallets: {
-                applePay: "never",
-                googlePay: "never",
-              },
-            }}
             onReady={() => {
               setPaymentReady(true);
               setPayError("");
