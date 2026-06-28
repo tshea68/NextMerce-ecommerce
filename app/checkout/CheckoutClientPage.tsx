@@ -4,13 +4,8 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "").replace(/\/+$/, "");
-const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
-
-const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
 /* --- pricing helpers ------------------------------------------------------ */
 function moneyToCents(v: unknown): number | null {
@@ -247,146 +242,6 @@ function OrderSummary({
   );
 }
 
-function CheckoutForm({
-  clientSecret,
-  totalCents,
-}: {
-  clientSecret: string;
-  totalCents: number;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const router = useRouter();
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [payError, setPayError] = useState("");
-  const [paymentReady, setPaymentReady] = useState(false);
-
-  const returnUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/success` : "";
-
-  const canPay =
-    Boolean(stripe) &&
-    Boolean(elements) &&
-    Boolean(clientSecret) &&
-    totalCents > 0 &&
-    !isSubmitting;
-
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setPayError("");
-
-    if (!stripe || !elements) {
-      setPayError(
-        "Secure payment form is still loading. Please wait a moment and try again."
-      );
-      return;
-    }
-
-    if (!totalCents || totalCents <= 0) {
-      setPayError("Order total is missing. Please refresh and try again.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const submitResult = await elements.submit();
-
-      if (submitResult?.error) {
-        setPayError(submitResult.error.message || "Please check your payment details.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      const result = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: returnUrl,
-        },
-        redirect: "if_required",
-      });
-
-      if (result?.error) {
-        setPayError(result.error.message || "Payment failed.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      router.push(
-        `/success?payment_intent_client_secret=${encodeURIComponent(
-          clientSecret
-        )}`
-      );
-    } catch (err: any) {
-      setPayError(err?.message || "Payment failed.");
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="mb-1 text-lg font-semibold text-gray-950">Payment</div>
-        <div className="mb-4 text-sm text-gray-600">
-          You will be charged{" "}
-          <span className="font-semibold text-gray-950">
-            ${money(totalCents)}
-          </span>
-          .
-        </div>
-
-        {!STRIPE_PK ? (
-          <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            Stripe publishable key is missing. Payment cannot load.
-          </div>
-        ) : null}
-
-        <div className="rounded-md border border-gray-200 bg-white p-3">
-          <PaymentElement
-            onReady={() => {
-              setPaymentReady(true);
-              setPayError("");
-            }}
-            onLoadError={(event: any) => {
-              setPaymentReady(false);
-              setPayError(
-                event?.error?.message ||
-                  "Secure payment form failed to load. Please refresh and try again."
-              );
-            }}
-          />
-        </div>
-
-        {payError ? (
-          <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {payError}
-          </div>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={!canPay}
-          className="mt-4 w-full cursor-pointer rounded-md bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 active:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-600"
-        >
-          {isSubmitting ? "Processing..." : `Pay $${money(totalCents)}`}
-        </button>
-
-        <div className="mt-2 text-[11px] text-gray-500">
-          Your payment is securely processed by Stripe. We will email your
-          order confirmation.
-        </div>
-      </div>
-
-      <div className="text-xs text-gray-600">
-        <Link href="/" className="text-blue-600 hover:underline">
-          ← Continue shopping
-        </Link>
-      </div>
-    </form>
-  );
-}
-
 /* --- page ---------------------------------------------------------------- */
 export default function CheckoutClientPage() {
   const params = useSearchParams();
@@ -564,14 +419,6 @@ export default function CheckoutClientPage() {
     }),
     []
   );
-
-  if (!STRIPE_PK || !stripePromise) {
-    return (
-      <div className="mx-auto max-w-5xl p-6 text-sm text-red-600">
-        Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
