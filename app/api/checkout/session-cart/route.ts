@@ -130,10 +130,10 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      ui_mode: "embedded_page" as any,
       customer_email: cleanString(contact?.email) || undefined,
       line_items,
-      success_url: `${origin}/success?sid={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/checkout`,
+      return_url: `${origin}/success?sid={CHECKOUT_SESSION_ID}`,
       billing_address_collection: "auto",
       metadata,
       payment_intent_data: {
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       id: session.id,
-      url: session.url,
+      client_secret: session.client_secret,
       is_refurb_only: isRefurbOnly,
     });
   } catch (err: any) {
