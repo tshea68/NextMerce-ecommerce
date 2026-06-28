@@ -400,12 +400,23 @@ export default function CheckoutClientPage() {
         );
       }
 
-      if (!data?.url) {
-        throw new Error("Backend did not return checkout URL.");
+      if (!data?.client_secret) {
+        throw new Error("Backend did not return embedded checkout client secret.");
       }
 
-      window.location.href = data.url;
-      return;
+      const itemsSubtotalCents = cartItems.reduce((sum, item) => {
+        const unit = Number(item.unit_amount_cents || 0);
+        const qty = Number(item.qty || 1);
+        return sum + unit * qty;
+      }, 0);
+
+      setClientSecret(data.client_secret);
+      setAmounts({
+        items_subtotal_cents: itemsSubtotalCents,
+        shipping_amount_cents: groundShippingIsFree ? 0 : null,
+        tax_amount_cents: null,
+        total_amount_cents: itemsSubtotalCents,
+      });
     } catch (e: any) {
       setCreateError(e?.message || "Failed to create Checkout Session.");
     } finally {
@@ -592,23 +603,12 @@ export default function CheckoutClientPage() {
           </div>
 
           {clientSecret ? (
-            <Elements
-              key={clientSecret}
-              stripe={stripePromise}
-              options={{
-                clientSecret,
-                appearance,
-              }}
-            >
-              <CheckoutForm
-                clientSecret={clientSecret}
-                totalCents={Number(
-                  amounts?.total_amount_cents ??
-                    amounts?.total_amount ??
-                    computeCartSubtotalCents(cartItems)
-                )}
-              />
-            </Elements>
+            <EmbeddedCheckoutProvider
+                stripe={stripePromise}
+                options={{ clientSecret }}
+              >
+                <EmbeddedCheckout />
+              </EmbeddedCheckoutProvider>
           ) : null}
         </div>
 
