@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
 import PartImage from "@/components/PartImage";
@@ -221,6 +222,10 @@ export default function ProductCard({ item }: ProductCardProps) {
     addToCart: (item: CartItemInput) => void;
   };
 
+  const router = useRouter();
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [busy, setBusy] = useState(false);
+
   const mpn =
     (item?.mpn && String(item.mpn).trim()) ||
     (item?.mpn_display && String(item.mpn_display).trim()) ||
@@ -274,20 +279,49 @@ export default function ProductCard({ item }: ProductCardProps) {
 
   const [qty, setQty] = useState(1);
 
+  function addCardItemToCart() {
+    if (!mpn || isNla || priceNum <= 0) return false;
+
+    addToCart({
+      mpn,
+      name: headline,
+      price: priceNum,
+      qty: isOfferLike ? 1 : qty,
+      image: img || undefined,
+      condition: isOfferLike ? "refurbished" : "new",
+      is_refurb: !!isOfferLike,
+    });
+
+    return true;
+  }
+
   function handleAddToCart() {
-    if (!mpn || isNla) return;
+    if (busy) return;
+
+    setBusy(true);
 
     try {
-      addToCart({
-        mpn,
-        name: headline,
-        price: priceNum,
-        qty: isOfferLike ? 1 : qty,
-        image: img || undefined,
-        condition: isOfferLike ? "refurbished" : "new",
-        is_refurb: !!isOfferLike,
-      });
-    } catch {}
+      const ok = addCardItemToCart();
+      if (ok) {
+        setAddedToCart(true);
+        window.setTimeout(() => setAddedToCart(false), 1400);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handleBuyNow() {
+    if (busy) return;
+
+    setBusy(true);
+
+    try {
+      const ok = addCardItemToCart();
+      if (ok) router.push("/checkout");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const cardBg = isNla
@@ -512,20 +546,31 @@ export default function ProductCard({ item }: ProductCardProps) {
             )}
 
             <button
+              type="button"
               className={`${
                 isNla
                   ? "bg-gray-400 cursor-not-allowed"
-                  : isOfferLike
-                    ? "bg-[#06254a] hover:bg-[#031a35]"
-                    : "bg-[#06254a] hover:bg-[#031a35]"
-              } text-white text-[12px] font-semibold rounded px-3 py-2`}
+                  : "bg-[#06254a] hover:bg-[#031a35]"
+              } text-white text-[12px] font-semibold rounded px-3 py-2 disabled:opacity-60`}
               onClick={handleAddToCart}
-              disabled={isNla}
+              disabled={isNla || busy}
               title={isNla ? "This part is not available for purchase" : "Add to Cart"}
             >
-              Add to Cart
+              {busy ? "Adding..." : addedToCart ? "Added ✓" : "Add to Cart"}
             </button>
           </div>
+
+          {!isNla && (
+            <button
+              type="button"
+              className="w-full rounded border border-[#06254a] bg-white px-3 py-2 text-[12px] font-semibold text-[#06254a] hover:bg-slate-50 disabled:opacity-60"
+              onClick={handleBuyNow}
+              disabled={busy}
+              title="Add this part and go straight to checkout"
+            >
+              Buy Now
+            </button>
+          )}
 
           <Link
             href={detailHref}
