@@ -194,8 +194,8 @@ export default function HomeHeroRebuild({
                   <span className="block text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
                     Search parts
                   </span>
-                  <span className="block truncate text-[15px] font-black text-slate-950 sm:text-base">
-                    Enter model number or part number
+                  <span className="block truncate text-[15px] font-black text-slate-950 sm:text-base text-slate-500 whitespace-normal leading-tight">
+                    Enter your part or model number
                   </span>
                 </span>
               </span>
