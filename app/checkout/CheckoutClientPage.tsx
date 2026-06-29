@@ -436,13 +436,13 @@ export default function CheckoutClientPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 py-4 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
       <div className="mb-4 text-sm text-white/80">
         Review your order, choose shipping, enter your shipping details, and
         pay securely with Stripe.
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-4 overflow-x-hidden lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-6">
         <div className="space-y-4">
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <div className="mb-3 text-sm font-semibold">
@@ -607,12 +607,14 @@ export default function CheckoutClientPage() {
           </div>
 
           {clientSecret ? (
-            <EmbeddedCheckoutProvider
+            <div className="mt-4 w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-white p-0 sm:p-2 [&_iframe]:max-w-full">
+              <EmbeddedCheckoutProvider
                 stripe={stripePromise}
                 options={{ clientSecret }}
               >
                 <EmbeddedCheckout />
               </EmbeddedCheckoutProvider>
+            </div>
           ) : null}
         </div>
 
