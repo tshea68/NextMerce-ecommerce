@@ -523,7 +523,7 @@ export default function HeaderMenu() {
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 lg:hidden">
-          <div className="absolute right-0 top-0 flex h-full w-[340px] flex-col bg-white p-6 shadow-2xl">
+          <div className="absolute right-3 top-3 flex max-h-[calc(100vh-24px)] w-[340px] flex-col bg-white p-5 shadow-2xl overflow-y-auto rounded-2xl">
             <div className="mb-6 flex items-center justify-between">
               <div className="text-lg font-semibold text-black">Menu</div>
               <button onClick={() => setMobileOpen(false)} aria-label="Close menu">
