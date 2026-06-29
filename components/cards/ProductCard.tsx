@@ -518,7 +518,7 @@ export default function ProductCard({ item }: ProductCardProps) {
           )}
         </div>
 
-        <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-end text-right gap-2">
+        <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-stretch text-center gap-2">
           <div
             className={`text-lg font-bold leading-none ${
               isNla ? "text-amber-800" : "text-green-700"
@@ -551,7 +551,7 @@ export default function ProductCard({ item }: ProductCardProps) {
                 isNla
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#06254a] hover:bg-[#031a35]"
-              } flex-1 text-white text-[12px] font-semibold rounded px-3 py-2 disabled:opacity-60`}
+              } w-full flex-1 text-white text-[12px] font-semibold rounded px-3 py-2 disabled:opacity-60`}
               onClick={handleAddToCart}
               disabled={isNla || busy}
               title={isNla ? "This part is not available for purchase" : "Add to Cart"}
