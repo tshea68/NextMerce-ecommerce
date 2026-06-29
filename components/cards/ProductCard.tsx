@@ -518,16 +518,16 @@ export default function ProductCard({ item }: ProductCardProps) {
           )}
         </div>
 
-        <div className="col-start-2 row-start-1 flex w-full min-w-0 flex-col items-stretch justify-start gap-2 text-center lg:col-auto lg:row-auto lg:max-w-[220px]">
+        <div className="col-start-2 row-start-1 flex w-full min-w-0 flex-col items-center justify-start gap-2 text-center lg:col-auto lg:row-auto lg:max-w-[220px]">
           <div
-            className={`text-2xl font-black leading-none lg:text-lg lg:font-bold ${
+            className={`w-full text-center text-2xl font-black leading-none lg:text-lg lg:font-bold ${
               isNla ? "text-amber-800" : "text-green-700"
             }`}
           >
             {isNla ? "—" : priceFmt(priceNum)}
           </div>
 
-          <div className="flex w-full items-center gap-2">
+          <div className="flex w-full flex-col gap-2 lg:flex-row">
             {!isOfferLike && !isNla && (
               <select
                 className="border border-gray-300 rounded px-2 py-1 text-[12px] text-black"
@@ -551,7 +551,7 @@ export default function ProductCard({ item }: ProductCardProps) {
                 isNla
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#06254a] hover:bg-[#031a35]"
-              } w-full flex-1 text-white text-[13px] font-semibold rounded px-3 py-2.5 disabled:opacity-60`}
+              } w-full text-white text-[13px] font-semibold rounded px-3 py-2.5 disabled:opacity-60`}
               onClick={handleAddToCart}
               disabled={isNla || busy}
               title={isNla ? "This part is not available for purchase" : "Add to Cart"}
