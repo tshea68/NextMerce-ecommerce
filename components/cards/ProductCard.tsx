@@ -393,9 +393,9 @@ export default function ProductCard({ item }: ProductCardProps) {
 
   return (
     <div className={`overflow-hidden rounded-xl border shadow-sm transition-shadow hover:shadow-md ${cardBg}`}>
-      <div className="px-4 py-4 flex flex-col lg:flex-row gap-4">
+      <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-4 px-4 py-4 lg:flex lg:flex-row">
         <div
-          className="relative flex-shrink-0 flex flex-col items-center"
+          className="relative col-start-1 row-start-1 flex flex-col items-center lg:flex-shrink-0"
           style={{ width: "110px" }}
         >
           <div className="relative flex items-center justify-center overflow-visible">
@@ -421,7 +421,17 @@ export default function ProductCard({ item }: ProductCardProps) {
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 flex flex-col gap-2 text-black">
+        <div className="col-start-2 row-start-1 flex min-w-0 flex-col items-end justify-start pt-2 text-right lg:hidden">
+          <div
+            className={`text-xl font-bold leading-none ${
+              isNla ? "text-amber-800" : "text-green-700"
+            }`}
+          >
+            {isNla ? "—" : priceFmt(priceNum)}
+          </div>
+        </div>
+
+        <div className="col-span-2 row-start-2 flex-1 min-w-0 flex flex-col gap-2 text-black lg:col-auto lg:row-auto">
           <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
             <Link
               href={detailHref}
@@ -520,7 +530,7 @@ export default function ProductCard({ item }: ProductCardProps) {
 
         <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-stretch text-center gap-2">
           <div
-            className={`text-lg font-bold leading-none ${
+            className={`hidden lg:block text-lg font-bold leading-none ${
               isNla ? "text-amber-800" : "text-green-700"
             }`}
           >
