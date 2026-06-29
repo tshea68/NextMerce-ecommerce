@@ -40,6 +40,8 @@ type OrderRow = {
 
 type StripeishOrder = {
   status?: string;
+  payment_status?: string;
+  payment_intent_status?: string;
   payment_intent_id?: string;
   payment_intent?: string;
   total_cents?: number;
@@ -50,6 +52,23 @@ type StripeishOrder = {
   line_items?: any[];
   lines?: { data?: any[] };
 };
+
+function normalizeSuccessStatus(j: StripeishOrder, fallback?: string | null) {
+  const paymentStatus = String(j?.payment_status || "").toLowerCase();
+  const piStatus = String(j?.payment_intent_status || "").toLowerCase();
+  const sessionStatus = String(j?.status || "").toLowerCase();
+  const fallbackStatus = String(fallback || "").toLowerCase();
+
+  if (paymentStatus === "paid" || piStatus === "succeeded") return "succeeded";
+  if (sessionStatus === "complete") return "succeeded";
+  if (sessionStatus === "paid") return "paid";
+  if (piStatus === "processing" || sessionStatus === "processing") return "processing";
+  if (piStatus === "requires_capture") return "requires_capture";
+  if (fallbackStatus === "succeeded") return "succeeded";
+  if (fallbackStatus) return fallbackStatus;
+
+  return sessionStatus || "unknown";
+}
 
 function SuccessPageInner() {
   const params = useSearchParams();
@@ -168,7 +187,7 @@ function SuccessPageInner() {
           );
           const j = (await safeJson(r)) as StripeishOrder;
 
-          const st = j.status || "unknown";
+          const st = normalizeSuccessStatus(j);
           setStatus(st);
           setOrder(j);
           setMsg(
@@ -191,7 +210,7 @@ function SuccessPageInner() {
           );
           const j = (await safeJson(r)) as StripeishOrder;
 
-          const st = j.status || redirect || "unknown";
+          const st = normalizeSuccessStatus(j, redirect);
           setStatus(st);
           setOrder(j);
           setMsg(
@@ -298,7 +317,7 @@ function SuccessPageInner() {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-white">
-              Order Confirmation
+              Order Confirmation 
             </h1>
             <p className="text-xs text-emerald-100">
               {status === "loading" ? "We’re confirming your payment…" : msg}
