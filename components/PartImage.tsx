@@ -123,11 +123,11 @@ export default function PartImage({
         portalRoot &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-3 sm:p-6"
             onClick={closePreview}
           >
             <div
-              className="relative w-[min(96vw,1350px)]"
+              className="relative inline-flex max-h-[90vh] max-w-[94vw] items-center justify-center"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -139,11 +139,11 @@ export default function PartImage({
                 ×
               </button>
 
-              <div className="flex h-[min(90vh,950px)] w-full items-center justify-center overflow-hidden rounded-lg bg-white">
+              <div className="inline-flex max-h-[88vh] max-w-[94vw] items-center justify-center overflow-hidden rounded-lg bg-white p-2 shadow-2xl sm:p-3">
                 <img
                   src={src}
                   alt={alt}
-                  className="h-full w-full object-contain p-6"
+                  className="block h-auto max-h-[84vh] w-auto max-w-[90vw] object-contain"
                   onError={handleImgError}
                   draggable={false}
                 />
