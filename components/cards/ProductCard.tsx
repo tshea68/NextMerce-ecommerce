@@ -527,7 +527,7 @@ export default function ProductCard({ item }: ProductCardProps) {
             {isNla ? "—" : priceFmt(priceNum)}
           </div>
 
-          <div className="flex items-center w-full justify-end gap-2">
+          <div className="flex w-full items-center gap-2">
             {!isOfferLike && !isNla && (
               <select
                 className="border border-gray-300 rounded px-2 py-1 text-[12px] text-black"
@@ -551,7 +551,7 @@ export default function ProductCard({ item }: ProductCardProps) {
                 isNla
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#06254a] hover:bg-[#031a35]"
-              } text-white text-[12px] font-semibold rounded px-3 py-2 disabled:opacity-60`}
+              } flex-1 text-white text-[12px] font-semibold rounded px-3 py-2 disabled:opacity-60`}
               onClick={handleAddToCart}
               disabled={isNla || busy}
               title={isNla ? "This part is not available for purchase" : "Add to Cart"}
