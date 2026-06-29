@@ -44,6 +44,8 @@ type StripeishOrder = {
   payment_intent_status?: string;
   payment_intent_id?: string;
   payment_intent?: string;
+  customer_email?: string;
+  customer_details?: { email?: string | null } | null;
   total_cents?: number;
   amount_total?: number;
   amount?: number;
@@ -242,6 +244,12 @@ function SuccessPageInner() {
   const reliableOrderNumber =
     orderRow?.reliable_order_number || orderRow?.reliableOrderNumber || null;
 
+  const confirmationEmail =
+    orderRow?.customer_email ||
+    order?.customer_email ||
+    order?.customer_details?.email ||
+    "";
+
   const totalCents =
     (typeof orderRow?.total_amount_cents === "number"
       ? orderRow.total_amount_cents
@@ -371,18 +379,18 @@ function SuccessPageInner() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="bg-gray-50 rounded-md border border-gray-200 px-4 py-3 text-sm space-y-1">
-              {orderRow?.customer_email && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Confirmation sent to</span>
-                  <span className="font-medium text-gray-900">
-                    {orderRow.customer_email}
-                  </span>
+            <div className="bg-gray-50 rounded-md border border-gray-200 px-4 py-3 text-sm space-y-3">
+              {confirmationEmail && (
+                <div>
+                  <div className="text-gray-600">Confirmation sent to</div>
+                  <div className="break-all font-medium text-gray-900">
+                    {confirmationEmail}
+                  </div>
                 </div>
               )}
 
               {typeof totalCents === "number" && (
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-4">
                   <span className="text-gray-600">Order total</span>
                   <span className="font-semibold text-gray-900">
                     ${(totalCents / 100).toFixed(2)} {currency}
