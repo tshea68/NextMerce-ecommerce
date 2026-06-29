@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import CartWidget from "@/components/cart/CartWidget.client";
 import { ShoppingCart, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -10,6 +11,8 @@ import SearchOverlay from "@/components/search/SearchOverlay";
 import TopBar from "@/components/site/TopBar";
 
 export default function Header() {
+  const pathname = usePathname();
+  const hideMobileHeaderSearch = pathname === "/";
   const { cartItems } = useCart();
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -61,14 +64,16 @@ export default function Header() {
             </div>
 
             <div className="flex shrink-0 items-center gap-2 lg:hidden">
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-black/20 bg-white p-0 text-sm font-medium text-black shadow-sm transition hover:bg-black/[0.03]"
-                aria-label="Open search"
-              >
-                <Search className="h-4 w-4" />
-              </button>
+              {!hideMobileHeaderSearch && (
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-black/20 bg-white p-0 text-sm font-medium text-black shadow-sm transition hover:bg-black/[0.03]"
+                  aria-label="Open search"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              )}
 
               <CartWidget variant="compact" />
 
