@@ -4,9 +4,12 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider, Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "").replace(/\/+$/, "");
+const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
+const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
 /* --- pricing helpers ------------------------------------------------------ */
 function moneyToCents(v: unknown): number | null {
