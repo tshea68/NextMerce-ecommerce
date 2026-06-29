@@ -421,16 +421,6 @@ export default function ProductCard({ item }: ProductCardProps) {
           </div>
         </div>
 
-        <div className="col-start-2 row-start-1 flex min-w-0 flex-col items-end justify-start pt-2 text-right lg:hidden">
-          <div
-            className={`text-xl font-bold leading-none ${
-              isNla ? "text-amber-800" : "text-green-700"
-            }`}
-          >
-            {isNla ? "—" : priceFmt(priceNum)}
-          </div>
-        </div>
-
         <div className="col-span-2 row-start-2 flex-1 min-w-0 flex flex-col gap-2 text-black lg:col-auto lg:row-auto">
           <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
             <Link
@@ -528,9 +518,9 @@ export default function ProductCard({ item }: ProductCardProps) {
           )}
         </div>
 
-        <div className="w-full max-w-[220px] flex-shrink-0 flex flex-col items-stretch text-center gap-2">
+        <div className="col-start-2 row-start-1 flex w-full min-w-0 flex-col items-stretch justify-start gap-2 text-center lg:col-auto lg:row-auto lg:max-w-[220px]">
           <div
-            className={`hidden lg:block text-lg font-bold leading-none ${
+            className={`text-2xl font-black leading-none lg:text-lg lg:font-bold ${
               isNla ? "text-amber-800" : "text-green-700"
             }`}
           >
@@ -561,7 +551,7 @@ export default function ProductCard({ item }: ProductCardProps) {
                 isNla
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#06254a] hover:bg-[#031a35]"
-              } w-full flex-1 text-white text-[12px] font-semibold rounded px-3 py-2 disabled:opacity-60`}
+              } w-full flex-1 text-white text-[13px] font-semibold rounded px-3 py-2.5 disabled:opacity-60`}
               onClick={handleAddToCart}
               disabled={isNla || busy}
               title={isNla ? "This part is not available for purchase" : "Add to Cart"}
@@ -573,7 +563,7 @@ export default function ProductCard({ item }: ProductCardProps) {
           {!isNla && (
             <button
               type="button"
-              className="w-full rounded border border-[#06254a] bg-white px-3 py-2 text-[12px] font-semibold text-[#06254a] hover:bg-slate-50 disabled:opacity-60"
+              className="w-full rounded border border-[#06254a] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#06254a] hover:bg-slate-50 disabled:opacity-60"
               onClick={handleBuyNow}
               disabled={busy}
               title="Add this part and go straight to checkout"
@@ -581,14 +571,7 @@ export default function ProductCard({ item }: ProductCardProps) {
               Buy Now
             </button>
           )}
-
-          <Link
-            href={detailHref}
-            className="underline text-[#06254a] text-[11px] font-medium hover:text-orange-700"
-          >
-            View part
-          </Link>
-        </div>
+</div>
       </div>
     </div>
   );
