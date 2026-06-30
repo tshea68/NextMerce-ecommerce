@@ -42,3 +42,19 @@
 .animate-brand-logo-scroll {
   animation: brandLogoScroll 38s linear infinite;
 }
+
+
+/* Prevent mobile horizontal rubber-band/pan without changing component layout */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+@supports not (overflow: clip) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+}
