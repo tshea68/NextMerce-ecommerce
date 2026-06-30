@@ -1445,7 +1445,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
           {isModelFocused ? (
             <div
-              className="max-h-[720px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col min-h-0 lg:max-h-none"
+              className="rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col min-h-0 overflow-hidden"
               style={isLg && asideHeight ? { height: asideHeight } : undefined}
             >
               <div className="shrink-0 p-4 border-b border-gray-200 bg-white">
@@ -1503,7 +1503,7 @@ export default function PartsExplorer(props: PartsExplorerProps) {
 
               {hasAnyResults && (
                 <div
-                  className="max-h-[720px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col min-h-0 lg:max-h-none"
+                  className="rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col min-h-0"
                   style={isLg && asideHeight ? { height: asideHeight } : undefined}
                 >
                   <div className="flex-1 min-h-0 overflow-y-auto p-4">
