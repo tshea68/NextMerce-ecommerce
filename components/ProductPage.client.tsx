@@ -8,7 +8,7 @@ import PartImage from "@/components/PartImage";
 import ComparisonBadge from "@/components/ComparisonBadge.client";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
-import { buildProductItem, trackAddToCart, trackBeginCheckout, trackViewItem } from "@/lib/ga4";
+import { trackAddToCart, trackViewItem } from "@/lib/ga4";
 
 export type ProductVM = {
   mpn?: string | null;
@@ -449,22 +449,6 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
   async function handleBuyNow() {
     await handleAddToCart();
-
-    const item = buildProductItem(
-      {
-        ...vm,
-        mpn,
-        title,
-        price: asNumber(vm.price) ?? undefined,
-      },
-      qty
-    );
-
-    trackBeginCheckout(
-      [item],
-      item.price != null ? item.price * qty : undefined
-    );
-
     router.push("/checkout");
   }
 
