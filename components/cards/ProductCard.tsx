@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
 import PartImage from "@/components/PartImage";
+import { trackAddToCart } from "@/lib/ga4";
 
 function priceFmt(n: any) {
   const x =
@@ -282,15 +283,31 @@ export default function ProductCard({ item }: ProductCardProps) {
   function addCardItemToCart() {
     if (!mpn || isNla || priceNum <= 0) return false;
 
+    const cartQty = isOfferLike ? 1 : qty;
+
     addToCart({
       mpn,
       name: headline,
       price: priceNum,
-      qty: isOfferLike ? 1 : qty,
+      qty: cartQty,
       image: img || undefined,
       condition: isOfferLike ? "refurbished" : "new",
       is_refurb: !!isOfferLike,
     });
+
+    trackAddToCart(
+      {
+        ...item,
+        mpn,
+        title: headline,
+        name: headline,
+        price: priceNum,
+        image_url: img || undefined,
+        condition: isOfferLike ? "refurbished" : "new",
+        is_refurb: !!isOfferLike,
+      },
+      cartQty
+    );
 
     return true;
   }

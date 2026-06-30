@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { trackAddToCart } from "@/lib/ga4";
 
 type CartItemInput = {
   mpn: string;
@@ -76,6 +77,20 @@ export default function AddToCartBox({ item }: { item: any }) {
         condition: "refurbished",
         is_refurb: true,
       });
+
+      trackAddToCart(
+        {
+          ...item,
+          mpn,
+          title,
+          name: title,
+          price: priceNum,
+          image_url: imageUrl || undefined,
+          condition: "refurbished",
+          is_refurb: true,
+        },
+        1
+      );
     } finally {
       setAdding(false);
     }

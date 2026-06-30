@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { buildProductItem, trackBeginCheckout, trackEvent } from "@/lib/ga4";
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider, Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 
@@ -305,6 +306,48 @@ export default function CheckoutClientPage() {
   }, [contextCartItems, queryCartItems]);
 
   const isRefurbOnly = useMemo(() => isRefurbOnlyCart(cartItems), [cartItems]);
+  const beginCheckoutTrackedRef = useRef<string | null>(null);
+  const checkoutFormStartedTrackedRef = useRef(false);
+  const paymentReadyTrackedRef = useRef<string | null>(null);
+  const paymentErrorTrackedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) return;
+
+    const key = cartItems
+      .map((item) => `${item.mpn}:${item.qty}:${item.unit_amount_cents ?? item.price ?? ""}`)
+      .join("|");
+
+    if (!key || beginCheckoutTrackedRef.current === key) return;
+    beginCheckoutTrackedRef.current = key;
+
+    const ga4Items = cartItems.map((item) =>
+      buildProductItem(
+        {
+          ...item,
+          price:
+            typeof item.unit_amount_cents === "number"
+              ? item.unit_amount_cents / 100
+              : item.price,
+          title: item.name || item.title || item.mpn,
+          name: item.name || item.title || item.mpn,
+        },
+        Number(item.qty || 1)
+      )
+    );
+
+    const value = cartItems.reduce((sum, item) => {
+      const qty = Number(item.qty || 1);
+      const price =
+        typeof item.unit_amount_cents === "number"
+          ? item.unit_amount_cents / 100
+          : Number(item.price || 0);
+
+      return sum + (Number.isFinite(price) ? price : 0) * (Number.isFinite(qty) ? qty : 1);
+    }, 0);
+
+    trackBeginCheckout(ga4Items, value > 0 ? value : undefined);
+  }, [cartItems]);
 
   const [shippingMethod, setShippingMethod] = useState(
     params.get("ship_method") || "GND"
@@ -325,6 +368,69 @@ export default function CheckoutClientPage() {
   const [amounts, setAmounts] = useState<any>(null);
   const [creatingIntent, setCreatingIntent] = useState(false);
   const [createError, setCreateError] = useState("");
+
+  useEffect(() => {
+    if (checkoutFormStartedTrackedRef.current) return;
+
+    const hasStartedShippingForm = [
+      email,
+      phone,
+      fullName,
+      address1,
+      address2,
+      city,
+      state,
+      postal,
+    ].some((value) => String(value || "").trim());
+
+    if (!hasStartedShippingForm) return;
+
+    checkoutFormStartedTrackedRef.current = true;
+
+    const value = computeCartSubtotalCents(cartItems) / 100;
+
+    trackEvent("checkout_form_started", {
+      currency: "USD",
+      value: value > 0 ? value : undefined,
+      item_count: cartItems.length,
+      is_refurb_only: isRefurbOnly,
+    });
+  }, [email, phone, fullName, address1, address2, city, state, postal, cartItems, isRefurbOnly]);
+
+  useEffect(() => {
+    if (!clientSecret) return;
+    if (paymentReadyTrackedRef.current === clientSecret) return;
+
+    paymentReadyTrackedRef.current = clientSecret;
+
+    const value = computeCartSubtotalCents(cartItems) / 100;
+
+    trackEvent("payment_ready", {
+      checkout_type: "embedded",
+      currency: "USD",
+      value: value > 0 ? value : undefined,
+      item_count: cartItems.length,
+      is_refurb_only: isRefurbOnly,
+    });
+  }, [clientSecret, cartItems, isRefurbOnly]);
+
+  useEffect(() => {
+    if (!createError) return;
+    if (paymentErrorTrackedRef.current === createError) return;
+
+    paymentErrorTrackedRef.current = createError;
+
+    const value = computeCartSubtotalCents(cartItems) / 100;
+
+    trackEvent("payment_error", {
+      error_stage: clientSecret ? "embedded_checkout" : "create_checkout_session",
+      error_message: String(createError).slice(0, 180),
+      currency: "USD",
+      value: value > 0 ? value : undefined,
+      item_count: cartItems.length,
+      is_refurb_only: isRefurbOnly,
+    });
+  }, [createError, clientSecret, cartItems, isRefurbOnly]);
 
   const canCreateIntent =
     cartItems.length > 0 &&
@@ -351,6 +457,16 @@ export default function CheckoutClientPage() {
       );
       return;
     }
+
+    const shippingContinueValue = computeCartSubtotalCents(cartItems) / 100;
+
+    trackEvent("shipping_continue_click", {
+      currency: "USD",
+      value: shippingContinueValue > 0 ? shippingContinueValue : undefined,
+      item_count: cartItems.length,
+      shipping_method: (shippingMethod || "GND").trim(),
+      is_refurb_only: isRefurbOnly,
+    });
 
     setCreatingIntent(true);
     try {
