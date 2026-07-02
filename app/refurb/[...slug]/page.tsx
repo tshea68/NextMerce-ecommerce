@@ -21,16 +21,27 @@ function looksLikeMpn(value: string): boolean {
   return /^[a-z0-9][a-z0-9._-]{2,}$/i.test(cleaned);
 }
 
-function targetedRefurbGridUrl(mpn: string, offer: string): string {
+function offersUrl(mpn: string, offer: string): string {
   const cleaned = mpn.trim();
 
   const qs = new URLSearchParams();
-  qs.set("condition", "refurb");
-  qs.set("q", cleaned);
-  qs.set("mpn", cleaned);
-  qs.set("search", cleaned);
-
   if (offer) qs.set("offer", offer);
+
+  const query = qs.toString();
+  return `/offers/${encodeURIComponent(cleaned)}${query ? `?${query}` : ""}`;
+}
+
+function targetedGridUrl(value: string): string {
+  const cleaned = value.trim();
+
+  const qs = new URLSearchParams();
+  qs.set("condition", "refurb");
+
+  if (cleaned) {
+    qs.set("q", cleaned);
+    qs.set("mpn", cleaned);
+    qs.set("search", cleaned);
+  }
 
   return `/grid?${qs.toString()}`;
 }
@@ -48,10 +59,10 @@ export default async function RefurbLandingPage({
   // Current Shopping feed format:
   // /refurb/w10157246?offer=...
   //
-  // Never let this collapse to a generic /grid page.
+  // Send product-looking refurb URLs to the actual offer/product route.
   if (looksLikeMpn(slug)) {
-    redirect(targetedRefurbGridUrl(slug, offer));
+    redirect(offersUrl(slug, offer));
   }
 
-  redirect("/grid?condition=refurb");
+  redirect(targetedGridUrl(slug));
 }
