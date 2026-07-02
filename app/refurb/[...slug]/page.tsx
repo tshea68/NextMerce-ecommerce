@@ -2,11 +2,6 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-// Use the public FastAPI domain directly for legacy SEO redirects.
-// Do not depend on NEXT_PUBLIC_API_BASE here; that may point at a frontend-relative
-// or stale environment value and cause this route to fall back.
-const API_BASE = "https://api.appliancepartgeeks.com";
-
 type SearchValue = string | string[] | undefined;
 
 type PageProps = {
@@ -21,64 +16,42 @@ function firstValue(value: SearchValue): string {
   return value || "";
 }
 
-function fallbackGridUrl(legacyPath: string): string {
-  const cleaned = legacyPath.trim();
+function looksLikeMpn(value: string): boolean {
+  const cleaned = value.trim();
+  return /^[a-z0-9][a-z0-9._-]{2,}$/i.test(cleaned);
+}
 
-  if (!cleaned) {
-    return fallbackGridUrl(legacyPath);
-  }
+function targetedRefurbGridUrl(mpn: string, offer: string): string {
+  const cleaned = mpn.trim();
 
   const qs = new URLSearchParams();
-  qs.set("condition", "refurbished");
+  qs.set("condition", "refurb");
   qs.set("q", cleaned);
+  qs.set("mpn", cleaned);
+  qs.set("search", cleaned);
+
+  if (offer) qs.set("offer", offer);
 
   return `/grid?${qs.toString()}`;
 }
 
-async function resolveLegacyRefurbRedirect(
-  legacyPath: string,
-  offer: string
-): Promise<string> {
-  const qs = new URLSearchParams();
-  qs.set("path", legacyPath);
-  if (offer) qs.set("offer", offer);
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
-
-  try {
-    const res = await fetch(`${API_BASE}/api/legacy/refurb-redirect?${qs.toString()}`, {
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    if (!res.ok) return fallbackGridUrl(legacyPath);
-
-    const data = await res.json();
-
-    if (typeof data?.redirect_to === "string" && data.redirect_to.startsWith("/")) {
-      return data.redirect_to;
-    }
-
-    return fallbackGridUrl(legacyPath);
-  } catch {
-    return fallbackGridUrl(legacyPath);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-export default async function LegacyRefurbRedirectPage({
+export default async function RefurbLandingPage({
   params,
   searchParams,
 }: PageProps) {
   const resolvedParams = await Promise.resolve(params);
   const resolvedSearchParams = await Promise.resolve(searchParams);
 
-  const slug = (resolvedParams.slug || []).join("/");
+  const slug = (resolvedParams.slug || []).join("/").trim();
   const offer = firstValue(resolvedSearchParams.offer);
 
-  const destination = await resolveLegacyRefurbRedirect(slug, offer);
+  // Current Shopping feed format:
+  // /refurb/w10157246?offer=...
+  //
+  // Never let this collapse to a generic /grid page.
+  if (looksLikeMpn(slug)) {
+    redirect(targetedRefurbGridUrl(slug, offer));
+  }
 
-  redirect(destination);
+  redirect("/grid?condition=refurb");
 }
