@@ -7,6 +7,21 @@ function looksLikeMpn(value: string): boolean {
   return /^[a-z0-9][a-z0-9._-]{2,}$/i.test(cleaned);
 }
 
+function copyTrackingParams(from: URLSearchParams, to: URLSearchParams) {
+  for (const [key, value] of from.entries()) {
+    const k = key.toLowerCase();
+
+    if (
+      k === "gclid" ||
+      k === "gbraid" ||
+      k === "wbraid" ||
+      k.startsWith("utm_")
+    ) {
+      to.set(key, value);
+    }
+  }
+}
+
 export function GET(req: NextRequest) {
   const raw =
     req.nextUrl.searchParams.get("q") ||
@@ -19,6 +34,7 @@ export function GET(req: NextRequest) {
 
   if (q && looksLikeMpn(q)) {
     const target = new URL(`/offers/${encodeURIComponent(q)}`, req.url);
+    copyTrackingParams(req.nextUrl.searchParams, target.searchParams);
     return NextResponse.redirect(target, 307);
   }
 
@@ -30,6 +46,8 @@ export function GET(req: NextRequest) {
     target.searchParams.set("mpn", q);
     target.searchParams.set("condition", "refurb");
   }
+
+  copyTrackingParams(req.nextUrl.searchParams, target.searchParams);
 
   return NextResponse.redirect(target, 307);
 }
