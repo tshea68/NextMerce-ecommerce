@@ -21,14 +21,36 @@ function looksLikeMpn(value: string): boolean {
   return /^[a-z0-9][a-z0-9._-]{2,}$/i.test(cleaned);
 }
 
-function offersUrl(mpn: string, offer: string): string {
-  const cleaned = mpn.trim();
+function looksLikeListingId(value: string): boolean {
+  return /^\d{8,20}$/.test(value.trim());
+}
+
+function listingIdFromOfferToken(offer: string): string {
+  const raw = String(offer || "").trim();
+  if (!raw) return "";
+
+  // Usually: v1|listing_id|variation_id
+  const decoded = raw.replace(/%7C/gi, "|");
+  const parts = decoded.split("|").map((x) => x.trim()).filter(Boolean);
+
+  for (const part of parts) {
+    if (looksLikeListingId(part)) return part;
+  }
+
+  return "";
+}
+
+function offersUrl(slug: string, offer: string): string {
+  const cleanedSlug = slug.trim();
+  const listingId = listingIdFromOfferToken(offer);
+  const targetSlug = listingId || cleanedSlug;
 
   const qs = new URLSearchParams();
   if (offer) qs.set("offer", offer);
+  if (listingId && cleanedSlug) qs.set("mpn", cleanedSlug);
 
   const query = qs.toString();
-  return `/offers/${encodeURIComponent(cleaned)}${query ? `?${query}` : ""}`;
+  return `/offers/${encodeURIComponent(targetSlug)}${query ? `?${query}` : ""}`;
 }
 
 function targetedGridUrl(value: string): string {
@@ -56,10 +78,11 @@ export default async function RefurbLandingPage({
   const slug = (resolvedParams.slug || []).join("/").trim();
   const offer = firstValue(resolvedSearchParams.offer);
 
-  // Current Shopping feed format:
-  // /refurb/w10157246?offer=...
+  // Shopping feed format:
+  // /refurb/{mpn}?offer=v1|listing_id|variation_id
   //
-  // Send product-looking refurb URLs to the actual offer/product route.
+  // Use listing_id from the offer token when available because /offers/[slug]
+  // already resolves listing_id directly.
   if (looksLikeMpn(slug)) {
     redirect(offersUrl(slug, offer));
   }
