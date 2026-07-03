@@ -42,7 +42,7 @@ function isPartInStock(stock_status_canon: any, availability_rank: any) {
 function looksLikeListingId(s: string) {
   const x = String(s ?? "").trim();
   if (!x) return false;
-  return /^\d{8,20}$/.test(x);
+  return /^\d{8,40}$/.test(x);
 }
 
 function cleanStr(v: any) {
