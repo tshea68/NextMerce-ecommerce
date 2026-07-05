@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { money } from "@/lib/money";
-import { buildProductItem, trackBeginCheckout } from "@/lib/ga4";
+
 
 export default function CartPage() {
   const router = useRouter();
@@ -33,19 +33,6 @@ export default function CartPage() {
       condition:
         item.condition || (item.is_refurb ? "refurbished" : "new"),
     }));
-
-    const ga4Items = cartItems.map((item) =>
-      buildProductItem(
-        {
-          ...item,
-          title: item.name,
-          is_refurb: !!item.is_refurb,
-        },
-        Number(item.qty || 1)
-      )
-    );
-
-    trackBeginCheckout(ga4Items, subtotal);
 
     router.push(
       `/checkout?cart=${encodeURIComponent(JSON.stringify(summaryPayload))}`
