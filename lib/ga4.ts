@@ -36,9 +36,14 @@ export function trackEvent(eventName: string, params: Record<string, any> = {}) 
   }
 
   window.dataLayer = window.dataLayer || [];
+
+  // Keep top-level params for existing GTM tags, but also provide the
+  // GA4/GTM ecommerce object expected by "Send ecommerce data".
+  window.dataLayer.push({ ecommerce: null });
   window.dataLayer.push({
     event: eventName,
     ...clean,
+    ecommerce: clean,
   });
 }
 
