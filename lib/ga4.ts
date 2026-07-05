@@ -64,7 +64,8 @@ export function buildProductItem(product: any, quantity = 1): GA4Item {
 
   return {
     item_id: String(mpn),
-    item_name: String(title),
+    // Use MPN as GA4 item_name so view/add/checkout/purchase rows reconcile.
+    item_name: String(mpn),
     item_brand: product?.brand || undefined,
     item_category: product?.appliance_type || undefined,
     item_category2:
