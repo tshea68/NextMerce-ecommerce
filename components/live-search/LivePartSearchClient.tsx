@@ -69,6 +69,31 @@ type SourceHealthResponse = {
   sources: SourceHealth[];
 };
 
+type PartsAgentResponse = {
+  intent: string;
+  allowed_to_answer: boolean;
+  brand: string | null;
+  appliance_type: string | null;
+  model_number: string | null;
+  part_number: string | null;
+  symptom: string | null;
+  error_code: string | null;
+  needs_more_info: boolean;
+  missing_fields: string[];
+  confidence: "low" | "medium" | "high";
+  message: string;
+  result?: {
+    part_number?: string;
+    recommendation?: string;
+    xmarket?: unknown;
+    refurb?: unknown;
+    live?: LivePartResponse & {
+      summary?: unknown;
+    };
+    errors?: { source: string; detail: string }[];
+  } | null;
+};
+
 function sellerLabel(sellerKey: string) {
   const labels: Record<string, string> = {
     apg_internal: "APG",
@@ -398,6 +423,8 @@ export default function LivePartSearchClient() {
   const [loadingMode, setLoadingMode] = useState<"refresh" | "saved" | "">("");
   const [showSources, setShowSources] = useState(false);
   const [error, setError] = useState("");
+  const [agentMessage, setAgentMessage] = useState("");
+  const [agentIntent, setAgentIntent] = useState("");
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -445,35 +472,56 @@ export default function LivePartSearchClient() {
   }
 
   async function refreshLive(clean: string) {
-    const refreshRes = await fetch(
-      `${API_BASE}/api/live-part-search/${encodeURIComponent(clean)}/refresh`,
-      { method: "POST", cache: "no-store" }
-    );
+    const agentRes = await fetch(`${API_BASE}/api/parts-agent/query`, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: clean }),
+    });
 
-    if (!refreshRes.ok) {
+    if (!agentRes.ok) {
       let detail = "";
       try {
-        const errJson = await refreshRes.json();
+        const errJson = await agentRes.json();
         detail = errJson?.detail ? `: ${errJson.detail}` : "";
       } catch {
         // ignore
       }
-      throw new Error(`Refresh request failed: ${refreshRes.status}${detail}`);
+      throw new Error(`Parts agent request failed: ${agentRes.status}${detail}`);
     }
 
-    const refreshJson = (await refreshRes.json()) as LivePartResponse;
+    const agentJson = (await agentRes.json()) as PartsAgentResponse;
+
+    setAgentMessage(agentJson.message || "");
+    setAgentIntent(agentJson.intent || "");
+
+    if (!agentJson.allowed_to_answer) {
+      throw new Error(agentJson.message || "This search is outside appliance parts.");
+    }
+
+    const live = agentJson.result?.live;
+
+    if (!live) {
+      if (agentJson.needs_more_info) {
+        setData(null);
+        setSources(null);
+        return;
+      }
+
+      throw new Error(agentJson.message || "No part result was found.");
+    }
 
     setData({
-      searched_mpn: refreshJson.searched_mpn,
-      searched_mpn_norm: refreshJson.searched_mpn_norm,
-      saved_run_id: refreshJson.saved_run_id,
-      result_count: refreshJson.result_count,
-      source_count: refreshJson.source_count,
-      results: refreshJson.results || [],
-      sources: refreshJson.sources || [],
+      searched_mpn: live.searched_mpn,
+      searched_mpn_norm: live.searched_mpn_norm,
+      saved_run_id: live.saved_run_id,
+      result_count: live.result_count,
+      source_count: live.source_count,
+      results: live.results || [],
+      sources: live.sources || [],
     });
 
-    setSources(normalizeResponseToSources(refreshJson));
+    setSources(normalizeResponseToSources(live));
   }
 
   async function runSearch(e?: FormEvent, mode: "refresh" | "saved" = "refresh") {
@@ -485,6 +533,8 @@ export default function LivePartSearchClient() {
     setLoading(true);
     setLoadingMode(mode);
     setError("");
+    setAgentMessage("");
+    setAgentIntent("");
     setData(null);
     setSources(null);
     setSearched(clean);
@@ -510,15 +560,15 @@ export default function LivePartSearchClient() {
           <form onSubmit={(e) => runSearch(e, "refresh")} className="flex flex-col gap-2 md:flex-row md:items-center">
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex items-center gap-2">
-                <h1 className="text-lg font-black">Live Part Search</h1>
+                <h1 className="text-lg font-black">Parts Sherpa Search</h1>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-slate-600">
-                  exact MPN + known replacements only
+                  MPN, model, symptom, or error code
                 </span>
               </div>
               <input
                 value={mpn}
                 onChange={(e) => setMpn(e.target.value)}
-                placeholder="Enter exact MPN, e.g. DC92-01607J"
+                placeholder="Enter part number, model number, symptom, or error code"
                 className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-black tracking-wide outline-none ring-orange-500/20 focus:border-orange-500 focus:ring-4"
               />
             </div>
@@ -529,7 +579,7 @@ export default function LivePartSearchClient() {
                 disabled={loading}
                 className="h-10 rounded-lg bg-slate-950 px-4 text-xs font-black uppercase tracking-wide text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading && loadingMode === "refresh" ? "Checking..." : "Check Live"}
+                {loading && loadingMode === "refresh" ? "Checking..." : "Ask Sherpa"}
               </button>
               <button
                 type="button"
@@ -549,7 +599,7 @@ export default function LivePartSearchClient() {
           <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm">
             <div className="flex items-center gap-2 font-semibold text-slate-700">
               <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-orange-600" />
-              {loadingMode === "saved" ? "Loading saved result" : `Checking live sources for ${searched}`}
+              {loadingMode === "saved" ? "Loading saved result" : `Parts Sherpa is checking ${searched}`}
             </div>
             <div className="font-mono text-xs font-black text-slate-500">{elapsed}s</div>
           </div>
@@ -561,9 +611,21 @@ export default function LivePartSearchClient() {
           </div>
         ) : null}
 
+        {agentMessage && !error ? (
+          <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900">
+            <strong>Parts Sherpa:</strong> {agentMessage}
+            {agentIntent ? (
+              <span className="ml-2 rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-orange-700">
+                {agentIntent}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
+
         {!data && !loading && !error ? (
           <div className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-8 text-center text-sm text-slate-600">
-            Enter an exact part number and run a live availability check.
+            Enter a part number, model number, symptom, or error code. Parts Sherpa will return used OEM options and source comparisons when available.
           </div>
         ) : null}
 
