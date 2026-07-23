@@ -299,11 +299,8 @@ function SuccessPageInner() {
             },
           ];
 
-    trackPurchase({
-      transactionId,
-      items,
-      value: totalCents / 100,
-    });
+    // Purchase tracking is handled server-side from the Stripe webhook.
+    // Do not fire a client-side purchase event here, or GA4 will double-count.
   }, [status, totalCents, lineItems, order, orderRow, params]);
 
   function handlePrint() {
