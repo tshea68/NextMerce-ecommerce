@@ -292,6 +292,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
   const [refurb, setRefurb] = useState<AnyItem[]>([]);
   const [parts, setParts] = useState<AnyItem[]>([]);
   const [partCompletions, setPartCompletions] = useState<string[]>([]);
+  const [selectedPartCompletion, setSelectedPartCompletion] = useState("");
   const [brandLogos, setBrandLogos] = useState<AnyItem[]>([]);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -482,6 +483,13 @@ export default function SearchOverlay({ open, onClose }: Props) {
   const partsTabResults = partOfferGroups.slice(0, 8);
 
   const partSherpaMpn = useMemo(() => {
+    if (
+      selectedPartCompletion &&
+      normMpnKey(selectedPartCompletion) === normMpnKey(query)
+    ) {
+      return normalizePartSherpaMpn(selectedPartCompletion);
+    }
+
     if (partCompletions.length > 0 && stronglyResemblesMpn(query)) {
       return normalizePartSherpaMpn(query);
     }
@@ -505,7 +513,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
     }
 
     return "";
-  }, [query, models, parts, refurb, partCompletions]);
+  }, [query, models, parts, refurb, partCompletions, selectedPartCompletion]);
 
   const partSherpaHref = partSherpaMpn
     ? `https://sherpa.scalepartners.io/part-search/?part=${encodeURIComponent(partSherpaMpn)}`
@@ -537,7 +545,10 @@ export default function SearchOverlay({ open, onClose }: Props) {
                 ref={inputRef}
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setSelectedPartCompletion("");
+                  setQuery(e.target.value);
+                }}
                 className="ml-3 flex-1 bg-transparent text-[16px] text-black outline-none placeholder:text-black/40"
                 placeholder="Search by model number, part number (MPN), brand, or appliance type"
               />
@@ -605,6 +616,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                           key={completion}
                           type="button"
                           onClick={() => {
+                            setSelectedPartCompletion(completion);
                             setQuery(completion);
                             inputRef.current?.focus();
                           }}
