@@ -127,6 +127,21 @@ function rawMpn(item: AnyItem) {
   );
 }
 
+function normalizePartSherpaMpn(value: any) {
+  return String(value ?? "")
+    .trim()
+    .replace(/-includecore$/i, "");
+}
+
+function stronglyResemblesMpn(value: any) {
+  const candidate = String(value ?? "").trim();
+  return (
+    candidate.length >= 6 &&
+    /^[a-z0-9-]+$/i.test(candidate) &&
+    /\d/.test(candidate)
+  );
+}
+
 function normMpnKey(v: any) {
   return String(v ?? "")
     .trim()
@@ -276,6 +291,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
   const [models, setModels] = useState<AnyItem[]>([]);
   const [refurb, setRefurb] = useState<AnyItem[]>([]);
   const [parts, setParts] = useState<AnyItem[]>([]);
+  const [partCompletions, setPartCompletions] = useState<string[]>([]);
   const [brandLogos, setBrandLogos] = useState<AnyItem[]>([]);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -318,6 +334,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
     if (!open) return;
 
     const q = query.trim();
+    setPartCompletions([]);
     if (q.length < 2) {
       setModels([]);
       setRefurb([]);
@@ -326,24 +343,39 @@ export default function SearchOverlay({ open, onClose }: Props) {
       return;
     }
 
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const [modelsRes, refurbRes, partsRes] = await Promise.all([
+        const canFetchCompletions = /^[A-Za-z0-9-]+$/.test(q);
+        const [modelsRes, refurbRes, partsRes, completionsRes] =
+          await Promise.all([
           fetch(`${API_BASE}/api/suggest?q=${encodeURIComponent(q)}`, {
             cache: "no-store",
+            signal: controller.signal,
           }),
           fetch(`${API_BASE}/api/suggest/refurb?q=${encodeURIComponent(q)}`, {
             cache: "no-store",
+            signal: controller.signal,
           }),
           fetch(`${API_BASE}/api/suggest/parts?q=${encodeURIComponent(q)}`, {
             cache: "no-store",
+            signal: controller.signal,
           }),
+          canFetchCompletions
+            ? fetch(
+                `${API_BASE}/api/suggest/part-completions?q=${encodeURIComponent(q)}`,
+                { cache: "no-store", signal: controller.signal }
+              )
+            : Promise.resolve(null),
         ]);
 
         const modelsJson = modelsRes.ok ? await modelsRes.json() : {};
         const refurbJson = refurbRes.ok ? await refurbRes.json() : [];
         const partsJson = partsRes.ok ? await partsRes.json() : [];
+        const completionsJson = completionsRes?.ok
+          ? await completionsRes.json()
+          : [];
 
         const modelRows = Array.isArray(modelsJson)
           ? modelsJson
@@ -359,20 +391,49 @@ export default function SearchOverlay({ open, onClose }: Props) {
                 : []),
             ];
 
-        setModels(modelRows);
-        setRefurb(Array.isArray(refurbJson) ? refurbJson : []);
-        setParts(Array.isArray(partsJson) ? partsJson : []);
+        const completionRows = Array.isArray(completionsJson)
+          ? completionsJson
+          : Array.isArray(completionsJson?.matches)
+            ? completionsJson.matches
+            : [];
+        const normalizedQuery = q.toLowerCase();
+        const uniqueCompletions = Array.from(
+          new Set(
+            completionRows
+              .filter((value: unknown): value is string =>
+                typeof value === "string"
+              )
+              .map((value: string) => value.trim())
+              .filter(
+                (value: string) =>
+                  value.length > q.length &&
+                  value.toLowerCase().startsWith(normalizedQuery)
+              )
+          )
+        );
+
+        if (!controller.signal.aborted) {
+          setModels(modelRows);
+          setRefurb(Array.isArray(refurbJson) ? refurbJson : []);
+          setParts(Array.isArray(partsJson) ? partsJson : []);
+          setPartCompletions(uniqueCompletions);
+        }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error("overlay search failed", err);
         setModels([]);
         setRefurb([]);
         setParts([]);
+        setPartCompletions([]);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query, open]);
 
   const brandLogoMap = useMemo(() => {
@@ -396,8 +457,13 @@ export default function SearchOverlay({ open, onClose }: Props) {
   };
 
   const hasAny = useMemo(() => {
-    return models.length > 0 || refurb.length > 0 || parts.length > 0;
-  }, [models, refurb, parts]);
+    return (
+      models.length > 0 ||
+      refurb.length > 0 ||
+      parts.length > 0 ||
+      partCompletions.length > 0
+    );
+  }, [models, refurb, parts, partCompletions]);
 
   const showEmptyPrompt = query.trim().length < 2 && !loading;
   const showNoResults = query.trim().length >= 2 && !loading && !hasAny;
@@ -414,6 +480,36 @@ export default function SearchOverlay({ open, onClose }: Props) {
 
   const combinedPartResults = partOfferGroups.slice(0, 4);
   const partsTabResults = partOfferGroups.slice(0, 8);
+
+  const partSherpaMpn = useMemo(() => {
+    if (partCompletions.length > 0 && stronglyResemblesMpn(query)) {
+      return normalizePartSherpaMpn(query);
+    }
+
+    const queryKey = normMpnKey(query);
+    const exactPart = parts.find(
+      (item) => queryKey && normMpnKey(rawMpn(item)) === queryKey
+    );
+    const exactRefurb = refurb.find(
+      (item) => queryKey && normMpnKey(rawMpn(item)) === queryKey
+    );
+
+    const selectedRawMpn = rawMpn(
+      exactPart || exactRefurb || parts[0] || refurb[0]
+    );
+    if (selectedRawMpn) return normalizePartSherpaMpn(selectedRawMpn);
+
+    // A model-only response is not enough evidence to send the query to Sherpa.
+    if (models.length === 0 && stronglyResemblesMpn(query)) {
+      return normalizePartSherpaMpn(query);
+    }
+
+    return "";
+  }, [query, models, parts, refurb, partCompletions]);
+
+  const partSherpaHref = partSherpaMpn
+    ? `https://sherpa.scalepartners.io/part-search/?part=${encodeURIComponent(partSherpaMpn)}`
+    : "";
 
   if (!open) return null;
 
@@ -484,7 +580,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
               </div>
             ) : showEmptyPrompt ? (
               <div className="min-h-[70px]" />
-            ) : showNoResults ? (
+            ) : showNoResults && !partSherpaMpn ? (
               <div className="relative z-20 flex min-h-[110px] items-center justify-center">
                 <div className="max-w-xl text-center">
                   <p className="text-[16px] text-gray-600">
@@ -492,9 +588,37 @@ export default function SearchOverlay({ open, onClose }: Props) {
                   </p>
                 </div>
               </div>
-            ) : showResults ? (
+            ) : showResults || partSherpaMpn ? (
               <div className="relative z-40 space-y-6">
-                {(activeTab === "all" || activeTab === "models") && (
+                {partCompletions.length > 0 &&
+                (activeTab === "all" || activeTab === "products") ? (
+                  <section>
+                    <h3 className="mb-1 text-[19px] font-semibold text-black">
+                      Possible part numbers
+                    </h3>
+                    <p className="mb-3 text-sm text-gray-500">
+                      Longer catalog MPNs matching what you typed
+                    </p>
+                    <div className="max-w-[680px] space-y-2">
+                      {partCompletions.map((completion) => (
+                        <button
+                          key={completion}
+                          type="button"
+                          onClick={() => {
+                            setQuery(completion);
+                            inputRef.current?.focus();
+                          }}
+                          className="block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left font-mono text-[15px] font-semibold text-gray-900 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                        >
+                          {completion}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {(activeTab === "models" ||
+                  (activeTab === "all" && showResults)) && (
                   <section>
                     <h3 className="mb-3 text-[19px] font-semibold text-black">
                       Models
@@ -699,6 +823,28 @@ export default function SearchOverlay({ open, onClose }: Props) {
                       <p className="text-[15px] text-gray-500">
                         No matching parts found.
                       </p>
+                    ) : null}
+
+                    {partSherpaMpn ? (
+                      <a
+                        href={partSherpaHref}
+                        onClick={onClose}
+                        className="mt-5 block max-w-[680px] rounded-xl border border-amber-300 bg-amber-50 p-4 transition hover:border-amber-400 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500/40 md:p-5"
+                      >
+                        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-800">
+                          Search the whole market
+                        </div>
+                        <div className="mt-2 text-[16px] font-semibold text-gray-900">
+                          Compare prices for {partSherpaMpn}
+                        </div>
+                        <p className="mt-1 text-sm leading-5 text-gray-600">
+                          Search new OEM, refurbished and used prices across
+                          appliance-parts sellers.
+                        </p>
+                        <div className="mt-3 text-sm font-bold text-blue-700">
+                          Search with Part Sherpa →
+                        </div>
+                      </a>
                     ) : null}
                   </section>
                 )}
