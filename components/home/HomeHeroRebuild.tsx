@@ -8,24 +8,24 @@ import type { HeroLogo } from "@/lib/home/getHeroLogos";
 const CYCLE_MS = 11000;
 
 const logoSlots = [
-  { className: "right-[38%] top-[6%] h-9 w-28", offset: 0, delayMs: 0 },
-  { className: "right-[25%] top-[8%] h-8 w-24", offset: 3, delayMs: 450 },
-  { className: "right-[13%] top-[11%] h-9 w-28", offset: 6, delayMs: 900 },
-  { className: "right-[3%] top-[16%] h-8 w-24", offset: 9, delayMs: 1350 },
+  { className: "top-[6%] h-9 w-28", position: 35, offset: 0, delayMs: 0 },
+  { className: "top-[8%] h-8 w-24", position: 22, offset: 3, delayMs: 450 },
+  { className: "top-[11%] h-9 w-28", position: 10, offset: 6, delayMs: 900 },
+  { className: "top-[16%] h-8 w-24", position: 0, offset: 9, delayMs: 1350 },
 
-  { className: "right-[42%] top-[26%] h-8 w-24", offset: 12, delayMs: 1800 },
-  { className: "right-[29%] top-[31%] h-9 w-28", offset: 15, delayMs: 2250 },
-  { className: "right-[16%] top-[36%] h-8 w-24", offset: 18, delayMs: 2700 },
-  { className: "right-[4%] top-[42%] h-9 w-28", offset: 21, delayMs: 3150 },
+  { className: "top-[26%] h-8 w-24", position: 39, offset: 12, delayMs: 1800 },
+  { className: "top-[31%] h-9 w-28", position: 26, offset: 15, delayMs: 2250 },
+  { className: "top-[36%] h-8 w-24", position: 13, offset: 18, delayMs: 2700 },
+  { className: "top-[42%] h-9 w-28", position: 1, offset: 21, delayMs: 3150 },
 
-  { className: "right-[41%] bottom-[28%] h-8 w-24", offset: 24, delayMs: 3600 },
-  { className: "right-[28%] bottom-[24%] h-9 w-28", offset: 27, delayMs: 4050 },
-  { className: "right-[15%] bottom-[21%] h-8 w-24", offset: 30, delayMs: 4500 },
-  { className: "right-[3%] bottom-[25%] h-9 w-28", offset: 33, delayMs: 4950 },
+  { className: "bottom-[28%] h-8 w-24", position: 38, offset: 24, delayMs: 3600 },
+  { className: "bottom-[24%] h-9 w-28", position: 25, offset: 27, delayMs: 4050 },
+  { className: "bottom-[21%] h-8 w-24", position: 12, offset: 30, delayMs: 4500 },
+  { className: "bottom-[25%] h-9 w-28", position: 0, offset: 33, delayMs: 4950 },
 
-  { className: "right-[36%] bottom-[10%] h-9 w-28", offset: 36, delayMs: 5400 },
-  { className: "right-[22%] bottom-[8%] h-8 w-24", offset: 39, delayMs: 5850 },
-  { className: "right-[9%] bottom-[12%] h-9 w-28", offset: 42, delayMs: 6300 },
+  { className: "bottom-[10%] h-9 w-28", position: 33, offset: 36, delayMs: 5400 },
+  { className: "bottom-[8%] h-8 w-24", position: 19, offset: 39, delayMs: 5850 },
+  { className: "bottom-[12%] h-9 w-28", position: 6, offset: 42, delayMs: 6300 },
 ];
 
 function StatRow({
@@ -136,7 +136,12 @@ function LogoBackground({ logos }: { logos: HeroLogo[] }) {
               "absolute",
               slot.className,
             ].join(" ")}
-            style={{ animationDelay: `${slot.delayMs}ms` }}
+            style={{
+              // Spread every slot across this column, reserving the widest logo
+              // plus 12px at each edge for the 1.18x bloom animation.
+              right: `calc(12px + (100% - 136px) * ${slot.position / 39})`,
+              animationDelay: `${slot.delayMs}ms`,
+            }}
           >
             <img
               key={`${slotIndex}-${logo.image_url}`}
@@ -164,9 +169,6 @@ export default function HomeHeroRebuild({
     <>
       <section className="relative w-full overflow-visible bg-[#eef4fb]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(249,115,22,0.12),transparent_31%),radial-gradient(circle_at_88%_18%,rgba(14,56,102,0.14),transparent_32%),linear-gradient(135deg,#f8fafc_0%,#edf3fb_50%,#f8fafc_100%)]" />
-
-        <LogoBackground logos={heroLogos} />
-
 
         <div className="relative mx-auto grid min-h-[430px] w-full max-w-[1780px] grid-cols-1 items-center gap-5 px-8 py-5 md:grid-cols-[1.15fr_0.85fr] md:px-12 lg:px-16">
           <div className="relative z-20 max-w-[820px] rounded-[22px] border border-white/30 bg-white/24 p-4 shadow-[0_12px_34px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:p-5">
@@ -230,13 +232,14 @@ export default function HomeHeroRebuild({
           </div>
 
           <div className="relative z-[90] hidden min-h-[430px] overflow-visible md:flex items-end justify-end">
+            <LogoBackground logos={heroLogos} />
             <img
               src="https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/geeklogos/geek_hero_logo.png"
               alt="Appliance Part Geeks repair geek"
               draggable={false}
               style={{ transform: "translateY(125px)" }}
               className="
-                pointer-events-none relative h-auto max-w-none
+                pointer-events-none relative z-30 h-auto max-w-none
                 w-[385px]
                 mr-[10px]
                 lg:w-[455px] lg:mr-[45px]
