@@ -1,5 +1,6 @@
 "use client";
 
+import { oemAvailability } from "@/lib/oem-availability";
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -146,7 +147,7 @@ function hasPositiveInventory(vm: ProductVM) {
 function isOrderable(vm: ProductVM) {
   if (vm.is_refurb) return hasPositiveInventory(vm);
   if (isNlaish(vm)) return false;
-  return !hasPositiveInventory(vm);
+  return oemAvailability(vm.stock_status_canon, vm.availability_rank) === "special_order";
 }
 
 function titleFor(vm: ProductVM) {
@@ -367,11 +368,9 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
     }
 
     const partQty = asNumber(vm.inventory_total);
-    const newStatus = isNlaish(vm)
-      ? "discontinued"
-      : partQty != null && partQty > 0
-        ? "in_stock"
-        : "special_order";
+    const availability = oemAvailability(vm.stock_status_canon, vm.availability_rank);
+    const newStatus = isNlaish(vm) ? "discontinued"
+      : availability === "out_of_stock" ? "unavailable" : availability;
 
     return {
       mode: "part" as const,
@@ -485,9 +484,11 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
       : "Refurbished availability limited"
     : isNlaish(vm)
       ? "New part no longer available"
-      : inventoryCount != null && inventoryCount > 0
-        ? `${inventoryCount.toLocaleString("en-US")} in stock`
-        : "New part is not in stock, only special order";
+      : oemAvailability(vm.stock_status_canon, vm.availability_rank) === "in_stock"
+        ? "In stock"
+        : isSpecialOrderNew
+          ? "New part is not in stock, only special order"
+          : "New part is out of stock";
 
   return (
     <div className="bg-zinc-50">
