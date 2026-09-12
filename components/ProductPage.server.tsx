@@ -1,3 +1,4 @@
+import { shoppingOfferImage } from "@/lib/shopping-offer-image";
 import { oemAvailability } from "@/lib/oem-availability";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
@@ -360,7 +361,7 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     part_type: partType,
 
     image_url:
-      cleanStr(primaryRow?.image_url) ||
+      (primary.source === "offers" ? shoppingOfferImage(primary.row) : cleanStr(primaryRow?.image_url)) ||
       cleanStr(effectivePart?.image_url) ||
       null,
 

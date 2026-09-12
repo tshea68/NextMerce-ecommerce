@@ -1,3 +1,4 @@
+import { shoppingOfferImage } from "@/lib/shopping-offer-image";
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 
@@ -110,7 +111,7 @@ async function fetchProductForMetadata(kind: Kind, slugRaw: string, offer?: stri
     .order("price", { ascending: false, nullsFirst: false }).limit(1);
   const { data } = await query.maybeSingle();
 
-  return data ?? null;
+  return data ? { ...data, image_url: shoppingOfferImage(data) } : null;
 }
 
 export async function generateProductMetadata(kind: Kind, slugRaw: string, offer?: string): Promise<Metadata> {
