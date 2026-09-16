@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import styles from "./ProductOfferLayout.module.css";
+import { amount, compareSellers, delivered, normalizeRelationship, sellerHref } from "./seller-comparison";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com").replace(/\/+$/, "");
 
@@ -14,8 +15,10 @@ type SellerResult = {
   matched_mpn: string | null;
   price: number | null;
   currency: string | null;
-  product_url: string | null;
-  source_url: string | null;
+  product_url?: string | null;
+  url?: string | null;
+  destination_url?: string | null;
+  source_url?: string | null;
   shipping_cost?: number | null;
   shipping_text?: string | null;
   returns_text?: string | null;
@@ -33,16 +36,6 @@ function availability(row: SellerResult) {
   if (/in stock|instock|^available$/.test(status)) return "stock";
   return "other";
 }
-function amount(value: number | null | undefined) {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
-}
-function delivered(row: SellerResult) {
-  const price = amount(row.price), shipping = amount(row.shipping_cost);
-  return price !== null && shipping !== null ? price + shipping : null;
-}
-function rank(row: SellerResult) {
-  return row.relationship === "exact_match" ? 0 : row.relationship === "replacement_match" ? 1 : 2;
-}
 function sellerName(key: string) {
   return ({ apg_internal: "Appliance Part Geeks", genuinereplacementparts: "Genuine Replacement Parts", samsungparts: "SamsungParts", lgparts: "LG Parts", appliancepartspros: "AppliancePartsPros", repairclinic: "RepairClinic", ebay: "eBay" } as Record<string, string>)[key] || key;
 }
@@ -50,11 +43,6 @@ function money(price: number, currency: string | null) {
   try { return new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD" }).format(price); }
   catch { return `${price.toFixed(2)} ${currency || "USD"}`; }
 }
-function sellerHref(row: SellerResult) {
-  const url = row.product_url || row.source_url;
-  return url && (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url)) ? url : null;
-}
-
 export default function SellerComparison({ mpn }: { mpn: string }) {
   const [data, setData] = useState<LiveResponse | null>(null);
   const [tab, setTab] = useState("new");
@@ -91,7 +79,7 @@ export default function SellerComparison({ mpn }: { mpn: string }) {
   const rows = useMemo(() => {
     const selected = (data?.results || []).filter(row => group(row) === tab);
     // Separate unknown shipping from known totals rather than treating it as free.
-    return selected.sort((a, b) => rank(a) - rank(b) || (a.currency || "USD").localeCompare(b.currency || "USD") || Number(delivered(a) === null) - Number(delivered(b) === null) || (delivered(a) ?? amount(a.price) ?? Infinity) - (delivered(b) ?? amount(b.price) ?? Infinity));
+    return selected.sort(compareSellers);
   }, [data, tab]);
   const all = data?.results || [];
   return (
@@ -112,7 +100,7 @@ export default function SellerComparison({ mpn }: { mpn: string }) {
             <div className={styles.sellerTop}><h3>{sellerName(row.seller_key)}</h3>{href ? <a href={href} target="_blank" rel="noopener noreferrer">View seller ↗</a> : <span>Link unavailable</span>}</div>
             <div className={styles.priceLine}><strong>{amount(row.price) === null ? "Price unavailable" : money(row.price!, row.currency)}</strong><span> · {(row.stock_status || "Availability unknown").replace(/_/g, " ")}</span></div>
             <div className={styles.terms}>Shipping {shipping === null ? row.shipping_text || "calculated / unknown" : shipping === 0 ? "free" : money(shipping, row.currency)} · Returns {row.returns_text || "see seller"}{total !== null ? ` · ${money(total, row.currency)} delivered` : ""}</div>
-            {(row.relationship !== "exact_match" || group(row) === "refurb") && <div className={styles.match}>{row.condition || "Condition unspecified"}{row.relationship !== "exact_match" ? ` · ${row.relationship.replace(/_/g, " ")} (${row.matched_mpn || "MPN unspecified"})` : ""}</div>}
+            {(normalizeRelationship(row.relationship) !== "exact" || group(row) === "refurb") && <div className={styles.match}>{row.condition || "Condition unspecified"}{normalizeRelationship(row.relationship) !== "exact" ? ` · ${row.relationship.replace(/_/g, " ")} (${row.matched_mpn || "MPN unspecified"})` : ""}</div>}
           </article>;
         })}
       </div>
