@@ -1,3 +1,5 @@
+import { shoppingOfferImage } from "@/lib/shopping-offer-image";
+import { oemAvailability } from "@/lib/oem-availability";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import ProductPageClient, { type ProductVM } from "./ProductPage.client";
@@ -24,25 +26,6 @@ function normAlnum(s: string) {
 
 function normMpn(s: string) {
   return normAlnum(s).toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function isPartInStock(stock_status_canon: any, availability_rank: any) {
-  const r = Number(availability_rank);
-  if (Number.isFinite(r)) return r === 1 || r === 2;
-
-  const s = String(stock_status_canon ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_");
-
-  if (!s) return true;
-  return s === "in_stock" || s === "available" || s === "instock";
-}
-
-function looksLikeListingId(s: string) {
-  const x = String(s ?? "").trim();
-  if (!x) return false;
-  return /^\d{8,40}$/.test(x);
 }
 
 function cleanStr(v: any) {
@@ -101,7 +84,7 @@ function getSupabase() {
   });
 }
 
-async function fetchPrimary(kind: Kind, slugRaw: string) {
+async function fetchPrimary(kind: Kind, slugRaw: string, offer?: string) {
   const supabase = getSupabase();
   if (!supabase) return null;
 
@@ -132,20 +115,12 @@ async function fetchPrimary(kind: Kind, slugRaw: string) {
   const cols =
     "id,listing_id,mpn,title,price,image_url,brand,part_type,appliance_type,inventory_total,compatible_models,compatible_brands";
 
-  if (looksLikeListingId(slug)) {
-    const { data } = await supabase
-      .from("offers")
-      .select(cols)
-      .eq("listing_id", slug)
-      .maybeSingle();
-
-    if (data) {
-      return {
-        source: "offers" as const,
-        mpn_norm: normMpn(data?.mpn ?? slug),
-        row: data,
-      };
-    }
+  if (offer) {
+    if (!/^\d{1,40}$/.test(offer)) return null;
+    const { data, error } = await supabase.from("offers").select(cols)
+      .eq("mpn_norm", mpn_norm).eq("listing_id", offer).maybeSingle();
+    if (error || !data) return null;
+    return { source: "offers" as const, mpn_norm, row: data };
   }
 
   const { data } = await supabase
@@ -253,8 +228,8 @@ async function fetchCompatibleBrandMap(rawValues: string[]) {
   return map;
 }
 
-export default async function ProductPageServer(props: { kind: Kind; slug: string }) {
-  const primary = await fetchPrimary(props.kind, props.slug);
+export default async function ProductPageServer(props: { kind: Kind; slug: string; offer?: string }) {
+  const primary = await fetchPrimary(props.kind, props.slug, props.offer);
   if (!primary) notFound();
 
   const { newPart, refurbOffers } = await fetchAlternates(primary.mpn_norm);
@@ -386,7 +361,7 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     part_type: partType,
 
     image_url:
-      cleanStr(primaryRow?.image_url) ||
+      (primary.source === "offers" ? shoppingOfferImage(primary.row) : cleanStr(primaryRow?.image_url)) ||
       cleanStr(effectivePart?.image_url) ||
       null,
 
@@ -428,7 +403,7 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
 
   const schemaMpn = vm?.mpn || vm?.part_number || "";
   const detailPath = vm?.is_refurb
-    ? `/offers/${encodeURIComponent(schemaMpn)}`
+    ? `/offers/${primary.mpn_norm}?offer=${encodeURIComponent(String(primary.source === "offers" ? primary.row.listing_id : ""))}`
     : `/parts/${encodeURIComponent(schemaMpn)}`;
 
   const canonicalUrl = `${SITE_URL.replace(/\/+$/, "")}${detailPath}`;
@@ -462,12 +437,11 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     priceCurrency: "USD",
     price: vm.price ?? "0",
 
-    availability:
-      vm.inventory_total && vm.inventory_total > 0
-        ? "https://schema.org/InStock"
-        : vm.availability_rank === 2
-        ? "https://schema.org/PreOrder"
-        : "https://schema.org/OutOfStock",
+    availability: (
+      vm.is_refurb
+        ? Number(vm.inventory_total) > 0
+        : oemAvailability(vm.stock_status_canon, vm.availability_rank) === "in_stock"
+    ) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
 
     itemCondition: vm.is_refurb
       ? "https://schema.org/RefurbishedCondition"

@@ -1,3 +1,4 @@
+import { shoppingOfferImage } from "@/lib/shopping-offer-image";
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 
@@ -80,7 +81,7 @@ function buildDescription(row: any, kind: Kind, productTitle: string) {
   return `Shop ${base}. Genuine OEM appliance part with current price, availability, compatible model details, and replacement references.`;
 }
 
-async function fetchProductForMetadata(kind: Kind, slugRaw: string) {
+async function fetchProductForMetadata(kind: Kind, slugRaw: string, offer?: string) {
   const supabase = getSupabase();
   if (!supabase) return null;
 
@@ -101,27 +102,25 @@ async function fetchProductForMetadata(kind: Kind, slugRaw: string) {
     return data ?? null;
   }
 
-  const { data } = await supabase
-    .from("offers")
-    .select(
-      "id,listing_id,mpn,title,title_display,feed_title,price,image_url,brand,part_type,canonical_part_type,appliance_type,inventory_total,mpn_norm"
-    )
-    .eq("mpn_norm", mpn_norm)
-    .order("inventory_total", { ascending: false, nullsFirst: false })
-    .order("price", { ascending: false, nullsFirst: false })
-    .limit(1)
-    .maybeSingle();
+  if (offer && !/^\d{1,40}$/.test(offer)) return null;
+  let query = supabase.from("offers").select(
+    "id,listing_id,mpn,title,price,image_url,brand,part_type,appliance_type,inventory_total,mpn_norm"
+  ).eq("mpn_norm", mpn_norm);
+  if (offer) query = query.eq("listing_id", offer);
+  else query = query.order("inventory_total", { ascending: false, nullsFirst: false })
+    .order("price", { ascending: false, nullsFirst: false }).limit(1);
+  const { data } = await query.maybeSingle();
 
-  return data ?? null;
+  return data ? { ...data, image_url: shoppingOfferImage(data) } : null;
 }
 
-export async function generateProductMetadata(kind: Kind, slugRaw: string): Promise<Metadata> {
-  const row = await fetchProductForMetadata(kind, slugRaw);
+export async function generateProductMetadata(kind: Kind, slugRaw: string, offer?: string): Promise<Metadata> {
+  const row = await fetchProductForMetadata(kind, slugRaw, offer);
 
   const fallbackMpn = decodeURIComponent(slugRaw || "").trim();
   const mpn = clean(row?.mpn) || fallbackMpn;
   const encodedMpn = encodeURIComponent(mpn);
-  const path = kind === "offers" ? `/offers/${encodedMpn}` : `/parts/${encodedMpn}`;
+  const path = kind === "offers" ? `/offers/${normMpn(mpn)}${offer ? `?offer=${encodeURIComponent(offer)}` : ""}` : `/parts/${encodedMpn}`;
   const canonicalUrl = `${SITE_URL.replace(/\/+$/, "")}${path}`;
 
   if (!row) {
