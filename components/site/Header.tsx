@@ -25,16 +25,16 @@ export default function Header() {
       <TopBar />
 <header className="border-b border-black/10 bg-white text-black shadow-sm">
         <div className="mx-auto w-full max-w-[1700px] px-3 sm:px-4">
-          <div className="flex min-h-[104px] items-center justify-between gap-2 py-4 lg:min-h-[144px] lg:gap-4 lg:py-5">
-            <Link href="/" className="min-w-0 flex-1 lg:flex-none lg:shrink-0">
+          <div className="flex min-h-[104px] items-center justify-between gap-2 py-4 xl:min-h-[144px] xl:gap-4 xl:py-5">
+            <Link href="/" className="min-w-0 flex-1 xl:flex-none xl:shrink-0">
               <img
                 src="https://djvyjctjcehjyglwjniv.supabase.co/storage/v1/object/public/part_images/logofull2.png"
                 alt="Appliance Part Geeks"
-                className="h-[82px] max-w-full object-contain lg:h-[100px]"
+                className="h-[82px] max-w-full object-contain xl:h-[100px]"
               />
             </Link>
 
-            <div className="hidden flex-1 lg:flex flex-col items-start justify-center gap-5 pl-6">
+            <div className="hidden flex-1 xl:flex flex-col items-start justify-center gap-5 pl-6">
               <HeaderMenu />
 
               <div className="w-full pb-1">
@@ -49,25 +49,25 @@ export default function Header() {
                     Search by model number, part number (MPN), brand, or appliance type
                   </span>
 
-                  <span className="ml-auto hidden items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 lg:inline-flex">
+                  <span className="ml-auto hidden items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 xl:inline-flex">
                     Search
                   </span>
                 </button>
               </div>
             </div>
 
-            <div className="hidden lg:flex shrink-0">
+            <div className="hidden xl:flex shrink-0">
               <CartWidget variant="header" />
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 lg:hidden">
+            <div className="flex shrink-0 items-center gap-2 xl:hidden">
               <CartWidget variant="compact" />
 
               <HeaderMenu />
             </div>
           </div>
 
-          <div className="pb-3 lg:hidden">
+          <div className="pb-3 xl:hidden">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}

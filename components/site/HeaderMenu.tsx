@@ -26,7 +26,7 @@ export default function HeaderMenu() {
 
   return (
     <>
-      <div className="hidden lg:flex items-center justify-start">
+      <div className="hidden xl:flex items-center justify-start">
         <ul className="relative flex items-center gap-8 text-sm font-semibold text-black/80">
           {primaryLinks.map((item) => (
             <li key={item.href} className="group relative py-2">
@@ -509,7 +509,7 @@ export default function HeaderMenu() {
         </ul>
       </div>
 
-      <div className="flex items-center lg:hidden">
+      <div className="flex items-center xl:hidden">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
@@ -522,7 +522,7 @@ export default function HeaderMenu() {
       </div>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 lg:hidden">
+        <div className="fixed inset-0 z-50 bg-black/50 xl:hidden">
           <div className="absolute right-3 top-3 flex max-h-[calc(100vh-24px)] w-[340px] flex-col bg-white p-5 shadow-2xl overflow-y-auto rounded-2xl">
             <div className="mb-6 flex items-center justify-between">
               <div className="text-lg font-semibold text-black">Menu</div>

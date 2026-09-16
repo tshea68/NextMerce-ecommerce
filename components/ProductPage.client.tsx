@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Breadcrumbs, { type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import PartImage from "@/components/PartImage";
+import SellerComparison from "./product/SellerComparison.client";
+import styles from "./product/ProductOfferLayout.module.css";
 import ComparisonBadge from "@/components/ComparisonBadge.client";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
@@ -491,28 +493,32 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
 
   return (
     <div className="bg-zinc-50">
-      <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
+      <div className={cn("mx-auto w-full px-4 py-4 sm:px-5 lg:px-6 lg:py-5", vm.is_refurb ? styles.page : "max-w-6xl")}>
         <Breadcrumbs items={breadcrumbItems} className="mb-4 text-sm text-zinc-500" />
-<section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:p-4">
+<section className={vm.is_refurb ? styles.layout : "grid gap-4 lg:grid-cols-[0.9fr_1.1fr]"}>
+          <div className={vm.is_refurb ? "contents" : "rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:p-4"}>
+          <div className={vm.is_refurb ? styles.image : ""}>
+            {vm.is_refurb ? <div className={styles.identity}>{mpn} · {vm.brand || "OEM appliance part"}</div> : null}
             <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
               <PartImage
                 enableFullscreenPreview
                 imageUrl={vm.image_url || ""}
                 alt={title}
-                className="max-h-[340px] w-full object-contain"
+                className={vm.is_refurb ? styles.imagePreview : "max-h-[340px] w-full object-contain"}
                 disableHoverPreview={false}
               />
             </div>
 
-            <div className="mt-3 space-y-3">
+          </div>
+          <div className={vm.is_refurb ? styles.details : "mt-3"}>
+            <div className={vm.is_refurb ? "space-y-2" : "space-y-3"}>
               <MiniScrollSection
                 title={
                   compatibleModels.length
                     ? `Fits ${compatibleModels.length.toLocaleString("en-US")} Published Models`
                     : "Compatible Models"
                 }
-                note="Published model numbers currently linked to this part. Always match your full model number when possible."
+                note={vm.is_refurb ? "Match your full model number before ordering." : "Published model numbers currently linked to this part. Always match your full model number when possible."}
               >
                 {compatibleModels.length ? (
                   <div className="flex flex-wrap gap-2">
@@ -570,7 +576,9 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+          </div>
+
+          <div className={vm.is_refurb ? styles.buy : "rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5"}>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0 w-full">
                 <div className="rounded-2xl border border-blue-900 bg-blue-900 px-4 py-3 text-white shadow-sm">
@@ -587,8 +595,8 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
             </div>
 
             <div className="mt-5 space-y-4">
-              <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_315px]">
-                <div className="space-y-4">
+              <div className={vm.is_refurb ? "flex flex-col gap-3" : "grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_315px]"}>
+                <div className={vm.is_refurb ? "order-2 w-full space-y-3" : "space-y-4"}>
                   <ComparisonBadge
                     mode={badgeProps.mode}
                     variant="product"
@@ -611,10 +619,10 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
                   ) : null}
                 </div>
 
-                <aside className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
+                <aside className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="text-sm text-zinc-500">Price</div>
+                      <div className="text-sm text-zinc-500">{vm.is_refurb ? "APG price" : "Price"}</div>
                       <div className="mt-1 text-3xl font-bold tracking-tight text-zinc-950">
                         {priceText}
                       </div>
@@ -772,6 +780,7 @@ export default function ProductPageClient({ vm }: { vm: ProductVM }) {
               </div>
             </div>
           </div>
+          {vm.is_refurb ? <SellerComparison mpn={mpn} /> : null}
         </section>
       </div>
     </div>
