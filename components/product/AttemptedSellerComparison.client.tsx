@@ -18,7 +18,6 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
   const [refresh, setRefresh] = useState(0);
-  const [tab, setTab] = useState("new");
   useEffect(() => {
     const controller = new AbortController();
     setPayloads(EMPTY); setLoading(true); setErrors([]);
@@ -66,30 +65,33 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
     return () => controller.abort();
   }, [mpn, refresh]);
   const all = useMemo(() => buildAttemptedSellers(payloads, mpn), [payloads, mpn]);
-  const rows = all.filter(row => row.group === tab);
   const count = (state: string) => all.filter(row => row.state === state).length;
   return (
     <aside className={styles.comparison} aria-label="Compare Sellers" data-sellers-attempted={all.length}>
       <div className={styles.comparisonHeader}>
         <div className={styles.headerLine}><h2>Compare Sellers</h2><button type="button" className={styles.refresh} disabled={loading} onClick={() => setRefresh(value => value + 1)}>{loading ? "Checking…" : "Refresh"}</button></div>
-        <p aria-live="polite">{count("stock")} in stock · {count("backorder")} backorder / orderable · {count("unavailable")} not available · {count("inconclusive")} inconclusive</p>
-        <div className={styles.tabs} role="group" aria-label="Seller condition">
-          {[["new", "New OEM"], ["refurb", "Refurbished / Used"]].map(([value, label]) => <button type="button" key={value} aria-pressed={tab === value} onClick={() => setTab(value)}>{label} ({all.filter(row => row.group === value).length})</button>)}
-        </div>
-        <p className={styles.sortNote}>Every reported seller check is shown. Exact matches first; known delivered totals before unknown shipping.</p>
+        <p aria-live="polite">{count("stock")} in stock · {count("backorder")} backorder · {count("unavailable")} not available · {count("inconclusive")} inconclusive</p>
         {errors.map(error => <p key={error} role="status">{error}</p>)}
       </div>
-      <div className={styles.results} tabIndex={0} aria-label="Seller results" aria-busy={loading}>
+      <div className="attempted-groups">
+      {([["new", "New OEM"], ["refurb", "Refurbished / Used"]] as const).map(([group, label]) => {
+        const rows = all.filter(row => row.group === group);
+        return <section className="attempted-group" key={group} aria-labelledby={`seller-group-${group}`}>
+        <h3 className="attempted-heading" id={`seller-group-${group}`}>{label}<span>{rows.length}</span></h3>
+        <div className={styles.results} tabIndex={0} aria-label={`${label} seller results`} aria-busy={loading}>
         {!rows.length ? <p className={styles.empty}>{loading ? "Checking selected sellers…" : "No reported seller checks in this condition."}</p> : null}
         {rows.map(row => {
           const offer = row.offer, href = offer ? sellerHref(offer) : null, total = offer ? delivered(offer) : null, shipping = offer ? amount(offer.shipping_cost) : null;
           return <article key={row.key} data-seller-key={row.key} data-availability={row.state} className={styles.sellerRow}>
-            <div className={styles.sellerTop}><h3>{row.name}</h3>{href ? <a href={href} target="_blank" rel="noopener noreferrer">View seller ↗</a> : <span aria-label="Seller product link unknown">—</span>}</div>
-            <div className={styles.priceLine}><strong>{money(offer?.price ?? null, offer?.currency ?? null)}</strong><span> · </span><span className="seller-availability" data-state={row.state}>{row.label}</span></div>
-            <div className={styles.terms}>Shipping {shipping === null ? offer?.shipping_text || "—" : shipping === 0 ? "free" : money(shipping, offer?.currency ?? null)} · Returns {offer?.returns_text || "—"}{total !== null ? ` · ${money(total, offer?.currency ?? null)} delivered` : ""}</div>
-            <div className={styles.match}>{offer?.condition || "—"}{offer?.relationship && offer.relationship !== "exact" ? ` · ${offer.relationship.replace(/_/g, " ")} (${offer.matched_mpn || "—"})` : ""}</div>
+            <h4 className="attempted-seller-name">{row.name}</h4>
+            <div className="attempted-price-line"><strong className="attempted-price" data-known={offer?.price != null}>{money(offer?.price ?? null, offer?.currency ?? null)}</strong><span className="seller-availability" data-state={row.state}>{row.label === "—" ? "Could not verify" : row.label}</span></div>
+            <div className="attempted-terms">Ship {shipping === null ? offer?.shipping_text || "—" : shipping === 0 ? "free" : money(shipping, offer?.currency ?? null)} · Returns {offer?.returns_text || "—"}{total !== null ? ` · ${money(total, offer?.currency ?? null)} delivered` : ""}</div>
+            <div className="attempted-footer"><span>{offer?.condition || "—"}{offer?.relationship && offer.relationship !== "exact" ? ` · ${offer.relationship.replace(/_/g, " ")} (${offer.matched_mpn || "—"})` : ""}</span>{href ? <a href={href} target="_blank" rel="noopener noreferrer">View seller ↗</a> : null}</div>
           </article>;
         })}
+        </div>
+        </section>;
+      })}
       </div>
     </aside>
   );
