@@ -1,0 +1,128 @@
+/* Preview-only overrides. The live product routes do not mount this wrapper. */
+.nextmerce-part-preview {
+  font-size: 12px;
+  line-height: 1.4;
+
+  & > div > div {
+    max-width: 1760px;
+    padding: 10px 16px;
+  }
+
+  & nav { margin-bottom: 8px; font-size: 11px; }
+  & nav ol { font-size: inherit; line-height: 1.4; }
+
+  & section:has(> aside[aria-label="Compare Sellers"]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 8px;
+    align-items: start;
+
+    /* The existing contents wrapper keeps image and details as grid items. */
+    & > .contents > div, & > div:not(.contents) {
+      min-width: 0;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    & > .contents > div:first-child {
+      grid-area: 1 / 1;
+      & > div:first-child { margin-bottom: 5px; font-size: 11px; }
+      & > div:last-child { border-radius: 6px; }
+      & > div:last-child > div { height: 220px; }
+    }
+
+    & > .contents > div:last-child {
+      grid-area: 4 / 1;
+      max-height: 200px;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      & p { margin-bottom: 4px; font-size: 10px; line-height: 1.4; }
+      & .mb-2 { margin-bottom: 4px; }
+      & .flex-wrap { gap: 4px; }
+      & a { padding: 2px 5px; font-size: 10px; line-height: 1.4; border-radius: 4px; }
+      & [class*="overflow-y-auto"] { max-height: 88px; scrollbar-gutter: stable; }
+    }
+
+    /* Center: retain all purchase handlers and content, compact their presentation. */
+    & > div:not(.contents) {
+      grid-area: 2 / 1;
+      & > div { margin-top: 8px; }
+      & > div:first-child { margin-top: 0; }
+      & h1 { font-size: 13px; line-height: 1.3; }
+      & .bg-blue-900 { padding: 8px; border-radius: 6px; box-shadow: none; }
+      & .bg-blue-900 > div { margin-top: 3px; font-size: 10px; line-height: 1.4; }
+      & .gap-4 { gap: 8px; }
+      & .gap-3 { gap: 8px; }
+      & .order-2:empty { display: none; }
+      & .space-y-4 > * + *, & .space-y-3 > * + * { margin-top: 8px; }
+      & aside { padding: 8px; border-radius: 6px; }
+      & aside .text-3xl { margin-top: 2px; font-size: 24px; line-height: 1.2; }
+      & aside .text-sm { font-size: 11px; }
+      & aside label { margin-bottom: 3px; font-size: 9px; }
+      & aside button { height: 30px; font-size: 11px; }
+      & aside button.h-9 { height: 28px; width: 28px; }
+      & aside div.h-9 { height: 28px; min-width: 30px; padding-inline: 5px; font-size: 11px; }
+      & aside .mt-3, & aside .mt-4 { margin-top: 8px; }
+      & aside .p-3 { padding: 8px; }
+      & aside p { font-size: 10px; line-height: 1.45; }
+      & aside p.mt-2 { margin-top: 5px; }
+      & a[href^="/parts/"] { padding: 6px; }
+      & a[href^="/parts/"] > div { font-size: 11px; line-height: 1.4; }
+    }
+
+    /* Right: capped panel height, flexible list, native visible internal scrollbar. */
+    & > aside[aria-label="Compare Sellers"] {
+      grid-area: 3 / 1;
+      position: static;
+      height: auto;
+      max-height: 420px;
+      border-radius: 8px;
+      & > div:first-child { padding: 8px; }
+      & h2 { font-size: 14px; line-height: 1.3; }
+      & p { margin-top: 3px; font-size: 10px; line-height: 1.4; }
+      & [role="group"] { margin-top: 6px; gap: 4px; }
+      & [role="group"] button { padding: 4px; font-size: 10px; }
+      & [aria-label="Seller results"] {
+        flex: 1;
+        min-height: 0;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        scrollbar-gutter: stable;
+        scrollbar-width: auto;
+      }
+      & article {
+        min-height: 78px;
+        padding: 6px 8px;
+        & h3 { font-size: 11px; }
+        & a { font-size: 10px; padding-block: 2px; }
+        & strong { font-size: 14px; }
+        & > div { font-size: 10px; line-height: 1.4; }
+        & > div + div { margin-top: 2px; }
+      }
+    }
+
+    @media (min-width: 768px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      & > .contents > div:first-child { grid-area: 1 / 1; }
+      & > .contents > div:last-child { grid-area: 2 / 1; }
+      & > div:not(.contents) { grid-area: 1 / 2 / 3 / 3; }
+      & > aside[aria-label="Compare Sellers"] { grid-area: 3 / 1 / 4 / 3; }
+    }
+
+    @media (min-width: 1280px) {
+      grid-template-columns: minmax(0, 28fr) minmax(0, 30fr) minmax(0, 42fr);
+      grid-template-rows: auto 1fr;
+      & > .contents > div:first-child { grid-area: 1 / 1; }
+      & > .contents > div:last-child { grid-area: 2 / 1; }
+      & > div:not(.contents) { grid-area: 1 / 2 / 3 / 3; }
+      & > aside[aria-label="Compare Sellers"] {
+        grid-area: 1 / 3 / 3 / 4;
+        position: sticky;
+        top: 10px;
+        height: auto;
+        max-height: 580px;
+      }
+    }
+  }
+}
