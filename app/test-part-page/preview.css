@@ -116,8 +116,8 @@
       & > aside[aria-label="Compare Sellers"] { grid-area: 3 / 1 / 4 / 3; }
     }
 
-    @media (min-width: 1280px) {
-      grid-template-columns: minmax(0, 28fr) minmax(0, 30fr) minmax(0, 42fr);
+    @media (min-width: 1120px) {
+      grid-template-columns: minmax(0, 27fr) minmax(0, 29fr) minmax(0, 44fr);
       grid-template-rows: auto;
       & > .nextmerce-preview-product {
         display: flex;
