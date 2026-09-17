@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import styles from "./ProductOfferLayout.module.css";
 import { delivered, sellerHref } from "./seller-comparison";
 import { buildAttemptedSellers, type AttemptedPayloads } from "./attempted-sellers";
@@ -71,7 +72,15 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
   return (
     <aside className={styles.comparison} aria-label="Compare Seller Options" data-sellers-attempted={all.length}>
       <div className={styles.comparisonHeader}>
-        <div className={styles.headerLine}><h2>Compare Seller Options</h2><button type="button" className={styles.refresh} disabled={loading} onClick={() => setRefresh(value => value + 1)}>{loading ? "Checking…" : "Refresh"}</button></div>
+        <div className="sherpa-market-banner">
+          <Image src="/part-sherpa-logo.png" width={28} height={28} alt="Part Sherpa" className="sherpa-market-logo" />
+          <div className="sherpa-market-copy">
+            <div className={styles.headerLine}><h2>Part Sherpa Market Check</h2><button type="button" className={styles.refresh} disabled={loading} onClick={() => setRefresh(value => value + 1)}>{loading ? "Checking…" : "Refresh"}</button></div>
+            <div className="sherpa-market-value">Who has it. What it costs. What the terms are.</div>
+            <div className="sherpa-market-support">We checked multiple sellers for availability, shipping, returns, and delivered cost.</div>
+            <div className="sherpa-market-link"><a href="https://part-sherpa.com/how-it-works/">See how Part Sherpa works →</a></div>
+          </div>
+        </div>
         <p aria-live="polite">{count("stock")} in stock · {count("backorder")} backorder · {count("unavailable")} not available · {count("inconclusive")} inconclusive</p>
         <div className="attempted-scroll-cue">Scroll each column to see all sellers ↓</div>
         {errors.map(error => <p key={error} role="status">{error}</p>)}
