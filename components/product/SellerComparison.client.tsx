@@ -43,7 +43,7 @@ function money(price: number, currency: string | null) {
   try { return new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD" }).format(price); }
   catch { return `${price.toFixed(2)} ${currency || "USD"}`; }
 }
-export default function SellerComparison({ mpn }: { mpn: string }) {
+export default function SellerComparison({ mpn, showCondition = false }: { mpn: string; showCondition?: boolean }) {
   const [data, setData] = useState<LiveResponse | null>(null);
   const [tab, setTab] = useState("new");
   const [loading, setLoading] = useState(true);
@@ -100,7 +100,7 @@ export default function SellerComparison({ mpn }: { mpn: string }) {
             <div className={styles.sellerTop}><h3>{sellerName(row.seller_key)}</h3>{href ? <a href={href} target="_blank" rel="noopener noreferrer">View seller ↗</a> : <span>Link unavailable</span>}</div>
             <div className={styles.priceLine}><strong>{amount(row.price) === null ? "Price unavailable" : money(row.price!, row.currency)}</strong><span> · {(row.stock_status || "Availability unknown").replace(/_/g, " ")}</span></div>
             <div className={styles.terms}>Shipping {shipping === null ? row.shipping_text || "calculated / unknown" : shipping === 0 ? "free" : money(shipping, row.currency)} · Returns {row.returns_text || "see seller"}{total !== null ? ` · ${money(total, row.currency)} delivered` : ""}</div>
-            {(normalizeRelationship(row.relationship) !== "exact" || group(row) === "refurb") && <div className={styles.match}>{row.condition || "Condition unspecified"}{normalizeRelationship(row.relationship) !== "exact" ? ` · ${row.relationship.replace(/_/g, " ")} (${row.matched_mpn || "MPN unspecified"})` : ""}</div>}
+            {(showCondition || normalizeRelationship(row.relationship) !== "exact" || group(row) === "refurb") && <div className={styles.match}>{row.condition || "Condition unspecified"}{normalizeRelationship(row.relationship) !== "exact" ? ` · ${row.relationship.replace(/_/g, " ")} (${row.matched_mpn || "MPN unspecified"})` : ""}</div>}
           </article>;
         })}
       </div>

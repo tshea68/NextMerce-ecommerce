@@ -781,7 +781,7 @@ export default function ProductPageClient({ vm, previewLayout = false }: { vm: P
               </div>
             </div>
           </div>
-          {vm.is_refurb ? <SellerComparison mpn={mpn} /> : null}
+          {vm.is_refurb ? <SellerComparison mpn={mpn} showCondition={previewLayout} /> : null}
         </section>
       </div>
     </div>
