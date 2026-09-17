@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default function TestPartPage() {
   return (
     <div className="nextmerce-part-preview">
-      <ProductPageServer kind="offers" slug="WP8546219" />
+      <ProductPageServer kind="offers" slug="WP8546219" previewLayout />
     </div>
   );
 }

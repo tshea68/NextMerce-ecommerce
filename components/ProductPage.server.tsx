@@ -228,7 +228,7 @@ async function fetchCompatibleBrandMap(rawValues: string[]) {
   return map;
 }
 
-export default async function ProductPageServer(props: { kind: Kind; slug: string; offer?: string }) {
+export default async function ProductPageServer(props: { kind: Kind; slug: string; offer?: string; previewLayout?: boolean }) {
   const primary = await fetchPrimary(props.kind, props.slug, props.offer);
   if (!primary) notFound();
 
@@ -454,7 +454,7 @@ export default async function ProductPageServer(props: { kind: Kind; slug: strin
     <>
       <JsonLd data={productSchema} />
       <JsonLd data={breadcrumbSchema} />
-      <ProductPageClient vm={vm} />
+      <ProductPageClient vm={vm} {...(props.previewLayout ? { previewLayout: true } : {})} />
     </>
   );
 }
