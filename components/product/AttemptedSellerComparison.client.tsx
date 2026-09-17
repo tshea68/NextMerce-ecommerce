@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import styles from "./ProductOfferLayout.module.css";
-import { amount, delivered, sellerHref } from "./seller-comparison";
+import { delivered, sellerHref } from "./seller-comparison";
 import { buildAttemptedSellers, type AttemptedPayloads } from "./attempted-sellers";
+import { sellerPolicies } from "./seller-policies";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com").replace(/\/+$/, "");
 const EMPTY: AttemptedPayloads = { newMarket: null, refurbMarket: null, catalog: null };
@@ -18,9 +19,10 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
   const [refresh, setRefresh] = useState(0);
+  const [metadata, setMetadata] = useState<Record<string, unknown>>({});
   useEffect(() => {
     const controller = new AbortController();
-    setPayloads(EMPTY); setLoading(true); setErrors([]);
+    setPayloads(EMPTY); setLoading(true); setErrors([]); setMetadata({});
     const path = encodeURIComponent(mpn);
     async function get(path: string, init?: RequestInit) {
       const response = await fetch(`${API_BASE}${path}`, { ...init, cache: "no-store", signal: controller.signal });
@@ -55,10 +57,10 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
       save("catalog", live);
     }
     async function load() {
-      const checks = await Promise.allSettled([newMarket(), refurbMarket(), catalog()]);
+      const checks = await Promise.allSettled([newMarket(), refurbMarket(), catalog(), get("/api/market-sellers/metadata").then(data => { if (!controller.signal.aborted) setMetadata(data); })]);
       if (controller.signal.aborted) return;
       const labels = ["New OEM", "Refurbished / Used", "APG catalog"];
-      setErrors(previous => [...previous, ...checks.flatMap((result, i) => result.status === "rejected" ? [`${labels[i]} checks could not be loaded; their attempted-seller universe may be incomplete.`] : [])]);
+      setErrors(previous => [...previous, ...checks.flatMap((result, i) => result.status === "rejected" ? [i === 3 ? "Seller policies could not be loaded; unknown terms remain —." : `${labels[i]} checks could not be loaded; their attempted-seller universe may be incomplete.`] : [])]);
       setLoading(false);
     }
     void load();
@@ -67,25 +69,26 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
   const all = useMemo(() => buildAttemptedSellers(payloads, mpn), [payloads, mpn]);
   const count = (state: string) => all.filter(row => row.state === state).length;
   return (
-    <aside className={styles.comparison} aria-label="Compare Sellers" data-sellers-attempted={all.length}>
+    <aside className={styles.comparison} aria-label="Compare Seller Options" data-sellers-attempted={all.length}>
       <div className={styles.comparisonHeader}>
-        <div className={styles.headerLine}><h2>Compare Sellers</h2><button type="button" className={styles.refresh} disabled={loading} onClick={() => setRefresh(value => value + 1)}>{loading ? "Checking…" : "Refresh"}</button></div>
+        <div className={styles.headerLine}><h2>Compare Seller Options</h2><button type="button" className={styles.refresh} disabled={loading} onClick={() => setRefresh(value => value + 1)}>{loading ? "Checking…" : "Refresh"}</button></div>
         <p aria-live="polite">{count("stock")} in stock · {count("backorder")} backorder · {count("unavailable")} not available · {count("inconclusive")} inconclusive</p>
+        <div className="attempted-scroll-cue">Scroll each column to see all sellers ↓</div>
         {errors.map(error => <p key={error} role="status">{error}</p>)}
       </div>
       <div className="attempted-groups">
       {([["new", "New OEM"], ["refurb", "Refurbished / Used"]] as const).map(([group, label]) => {
         const rows = all.filter(row => row.group === group);
         return <section className="attempted-group" key={group} aria-labelledby={`seller-group-${group}`}>
-        <h3 className="attempted-heading" id={`seller-group-${group}`}>{label}<span>{rows.length}</span></h3>
+        <h3 className="attempted-heading" id={`seller-group-${group}`}>{label} Sellers<span>({rows.length}) <span aria-hidden="true">↓</span></span></h3>
         <div className={styles.results} tabIndex={0} aria-label={`${label} seller results`} aria-busy={loading}>
         {!rows.length ? <p className={styles.empty}>{loading ? "Checking selected sellers…" : "No reported seller checks in this condition."}</p> : null}
         {rows.map(row => {
-          const offer = row.offer, href = offer ? sellerHref(offer) : null, total = offer ? delivered(offer) : null, shipping = offer ? amount(offer.shipping_cost) : null;
+          const offer = row.offer, href = offer ? sellerHref(offer) : null, total = offer ? delivered(offer) : null, policies = sellerPolicies(row, metadata);
           return <article key={row.key} data-seller-key={row.key} data-availability={row.state} className={styles.sellerRow}>
             <h4 className="attempted-seller-name">{row.name}</h4>
             <div className="attempted-price-line"><strong className="attempted-price" data-known={offer?.price != null}>{money(offer?.price ?? null, offer?.currency ?? null)}</strong><span className="seller-availability" data-state={row.state}>{row.label === "—" ? "Could not verify" : row.label}</span></div>
-            <div className="attempted-terms">Ship {shipping === null ? offer?.shipping_text || "—" : shipping === 0 ? "free" : money(shipping, offer?.currency ?? null)} · Returns {offer?.returns_text || "—"}{total !== null ? ` · ${money(total, offer?.currency ?? null)} delivered` : ""}</div>
+            <div className="attempted-terms"><span title={policies.shippingTitle}>{policies.shipping}</span> · {policies.returnUrl ? <a className="attempted-return-policy" href={policies.returnUrl} title={policies.returnTitle} target="_blank" rel="noopener noreferrer">{policies.returns}</a> : <span title={policies.returnTitle}>{policies.returns}</span>}{total !== null ? ` · ${money(total, offer?.currency ?? null)} delivered` : ""}</div>
             <div className="attempted-footer"><span>{offer?.condition || "—"}{offer?.relationship && offer.relationship !== "exact" ? ` · ${offer.relationship.replace(/_/g, " ")} (${offer.matched_mpn || "—"})` : ""}</span>{href ? <a href={href} target="_blank" rel="noopener noreferrer">View seller ↗</a> : null}</div>
           </article>;
         })}
