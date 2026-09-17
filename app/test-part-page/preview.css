@@ -11,6 +11,12 @@
   & nav { margin-bottom: 8px; font-size: 11px; }
   & nav ol { font-size: inherit; line-height: 1.4; }
 
+  & .seller-availability { font-weight: 600; }
+  & .seller-availability[data-state="stock"] { color: #15803d; }
+  & .seller-availability[data-state="backorder"] { color: #a16207; }
+  & .seller-availability[data-state="unavailable"] { color: #b91c1c; }
+  & .seller-availability[data-state="inconclusive"] { color: #71717a; }
+
   & .nextmerce-preview-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

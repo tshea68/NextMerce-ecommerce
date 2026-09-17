@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Breadcrumbs, { type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import PartImage from "@/components/PartImage";
 import SellerComparison from "./product/SellerComparison.client";
+import AttemptedSellerComparison from "./product/AttemptedSellerComparison.client";
 import styles from "./product/ProductOfferLayout.module.css";
 import ComparisonBadge from "@/components/ComparisonBadge.client";
 import { useCart } from "@/context/CartContext";
@@ -781,7 +782,7 @@ export default function ProductPageClient({ vm, previewLayout = false }: { vm: P
               </div>
             </div>
           </div>
-          {vm.is_refurb ? <SellerComparison mpn={mpn} showCondition={previewLayout} /> : null}
+          {vm.is_refurb ? previewLayout ? <AttemptedSellerComparison mpn={mpn} /> : <SellerComparison mpn={mpn} /> : null}
         </section>
       </div>
     </div>
