@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Breadcrumbs, { type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import PartImage from "@/components/PartImage";
-import SellerComparison from "./product/SellerComparison.client";
 import AttemptedSellerComparison from "./product/AttemptedSellerComparison.client";
 import styles from "./product/ProductOfferLayout.module.css";
+import "./product/ProductPageLayout.css";
 import ComparisonBadge from "@/components/ComparisonBadge.client";
 import { useCart } from "@/context/CartContext";
 import { makePartTitle } from "@/lib/PartsTitle";
@@ -235,7 +235,7 @@ function MiniScrollSection({
   );
 }
 
-export default function ProductPageClient({ vm, previewLayout = false }: { vm: ProductVM; previewLayout?: boolean }) {
+export default function ProductPageClient({ vm }: { vm: ProductVM }) {
   const router = useRouter();
   const { addToCart: addItem } = useCart();
 
@@ -494,25 +494,25 @@ export default function ProductPageClient({ vm, previewLayout = false }: { vm: P
           : "New part is out of stock";
 
   return (
-    <div className="bg-zinc-50">
-      <div className={cn("mx-auto w-full px-4 py-4 sm:px-5 lg:px-6 lg:py-5", vm.is_refurb ? styles.page : "max-w-6xl")}>
+    <div className="bg-zinc-50 nextmerce-product-page">
+      <div className={cn("mx-auto w-full px-4 py-4 sm:px-5 lg:px-6 lg:py-5", styles.page)}>
         <Breadcrumbs items={breadcrumbItems} className="mb-4 text-sm text-zinc-500" />
-<section className={previewLayout && vm.is_refurb ? "nextmerce-preview-grid" : vm.is_refurb ? styles.layout : "grid gap-4 lg:grid-cols-[0.9fr_1.1fr]"}>
-          <div className={previewLayout && vm.is_refurb ? "nextmerce-preview-product" : vm.is_refurb ? "contents" : "rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:p-4"}>
-          <div className={previewLayout && vm.is_refurb ? "nextmerce-preview-image" : vm.is_refurb ? styles.image : ""}>
-            {vm.is_refurb ? <div className={styles.identity}>{mpn} · {vm.brand || "OEM appliance part"}</div> : null}
+        <section className="nextmerce-product-grid">
+          <div className="nextmerce-product-identity">
+          <div className="nextmerce-product-image">
+            <div className={styles.identity}>{mpn} · {vm.brand || "OEM appliance part"}</div>
             <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
               <PartImage
                 enableFullscreenPreview
                 imageUrl={vm.image_url || ""}
                 alt={title}
-                className={vm.is_refurb ? styles.imagePreview : "max-h-[340px] w-full object-contain"}
+                className={styles.imagePreview}
                 disableHoverPreview={false}
               />
             </div>
 
           </div>
-          <div className={previewLayout && vm.is_refurb ? "nextmerce-preview-details" : vm.is_refurb ? styles.details : "mt-3"}>
+          <div className="nextmerce-product-details">
             <div className={vm.is_refurb ? "space-y-2" : "space-y-3"}>
               <MiniScrollSection
                 title={
@@ -580,7 +580,7 @@ export default function ProductPageClient({ vm, previewLayout = false }: { vm: P
 
           </div>
 
-          <div className={previewLayout && vm.is_refurb ? "nextmerce-preview-buy" : vm.is_refurb ? styles.buy : "rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5"}>
+          <div className="nextmerce-product-buy">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0 w-full">
                 <div className="rounded-2xl border border-blue-900 bg-blue-900 px-4 py-3 text-white shadow-sm">
@@ -597,8 +597,8 @@ export default function ProductPageClient({ vm, previewLayout = false }: { vm: P
             </div>
 
             <div className="mt-5 space-y-4">
-              <div className={vm.is_refurb ? "flex flex-col gap-3" : "grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_315px]"}>
-                <div className={vm.is_refurb ? "order-2 w-full space-y-3" : "space-y-4"}>
+              <div className="flex flex-col gap-3">
+                <div className="order-2 w-full space-y-3">
                   <ComparisonBadge
                     mode={badgeProps.mode}
                     variant="product"
@@ -782,7 +782,7 @@ export default function ProductPageClient({ vm, previewLayout = false }: { vm: P
               </div>
             </div>
           </div>
-          {vm.is_refurb ? previewLayout ? <AttemptedSellerComparison mpn={mpn} /> : <SellerComparison mpn={mpn} /> : null}
+          <AttemptedSellerComparison mpn={mpn} />
         </section>
       </div>
     </div>

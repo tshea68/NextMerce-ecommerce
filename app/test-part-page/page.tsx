@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import ProductPageServer from "@/components/ProductPage.server";
-import "./preview.css";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,11 +9,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Preview the existing offers redesign without changing either product route.
+// Keep the shared live product layout as a noindex regression reference.
 export default function TestPartPage() {
-  return (
-    <div className="nextmerce-part-preview">
-      <ProductPageServer kind="offers" slug="WP8546219" previewLayout />
-    </div>
-  );
+  return <ProductPageServer kind="offers" slug="WP8546219" />;
 }

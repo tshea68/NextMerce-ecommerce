@@ -1,9 +1,9 @@
-/* Preview-only overrides. The live product routes do not mount this wrapper. */
-.nextmerce-part-preview {
+/* Shared approved product layout for live routes and the regression page. */
+.nextmerce-product-page {
   font-size: 12px;
   line-height: 1.4;
 
-  & > div > div {
+  & > div {
     max-width: 1760px;
     padding: 10px 16px;
   }
@@ -17,7 +17,7 @@
   & .seller-availability[data-state="unavailable"] { color: #b91c1c; }
   & .seller-availability[data-state="inconclusive"] { color: #71717a; }
 
-  & .nextmerce-preview-grid {
+  & .nextmerce-product-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
@@ -25,8 +25,8 @@
     align-items: start;
 
     /* Three actual sibling panels; unwrap the left panel only below desktop. */
-    & > .nextmerce-preview-product { display: contents; min-width: 0; }
-    & > .nextmerce-preview-product > div, & > .nextmerce-preview-buy {
+    & > .nextmerce-product-identity { display: contents; min-width: 0; }
+    & > .nextmerce-product-identity > div, & > .nextmerce-product-buy {
       min-width: 0;
       padding: 8px;
       border: 1px solid #e4e4e7;
@@ -35,7 +35,7 @@
       border-radius: 8px;
     }
 
-    & .nextmerce-preview-image {
+    & .nextmerce-product-image {
       grid-area: 1 / 1;
       & > div:first-child { margin-bottom: 5px; font-size: 11px; }
       color: #3f3f46;
@@ -43,9 +43,9 @@
       & > div:last-child > div { height: 220px; }
     }
 
-    & .nextmerce-preview-details {
+    & .nextmerce-product-details {
       grid-area: 4 / 1;
-      & > div > div { border: 0; padding: 0; background: transparent; }
+      & > div { border: 0; padding: 0; background: transparent; }
       max-height: 200px;
       overflow-y: auto;
       overscroll-behavior-y: contain;
@@ -57,7 +57,7 @@
     }
 
     /* Center: retain all purchase handlers and content, compact their presentation. */
-    & > .nextmerce-preview-buy {
+    & > .nextmerce-product-buy {
       grid-area: 2 / 1;
       & > div { margin-top: 8px; }
       & > div:first-child { margin-top: 0; }
@@ -193,23 +193,23 @@
 
     @media (min-width: 768px) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      & .nextmerce-preview-image { grid-area: 1 / 1; }
-      & .nextmerce-preview-details { grid-area: 2 / 1; }
-      & > .nextmerce-preview-buy { grid-area: 1 / 2 / 3 / 3; }
+      & .nextmerce-product-image { grid-area: 1 / 1; }
+      & .nextmerce-product-details { grid-area: 2 / 1; }
+      & > .nextmerce-product-buy { grid-area: 1 / 2 / 3 / 3; }
       & > aside[aria-label="Compare Seller Options"] { grid-area: 3 / 1 / 4 / 3; }
     }
 
     @media (min-width: 1120px) {
       grid-template-columns: minmax(0, 25fr) minmax(0, 27fr) minmax(0, 48fr);
       grid-template-rows: auto;
-      & > .nextmerce-preview-product {
+      & > .nextmerce-product-identity {
         display: flex;
         flex-direction: column;
         gap: 8px;
         grid-area: 1 / 1 / 2 / 2;
       }
-      & .nextmerce-preview-image, & .nextmerce-preview-details { grid-area: auto; }
-      & > .nextmerce-preview-buy { grid-area: 1 / 2 / 2 / 3; }
+      & .nextmerce-product-image, & .nextmerce-product-details { grid-area: auto; }
+      & > .nextmerce-product-buy { grid-area: 1 / 2 / 2 / 3; }
       & > aside[aria-label="Compare Seller Options"] {
         grid-area: 1 / 3 / 2 / 4;
         position: sticky;

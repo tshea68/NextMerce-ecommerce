@@ -6,6 +6,7 @@ import styles from "./ProductOfferLayout.module.css";
 import { delivered, sellerHref } from "./seller-comparison";
 import { buildAttemptedSellers, type AttemptedPayloads } from "./attempted-sellers";
 import { sellerPolicies } from "./seller-policies";
+import { useMarketCheckAnalytics } from "./useMarketCheckAnalytics";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com").replace(/\/+$/, "");
 const EMPTY: AttemptedPayloads = { newMarket: null, refurbMarket: null, catalog: null };
@@ -68,17 +69,18 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
     return () => controller.abort();
   }, [mpn, refresh]);
   const all = useMemo(() => buildAttemptedSellers(payloads, mpn), [payloads, mpn]);
+  const analytics = useMarketCheckAnalytics(mpn, all, loading, metadata);
   const count = (state: string) => all.filter(row => row.state === state).length;
   return (
-    <aside className={styles.comparison} aria-label="Compare Seller Options" data-sellers-attempted={all.length}>
+    <aside ref={analytics.blockRef} className={styles.comparison} aria-label="Compare Seller Options" data-sellers-attempted={all.length}>
       <div className={styles.comparisonHeader}>
         <div className="sherpa-market-banner">
-          <Image src="/part-sherpa-logo.png" width={28} height={28} alt="Part Sherpa" className="sherpa-market-logo" />
+          <a href="https://part-sherpa.com/" aria-label="Visit Part Sherpa" onClick={() => analytics.brandClick("logo")} onAuxClick={event => { if (event.button === 1) analytics.brandClick("logo"); }} style={{ display: "block", width: 28, height: 28 }}><Image src="/part-sherpa-logo.png" width={28} height={28} alt="Part Sherpa" className="sherpa-market-logo" /></a>
           <div className="sherpa-market-copy">
-            <div className={styles.headerLine}><h2>Part Sherpa Market Check</h2><button type="button" className={styles.refresh} disabled={loading} onClick={() => setRefresh(value => value + 1)}>{loading ? "Checking…" : "Refresh"}</button></div>
+            <div className={styles.headerLine}><h2>Part Sherpa Market Check</h2><button type="button" className={styles.refresh} disabled={loading} onClick={() => { analytics.refreshClick(); setRefresh(value => value + 1); }}>{loading ? "Checking…" : "Refresh"}</button></div>
             <div className="sherpa-market-value">Who has it. What it costs. What the terms are.</div>
             <div className="sherpa-market-support">We checked multiple sellers for availability, shipping, returns, and delivered cost.</div>
-            <div className="sherpa-market-link"><a href="https://part-sherpa.com/how-it-works/">See how Part Sherpa works →</a></div>
+            <div className="sherpa-market-link"><a href="https://part-sherpa.com/" onClick={() => analytics.brandClick("text")} onAuxClick={event => { if (event.button === 1) analytics.brandClick("text"); }}>Visit Part Sherpa →</a></div>
           </div>
         </div>
         <p aria-live="polite">{count("stock")} in stock · {count("backorder")} backorder · {count("unavailable")} not available · {count("inconclusive")} inconclusive</p>
@@ -90,15 +92,15 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
         const rows = all.filter(row => row.group === group);
         return <section className="attempted-group" key={group} aria-labelledby={`seller-group-${group}`}>
         <h3 className="attempted-heading" id={`seller-group-${group}`}>{label} Sellers<span>({rows.length}) <span aria-hidden="true">↓</span></span></h3>
-        <div className={styles.results} tabIndex={0} aria-label={`${label} seller results`} aria-busy={loading}>
+        <div className={styles.results} onScroll={event => analytics.onScroll(event.currentTarget, group)} tabIndex={0} aria-label={`${label} seller results`} aria-busy={loading}>
         {!rows.length ? <p className={styles.empty}>{loading ? "Checking selected sellers…" : "No reported seller checks in this condition."}</p> : null}
         {rows.map(row => {
           const offer = row.offer, href = offer ? sellerHref(offer) : null, total = offer ? delivered(offer) : null, policies = sellerPolicies(row, metadata);
-          return <article key={row.key} data-seller-key={row.key} data-availability={row.state} className={styles.sellerRow}>
+          return <article onClick={() => analytics.engage(group)} key={row.key} data-seller-key={row.key} data-availability={row.state} className={styles.sellerRow}>
             <h4 className="attempted-seller-name">{row.name}</h4>
             <div className="attempted-price-line"><strong className="attempted-price" data-known={offer?.price != null}>{money(offer?.price ?? null, offer?.currency ?? null)}</strong><span className="seller-availability" data-state={row.state}>{row.label === "—" ? "Could not verify" : row.label}</span></div>
             <div className="attempted-terms"><span title={policies.shippingTitle}>{policies.shipping}</span> · {policies.returnUrl ? <a className="attempted-return-policy" href={policies.returnUrl} title={policies.returnTitle} target="_blank" rel="noopener noreferrer">{policies.returns}</a> : <span title={policies.returnTitle}>{policies.returns}</span>}{total !== null ? ` · ${money(total, offer?.currency ?? null)} delivered` : ""}</div>
-            <div className="attempted-footer"><span>{offer?.condition || "—"}{offer?.relationship && offer.relationship !== "exact" ? ` · ${offer.relationship.replace(/_/g, " ")} (${offer.matched_mpn || "—"})` : ""}</span>{href ? <a href={href} target="_blank" rel="noopener noreferrer">View seller ↗</a> : null}</div>
+            <div className="attempted-footer"><span>{offer?.condition || "—"}{offer?.relationship && offer.relationship !== "exact" ? ` · ${offer.relationship.replace(/_/g, " ")} (${offer.matched_mpn || "—"})` : ""}</span>{href ? <a href={href} onClick={() => analytics.outbound(row)} onAuxClick={event => { if (event.button === 1) analytics.outbound(row); }} target="_blank" rel="noopener noreferrer">View seller ↗</a> : null}</div>
           </article>;
         })}
         </div>
