@@ -36,6 +36,7 @@ export function sellerPolicies(seller: AttemptedSeller, metadata: Fields) {
   const itemShippingText = knownText(raw.shipping_text, typeof raw.shipping === "string" && number(raw.shipping) === null ? raw.shipping : null, itemShipping.display);
   const policyShippingText = knownText(shippingPolicy.display);
   let shipping = "Shipping —";
+  let policyFixedCost: number | null = null;
   if (cost !== null) shipping = cost === 0 ? "Free Shipping" : `Shipping ${money(cost, currency)}`;
   else if (raw.free_shipping === true || itemShipping.free_shipping === true || shippingType === "free") shipping = "Free Shipping";
   else if (raw.calculated_shipping === true || shippingType === "calculated") shipping = "Calculated Shipping";
@@ -45,7 +46,8 @@ export function sellerPolicies(seller: AttemptedSeller, metadata: Fields) {
   else if (policyShippingText) {
     // A free-shipping threshold or "from" amount is not a fixed shipping charge.
     const fixed = policyShippingText.match(/^(?:shipping\s+)?\$\s*(\d+(?:\.\d{1,2})?)(?:\s|$)/i);
-    shipping = fixed && !/over|orders|from|starting|up to|minimum|threshold/i.test(policyShippingText) ? `Shipping ${money(Number(fixed[1]), currency)}` : policyShippingText;
+    if (fixed && !/over|orders|from|starting|up to|minimum|threshold/i.test(policyShippingText)) policyFixedCost = Number(fixed[1]);
+    shipping = policyFixedCost !== null ? `Shipping ${money(policyFixedCost, currency)}` : policyShippingText;
   } else {
     const threshold = number(shippingPolicy.free_shipping_threshold);
     if (threshold !== null && threshold > 0) shipping = `Free shipping over ${money(threshold, currency)}`;
@@ -60,6 +62,7 @@ export function sellerPolicies(seller: AttemptedSeller, metadata: Fields) {
   if (returns === "Returns —" && returnUrl) returns = "Returns: See seller";
   return {
     shipping, returns, returnUrl,
+    shippingCost: cost ?? (shipping === "Free Shipping" ? 0 : policyFixedCost),
     shippingTitle: itemShippingText || policyShippingText || undefined,
     returnTitle: knownText(itemReturns.exclusions, returnPolicy.exclusions, raw.return_exclusions) + (knownText(itemReturns.restocking_fee, returnPolicy.restocking_fee) ? ` ${knownText(itemReturns.restocking_fee, returnPolicy.restocking_fee)}` : ""),
   };
