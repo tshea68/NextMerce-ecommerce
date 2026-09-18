@@ -43,7 +43,7 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
     const started = performance.now();
     const timer = setInterval(() => {
       if (active && !finished) setElapsed((performance.now() - started) / 1000);
-    }, 500);
+    }, 200);
     function finish() {
       if (!active || finished) return;
       finished = true;
@@ -115,7 +115,7 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
     }
     async function load() {
       const checks = await Promise.allSettled([
-        check("newMarket", () => poll("newMarket", attempt => get(`/api/compare/new-market/${path}?refresh=${refresh > 0 && attempt === 0}&background=false`))),
+        check("newMarket", () => poll("newMarket", attempt => get(`/api/compare/new-market/${path}?refresh=${refresh > 0 && attempt === 0}&background=true`))),
         check("refurbMarket", () => poll("refurbMarket", () => get(`/api/refurb/${path}?limit=40`))),
         check("catalog", catalog),
       ]);
@@ -166,19 +166,19 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
           <a href="https://part-sherpa.com/" aria-label="Visit Part Sherpa" onClick={() => analytics.brandClick("logo")} onAuxClick={event => { if (event.button === 1) analytics.brandClick("logo"); }} style={{ display: "block", width: 28, height: 28 }}><Image src="/part-sherpa-logo.png" width={28} height={28} alt="Part Sherpa" className="sherpa-market-logo" /></a>
           <div className="sherpa-market-copy">
             <div className={styles.headerLine}><h2>Part Sherpa Market Check</h2><button type="button" className={styles.refresh} disabled={loading} onClick={() => { analytics.refreshClick(); setRetainedRows(all); setLoading(true); setElapsed(0); setCurrentPayloads(EMPTY); setSourceStates(CHECKING); setRefresh(value => value + 1); }}>{loading ? "Checking…" : "Refresh"}</button></div>
+            <div className="market-check-status" data-loading={loading} aria-label="Seller check status">
+              <div className="market-check-status-line">{loading ? <>
+                <span className="market-check-pulse" aria-hidden="true" />
+                <span className="market-check-message" role="status" aria-live="polite">Checking sellers…</span>
+                <span className="market-check-elapsed" aria-hidden="true">{elapsed.toFixed(1)}s</span>
+              </> : <span className="market-check-message" role="status" aria-live="polite">{count("stock")} in stock · {count("backorder")} backorder · {count("unavailable")} not available · {count("inconclusive")} inconclusive</span>}</div>
+              <div className="market-check-progress" role="status" aria-live="polite" title={errors.join(" ")}>
+                {loading ? (all.length ? `${checked} of ${all.length} sellers checked${SOURCE_KEYS.some(key => sourceStates[key] === "checking" && !currentPayloads[key]) ? " · waiting for seller lists" : ""}` : "Starting seller checks…") : errors.length ? <span aria-label={errors.join(" ")}>Some checks could not be completed.</span> : "\u00a0"}
+              </div>
+            </div>
             <div className="sherpa-market-value">Who has it. What it costs. What the terms are.</div>
-            <div className="sherpa-market-support">We checked multiple sellers for availability, shipping, returns, and delivered cost.</div>
+            <div className="sherpa-market-support">{loading ? "Checking" : "Checked"} multiple sellers for availability, shipping, returns, and delivered cost.</div>
             <div className="sherpa-market-link"><a href="https://part-sherpa.com/" onClick={() => analytics.brandClick("text")} onAuxClick={event => { if (event.button === 1) analytics.brandClick("text"); }}>Visit Part Sherpa →</a></div>
-          </div>
-        </div>
-        <div className="market-check-status" role="status" aria-live="polite" aria-atomic="true">
-          <div className="market-check-status-line">{loading ? <>
-            <span className="market-check-pulse" aria-hidden="true" />
-            <span>Checking sellers…</span>
-            <span className="market-check-elapsed" aria-hidden="true">{elapsed.toFixed(1)}s</span>
-          </> : <span>{count("stock")} in stock · {count("backorder")} backorder · {count("unavailable")} not available · {count("inconclusive")} inconclusive</span>}</div>
-          <div className="market-check-progress" title={errors.join(" ")}>
-            {loading && received.length ? `${checked} of ${received.length} reported sellers checked` : !loading && errors.length ? <span aria-label={errors.join(" ")}>Some checks could not be completed.</span> : "\u00a0"}
           </div>
         </div>
         <div className="attempted-scroll-cue">Scroll each column to see all sellers ↓</div>
@@ -196,7 +196,7 @@ export default function AttemptedSellerComparison({ mpn }: { mpn: string }) {
             <h4 className="attempted-seller-name">{row.name}</h4>
             <div className="attempted-price-line"><strong className="attempted-price" data-known={offer?.price != null}>{money(offer?.price ?? null, offer?.currency ?? null)}</strong><span className="seller-availability" data-state={row.pending ? "checking" : row.state}>{row.label === "—" ? "Could not verify" : row.label}</span></div>
             <div className="attempted-terms"><span title={policies.shippingTitle}>{policies.shipping}</span> · {policies.returnUrl ? <a className="attempted-return-policy" href={policies.returnUrl} title={policies.returnTitle} target="_blank" rel="noopener noreferrer">{policies.returns}</a> : <span title={policies.returnTitle}>{policies.returns}</span>}{total !== null ? ` · ${money(total, offer?.currency ?? null)} delivered` : ""}</div>
-            <div className="attempted-footer"><span>{offer?.condition || "—"}{offer?.relationship && offer.relationship !== "exact" ? ` · ${offer.relationship.replace(/_/g, " ")} (${offer.matched_mpn || "—"})` : ""}</span>{href ? <a href={href} onClick={() => analytics.outbound(row)} onAuxClick={event => { if (event.button === 1) analytics.outbound(row); }} target="_blank" rel="noopener noreferrer">View seller ↗</a> : null}</div>
+            <div className="attempted-footer"><span>{row.pending && offer ? "Previous result · " : ""}{offer?.condition || "—"}{offer?.relationship && offer.relationship !== "exact" ? ` · ${offer.relationship.replace(/_/g, " ")} (${offer.matched_mpn || "—"})` : ""}</span>{href ? <a href={href} onClick={() => analytics.outbound(row)} onAuxClick={event => { if (event.button === 1) analytics.outbound(row); }} target="_blank" rel="noopener noreferrer">View seller ↗</a> : null}</div>
           </article>;
         })}
         </div>

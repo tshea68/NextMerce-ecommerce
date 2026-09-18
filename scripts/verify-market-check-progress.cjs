@@ -39,7 +39,7 @@ async function waitUntil(predicate) {
         document.removeEventListener = (type, fn, options) => { if (type === "visibilitychange") window.__marketVisibilityListeners.delete(fn); return remove(type, fn, options); };
         window.setInterval = (fn, delay, ...args) => {
           const id = create(fn, delay, ...args);
-          if (delay === 500) { window.__marketTimers.add(id); window.__marketTimerMax = Math.max(window.__marketTimerMax, window.__marketTimers.size); }
+          if (delay === 200) { window.__marketTimers.add(id); window.__marketTimerMax = Math.max(window.__marketTimerMax, window.__marketTimers.size); }
           return id;
         };
         window.clearInterval = id => { window.__marketTimers.delete(id); return clear(id); };
@@ -57,10 +57,11 @@ async function waitUntil(predicate) {
       const release = async () => { const pending = held.splice(0); for (const { route, data } of pending) await route.fulfill({ json: data }).catch(() => {}); };
       await page.route('https://api.appliancepartgeeks.com/**', async route => {
         const url = route.request().url();
+        if (url.includes('/compare/new-market/')) assert.equal(new URL(url).searchParams.get('background'), 'true');
         let data = {};
         if (url.includes('/compare/new-market/')) {
           if (phase === 'initial' && firstRosterReleased && test.scenario === 'source failure') { await route.fulfill({ status: 503, json: {} }); return; }
-          data = phase === 'initial' ? searching : phase === 'refresh' ? { ...searching, offers: [] } : finished;
+          data = phase === 'initial' ? searching : phase === 'refresh' ? { ...searching, status: 'refreshing', offers: finished.offers, seller_dispositions: finished.seller_dispositions } : finished;
           if (phase === 'initial' || phase.startsWith('refresh')) {
             held.push({ route, data: phase === 'initial' && firstRosterReleased && test.scenario !== 'deadline' ? finished : data }); return;
           }
@@ -81,17 +82,21 @@ async function waitUntil(predicate) {
       await waitUntil(() => page.evaluate(() => window.__marketTimers?.size === 1));
       assert((await status.innerText()).includes('Checking sellers…'));
       assert.equal(await timer.innerText(), '0.0s');
-      assert.equal((await page.locator('.market-check-progress').innerText()).trim(), '');
+      assert.equal((await page.locator('.market-check-progress').innerText()).trim(), 'Starting seller checks…');
       assert.equal(await timer.getAttribute('aria-hidden'), 'true');
-      assert.equal(await status.getAttribute('aria-live'), 'polite');
+      assert.equal(await page.locator('.market-check-message').getAttribute('aria-live'), 'polite');
+      assert.equal(await status.evaluate(e => !!e.closest('.sherpa-market-banner')), true);
+      assert.equal(await status.evaluate(e => getComputedStyle(e).fontSize), '12px');
       assert.equal(await page.locator('.market-check-pulse').evaluate(e => getComputedStyle(e).animationName), 'none');
       const bounds = async () => page.locator('aside[aria-label="Compare Seller Options"]').evaluate(e => {
         const r = e.getBoundingClientRect(); return { height: r.height, width: r.width, statusHeight: e.querySelector('.market-check-status').getBoundingClientRect().height };
       });
       const initialBounds = await bounds();
-      await page.clock.runFor(500);
-      await waitUntil(async () => await timer.innerText() === "0.5s");
-      await page.clock.runFor(500);
+      await page.clock.runFor(200);
+      await waitUntil(async () => await timer.innerText() === '0.2s');
+      await page.clock.runFor(200);
+      await waitUntil(async () => await timer.innerText() === "0.4s");
+      await page.clock.runFor(600);
       await waitUntil(async () => await timer.innerText() === '1.0s');
       assert.equal(await timer.innerText(), '1.0s');
       assert.equal(await page.evaluate(() => window.__marketTimers.size), 1);
@@ -109,7 +114,7 @@ async function waitUntil(predicate) {
       assert.equal(await page.locator('[data-seller-key="newb"]').getAttribute('data-availability'), 'checking');
       assert.equal(await page.locator('[data-seller-key="newc"] .seller-availability').innerText(), 'Checking…');
       assert.equal(await page.locator('[data-availability="unavailable"]').count(), 0);
-      assert.equal(await page.locator('.market-check-progress').innerText(), '1 of 3 reported sellers checked');
+      assert.equal(await page.locator('.market-check-progress').innerText(), '1 of 3 sellers checked · waiting for seller lists');
       assert.deepEqual(await bounds(), initialBounds);
       await page.clock.runFor(test.scenario === 'fast' ? 1500 : 4500);
       if (test.scenario === 'source failure') {
@@ -155,9 +160,9 @@ async function waitUntil(predicate) {
       assert.equal(await timer.innerText(), '0.0s');
       assert.equal(await page.locator('[data-seller-key]').count(), rows);
       assert.equal(await page.locator('[data-seller-key="newa"] .attempted-price').innerText(), '$100.00');
-      await page.clock.runFor(500);
-      await waitUntil(async () => await timer.innerText() === "0.5s");
-      await page.clock.runFor(500);
+      await page.clock.runFor(400);
+      await waitUntil(async () => await timer.innerText() === "0.4s");
+      await page.clock.runFor(600);
       await waitUntil(async () => await timer.innerText() === '1.0s');
       assert.equal(await timer.innerText(), '1.0s');
       assert.equal(await page.evaluate(() => window.__marketTimers.size), 1);
@@ -167,6 +172,7 @@ async function waitUntil(predicate) {
       const [replacement] = held.splice(fresh, 1);
       await replacement.route.fulfill({ json: replacement.data });
       await waitUntil(async () => await page.locator('[data-seller-key="newb"]').getAttribute('data-availability') === 'checking');
+      assert((await page.locator('[data-seller-key="newb"] .attempted-footer').innerText()).includes('Previous result'));
       phase = 'refresh-pending';
       if (test.scenario === 'slow') {
         const usedIndex = held.findIndex(item => item.route.request().url().includes('/refurb/'));

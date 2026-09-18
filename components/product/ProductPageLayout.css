@@ -230,10 +230,12 @@
   }
 }
 
-.nextmerce-product-page .market-check-status { height: 32px; margin-top: 3px; color: #52525b; font-size: 9px; line-height: 14px; }
-.nextmerce-product-page .market-check-status-line { display: flex; align-items: center; gap: 5px; min-height: 16px; }
+.nextmerce-product-page .market-check-status { height: 52px; margin-top: 3px; color: #0f172a; font-size: 12px; font-weight: 600; line-height: 18px; }
+.nextmerce-product-page .market-check-status-line { display: flex; align-items: center; gap: 6px; min-height: 20px; }
 .nextmerce-product-page .market-check-elapsed { color: #71717a; font-variant-numeric: tabular-nums; min-width: 32px; }
-.nextmerce-product-page .market-check-progress { color: #71717a; font-size: 8px; line-height: 14px; }
-.nextmerce-product-page .market-check-pulse { width: 6px; height: 6px; flex: none; border-radius: 50%; background: #64748b; animation: market-check-pulse 1.8s ease-in-out infinite; }
-@keyframes market-check-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+.nextmerce-product-page .market-check-progress { color: #475569; font-size: 10px; font-weight: 400; line-height: 16px; }
+.nextmerce-product-page .market-check-pulse { width: 8px; height: 8px; flex: none; border-radius: 50%; background: #2563eb; animation: market-check-pulse 1.8s ease-in-out infinite; }
+@keyframes market-check-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .nextmerce-product-page .market-check-pulse { animation: none; } }
+
+.nextmerce-product-page .market-check-status[data-loading="false"] .market-check-message { font-size: 10px; font-weight: 400; line-height: 16px; }

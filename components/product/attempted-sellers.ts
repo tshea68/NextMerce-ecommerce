@@ -18,7 +18,7 @@ export type AttemptedPayloads = {
 };
 const str = (value: unknown): string => typeof value === "string" ? value.trim() : "";
 const rows = (value: unknown): RecordRow[] => Array.isArray(value) ? value.filter((r): r is RecordRow => !!r && typeof r === "object") : [];
-export const isCheckRunning = (status: unknown) => /^(?:searching|running|pending|in[ _-]progress|checking|queued|waiting|processing)$/i.test(str(status));
+export const isCheckRunning = (status: unknown) => /^(?:searching|refreshing|running|pending|in[ _-]progress|checking|queued|waiting|processing)$/i.test(str(status));
 const record = (value: unknown): RecordRow => value && typeof value === "object" && !Array.isArray(value) ? value as RecordRow : {};
 const norm = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 function identity(value: string) {
@@ -126,6 +126,12 @@ export function buildAttemptedSellers(payloads: AttemptedPayloads, mpn: string):
     // Selected sellers are pending only until their own result arrives. A
     // completed seller must not inherit the overall market's searching status.
     if (seller.sources.has("newMarket") && (isCheckRunning(market.status) || pendingSelections.has(seller.key) || pendingSelections.has(identity(seller.name))) && !check.search_status && !check.status && !offer) check.search_status = "searching";
+    // Background refreshes return cached offers/dispositions alongside explicit
+    // pending groups. Those values belong to the previous attempt, not progress.
+    if (seller.sources.has("newMarket") && (pendingSelections.has(seller.key) || pendingSelections.has(identity(seller.name)))) {
+      check.search_status = "searching";
+      delete check.status; delete check.error; delete check.fetch_ok;
+    }
     const availability = sellerAvailability(check, offer);
     return { key: seller.key, name: seller.name, group: seller.group, check, offer,
       ...availability, pending: availability.label === "Checking…", sources: [...seller.sources] };
