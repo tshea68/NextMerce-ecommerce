@@ -1,24 +1,21 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { shouldPushSpaPageView } from "@/lib/spaPageView";
 
 export default function GTMPageView() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const lastRouteRef = useRef<string | null>(null);
-  const search = searchParams?.toString() ?? "";
-  const route = search ? `${pathname}?${search}` : pathname;
+  const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!route || lastRouteRef.current === route) return;
+    if (!pathname || lastPathRef.current === pathname) return;
 
-    const shouldPush = shouldPushSpaPageView(lastRouteRef.current, route);
-    lastRouteRef.current = route;
+    const shouldPush = shouldPushSpaPageView(lastPathRef.current, pathname);
+    lastPathRef.current = pathname;
 
     // The base Google tag owns the initial hard-load page_view. Only later
-    // client-side route changes should trigger this SPA page_view.
+    // client-side pathname changes should trigger this SPA page_view.
     if (!shouldPush) return;
 
     window.dataLayer = window.dataLayer || [];
@@ -30,7 +27,7 @@ export default function GTMPageView() {
     });
 
     console.log("GTM page_view pushed:", pathname);
-  }, [pathname, route]);
+  }, [pathname]);
 
   return null;
 }

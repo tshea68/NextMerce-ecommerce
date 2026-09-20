@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Suspense } from "react";
 import "./globals.css";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
@@ -50,9 +49,7 @@ export default function RootLayout({
               `}
             </Script>
 
-            <Suspense fallback={null}>
-              <GTMPageView />
-            </Suspense>
+            <GTMPageView />
           </>
         ) : null}
 

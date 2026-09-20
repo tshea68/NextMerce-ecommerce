@@ -1,6 +1,6 @@
 export function shouldPushSpaPageView(
-  previousRoute: string | null,
-  currentRoute: string,
+  previousPath: string | null,
+  currentPath: string,
 ) {
-  return previousRoute !== null && previousRoute !== currentRoute;
+  return previousPath !== null && previousPath !== currentPath;
 }
