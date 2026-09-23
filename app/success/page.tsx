@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { trackPurchase, type GA4Item } from "@/lib/ga4";
+import { emitPurchaseOnce, purchaseDiagnostic, type Purchase } from "@/lib/purchase";
 
 const API_BASE =
   (process.env.NEXT_PUBLIC_API_BASE || "").trim() ||
@@ -51,7 +51,8 @@ type StripeishOrder = {
   amount?: number;
   currency?: string;
   items?: any[];
-  line_items?: any[];
+  line_items?: any[] | { data?: any[] };
+  purchase?: Purchase | null;
   lines?: { data?: any[] };
 };
 
@@ -79,7 +80,6 @@ function SuccessPageInner() {
   const [order, setOrder] = useState<StripeishOrder | null>(null);
   const [orderRow, setOrderRow] = useState<OrderRow | null>(null);
   const [msg, setMsg] = useState("Finalizing…");
-  const purchaseTrackedRef = useRef<string | null>(null);
 
   const statusMeta = useMemo(() => {
     const s = (status || "").toLowerCase();
@@ -132,8 +132,11 @@ function SuccessPageInner() {
       }));
     }
 
-    if (Array.isArray(order.line_items) && order.line_items.length > 0) {
-      return order.line_items.map((li: any, idx: number) => ({
+    const stripeLines = Array.isArray(order.line_items)
+      ? order.line_items
+      : order.line_items?.data;
+    if (stripeLines?.length) {
+      return stripeLines.map((li: any, idx: number) => ({
         id: li.id || idx,
         name: li.description || "Item",
         mpn: li.mpn || "",
@@ -189,6 +192,11 @@ function SuccessPageInner() {
           );
           const j = (await safeJson(r)) as StripeishOrder;
 
+          if (r.ok && j.purchase) {
+            purchaseDiagnostic("payment confirmed by Stripe");
+            void emitPurchaseOnce(j.purchase);
+          }
+
           const st = normalizeSuccessStatus(j);
           setStatus(st);
           setOrder(j);
@@ -207,6 +215,18 @@ function SuccessPageInner() {
         }
 
         if (piToUse) {
+          // Independently verify legacy returns through Stripe. Do not trust
+          // redirect_status, the external order row, or the UI's normalized state.
+          void fetch(`/api/checkout/session/status?pi=${encodeURIComponent(piToUse)}`)
+            .then(async (response) => {
+              if (!response.ok) return;
+              const verified = (await response.json()) as StripeishOrder;
+              if (verified.purchase) {
+                purchaseDiagnostic("payment confirmed by Stripe");
+                await emitPurchaseOnce(verified.purchase);
+              }
+            })
+            .catch(() => purchaseDiagnostic("purchase verification unavailable"));
           const r = await fetch(
             `${API_BASE}/api/checkout/intent/status?pi=${encodeURIComponent(piToUse)}`
           );
@@ -261,47 +281,6 @@ function SuccessPageInner() {
   const currency = (orderRow?.currency || order?.currency || "USD")
     .toString()
     .toUpperCase();
-
-  useEffect(() => {
-    const s = (status || "").toLowerCase();
-    if (s !== "paid" && s !== "succeeded") return;
-    if (typeof totalCents !== "number" || totalCents <= 0) return;
-
-    const transactionId =
-      String(orderRow?.id || order?.payment_intent_id || order?.payment_intent || "") ||
-      params.get("payment_intent") ||
-      params.get("sid") ||
-      "";
-
-    if (!transactionId) return;
-    if (purchaseTrackedRef.current === transactionId) return;
-    purchaseTrackedRef.current = transactionId;
-
-    const items: GA4Item[] =
-      lineItems.length > 0
-        ? lineItems.map((item: any) => ({
-            item_id: String(item.mpn || item.id || "unknown"),
-            item_name: String(item.name || item.mpn || "Item"),
-            price:
-              typeof item.unitCents === "number"
-                ? item.unitCents / 100
-                : typeof item.totalCents === "number" && Number(item.qty || 1) > 0
-                ? item.totalCents / 100 / Number(item.qty || 1)
-                : undefined,
-            quantity: Number(item.qty || 1),
-          }))
-        : [
-            {
-              item_id: transactionId,
-              item_name: "Order",
-              price: totalCents / 100,
-              quantity: 1,
-            },
-          ];
-
-    // Purchase tracking is handled server-side from the Stripe webhook.
-    // Do not fire a client-side purchase event here, or GA4 will double-count.
-  }, [status, totalCents, lineItems, order, orderRow, params]);
 
   function handlePrint() {
     try {
