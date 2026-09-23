@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { searchAPG, identityTitle, type SearchIdentity, type SearchPhase } from "@/lib/apg-search";
 import PartImage from "@/components/PartImage";
 import { makePartTitle } from "@/lib/PartsTitle";
 
@@ -282,6 +283,8 @@ function SearchThumb({
 }
 
 export default function SearchOverlay({ open, onClose }: Props) {
+  const [identity, setIdentity] = useState<SearchIdentity | null>(null);
+  const [phase, setPhase] = useState<SearchPhase>("browse");
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "models" | "products">(
     "all"
@@ -335,106 +338,23 @@ export default function SearchOverlay({ open, onClose }: Props) {
     if (!open) return;
 
     const q = query.trim();
-    setPartCompletions([]);
-    if (q.length < 2) {
-      setModels([]);
-      setRefurb([]);
-      setParts([]);
-      setLoading(false);
-      return;
-    }
-
+    setIdentity(null);
+    setPhase("browse");
+    setModels([]); setParts([]); setRefurb([]); setPartCompletions([]);
+    if (q.length < 2) { setLoading(false); return; }
     const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const canFetchCompletions = /^[A-Za-z0-9-]+$/.test(q);
-        const [modelsRes, refurbRes, partsRes, completionsRes] =
-          await Promise.all([
-          fetch(`${API_BASE}/api/suggest?q=${encodeURIComponent(q)}`, {
-            cache: "no-store",
-            signal: controller.signal,
-          }),
-          fetch(`${API_BASE}/api/suggest/refurb?q=${encodeURIComponent(q)}`, {
-            cache: "no-store",
-            signal: controller.signal,
-          }),
-          fetch(`${API_BASE}/api/suggest/parts?q=${encodeURIComponent(q)}`, {
-            cache: "no-store",
-            signal: controller.signal,
-          }),
-          canFetchCompletions
-            ? fetch(
-                `${API_BASE}/api/suggest/part-completions?q=${encodeURIComponent(q)}`,
-                { cache: "no-store", signal: controller.signal }
-              )
-            : Promise.resolve(null),
-        ]);
-
-        const modelsJson = modelsRes.ok ? await modelsRes.json() : {};
-        const refurbJson = refurbRes.ok ? await refurbRes.json() : [];
-        const partsJson = partsRes.ok ? await partsRes.json() : [];
-        const completionsJson = completionsRes?.ok
-          ? await completionsRes.json()
-          : [];
-
-        const modelRows = Array.isArray(modelsJson)
-          ? modelsJson
-          : [
-              ...(Array.isArray(modelsJson?.with_priced_parts)
-                ? modelsJson.with_priced_parts
-                : []),
-              ...(Array.isArray(modelsJson?.without_priced_parts)
-                ? modelsJson.without_priced_parts
-                : []),
-              ...(Array.isArray(modelsJson?.refurb_only_models)
-                ? modelsJson.refurb_only_models
-                : []),
-            ];
-
-        const completionRows = Array.isArray(completionsJson)
-          ? completionsJson
-          : Array.isArray(completionsJson?.matches)
-            ? completionsJson.matches
-            : [];
-        const normalizedQuery = q.toLowerCase();
-        const uniqueCompletions = Array.from(
-          new Set(
-            completionRows
-              .filter((value: unknown): value is string =>
-                typeof value === "string"
-              )
-              .map((value: string) => value.trim())
-              .filter(
-                (value: string) =>
-                  value.length > q.length &&
-                  value.toLowerCase().startsWith(normalizedQuery)
-              )
-          )
-        );
-
-        if (!controller.signal.aborted) {
-          setModels(modelRows);
-          setRefurb(Array.isArray(refurbJson) ? refurbJson : []);
-          setParts(Array.isArray(partsJson) ? partsJson : []);
-          setPartCompletions(uniqueCompletions);
-        }
-      } catch (err) {
-        if (controller.signal.aborted) return;
-        console.error("overlay search failed", err);
-        setModels([]);
-        setRefurb([]);
-        setParts([]);
-        setPartCompletions([]);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    }, 250);
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
+    setLoading(true);
+    const timer = setTimeout(() => {
+      void searchAPG(q, API_BASE, controller.signal, event => {
+        if (event.type === "phase") { setPhase(event.phase); if (event.phase !== "local") setLoading(false); }
+        else if (event.type === "identity") { setIdentity(event.identity); setLoading(false); }
+        else if (event.type === "models") setModels(event.rows as AnyItem[]);
+        else if (event.type === "parts") setParts(event.rows as AnyItem[]);
+        else if (event.type === "refurb") setRefurb(event.rows as AnyItem[]);
+        else if (event.type === "completions") setPartCompletions(event.rows as string[]);
+      }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    }, 150);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [query, open]);
 
   const brandLogoMap = useMemo(() => {
@@ -459,30 +379,44 @@ export default function SearchOverlay({ open, onClose }: Props) {
 
   const hasAny = useMemo(() => {
     return (
+      identity !== null ||
       models.length > 0 ||
       refurb.length > 0 ||
       parts.length > 0 ||
       partCompletions.length > 0
     );
-  }, [models, refurb, parts, partCompletions]);
+  }, [identity, models, refurb, parts, partCompletions]);
 
   const showEmptyPrompt = query.trim().length < 2 && !loading;
   const showNoResults = query.trim().length >= 2 && !loading && !hasAny;
   const showResults = hasAny;
 
-  const modelResults = models.slice(0, 4);
+  const modelResults = (identity?.kind === "model"
+    ? [{ ...identity, model_number: identity.identifier }, ...models.filter(m => normMpnKey(m.model_number) !== normMpnKey(identity.identifier))]
+    : models).slice(0, 4);
   const refurbResults = refurb.slice(0, 8);
   const newPartResults = parts.slice(0, 8);
+  const primaryPart = identity?.kind === "part" ? { ...identity, mpn: identity.identifier, identityOnly: true } : null;
 
   const partOfferGroups = useMemo(
-    () => buildPartOfferGroups(refurbResults, newPartResults),
-    [refurbResults, newPartResults]
+    () => {
+      const groups = buildPartOfferGroups(refurbResults, newPartResults);
+      if (primaryPart) {
+        const existing = groups.find(g => g.key === normMpnKey(primaryPart.mpn));
+        if (existing) { existing.base = primaryPart; groups.splice(groups.indexOf(existing), 1); groups.unshift(existing); }
+        else groups.unshift({ key: normMpnKey(primaryPart.mpn), part: null, offer: null, base: primaryPart });
+      }
+      return groups;
+    },
+    [refurbResults, newPartResults, identity]
   );
 
   const combinedPartResults = partOfferGroups.slice(0, 4);
   const partsTabResults = partOfferGroups.slice(0, 8);
 
   const partSherpaMpn = useMemo(() => {
+    if (identity?.kind === "model") return "";
+    if (identity?.kind === "part") return normalizePartSherpaMpn(identity.identifier);
     if (
       selectedPartCompletion &&
       normMpnKey(selectedPartCompletion) === normMpnKey(query)
@@ -513,7 +447,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
     }
 
     return "";
-  }, [query, models, parts, refurb, partCompletions, selectedPartCompletion]);
+  }, [identity, query, models, parts, refurb, partCompletions, selectedPartCompletion]);
 
   const partSherpaHref = partSherpaMpn
     ? `https://sherpa.scalepartners.io/part-search/?part=${encodeURIComponent(partSherpaMpn)}`
@@ -585,13 +519,16 @@ export default function SearchOverlay({ open, onClose }: Props) {
               />
             </div>
           <div className="relative min-h-0 flex-1 overflow-y-auto px-6 py-5 pb-8 md:px-10 md:py-6 min-[1200px]:pb-32">
+            {phase === "internet" && <div role="status" className="mb-4 text-sm text-gray-600"><p className="font-semibold">Searching the internet… hang tight.</p><p>We’re checking external sources for that part number.</p></div>}
+            {phase === "unverified" && <div role="status" className="mb-4 text-sm text-gray-600"><p>We couldn’t verify that number.</p><p>Check the label and try again.</p></div>}
+            {phase === "error" && <p role="status" className="mb-4 text-sm text-gray-600">Search is temporarily unavailable. Please try again.</p>}
             {loading && !hasAny ? (
               <div className="flex min-h-[130px] items-center justify-center">
                 <p className="text-[15px] text-gray-500">Searching…</p>
               </div>
             ) : showEmptyPrompt ? (
               <div className="min-h-[70px]" />
-            ) : showNoResults && !partSherpaMpn ? (
+            ) : showNoResults && !partSherpaMpn && phase === "browse" ? (
               <div className="relative z-20 flex min-h-[110px] items-center justify-center">
                 <div className="max-w-xl text-center">
                   <p className="text-[16px] text-gray-600">
@@ -729,7 +666,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
                           const partMpn = part ? rawMpn(part) : "";
 
                           const title =
-                            makePartTitle(part || offer || base, displayMpn) ||
+                            (base.identityOnly ? identityTitle(base as SearchIdentity) : makePartTitle(base, displayMpn)) ||
                             (part || offer || base)?.title ||
                             displayMpn;
 
@@ -743,7 +680,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
 
                           const hasBoth = !!part && !!offer;
                           const relationshipLabel =
-                            hasBoth && normMpnKey(partMpn) && normMpnKey(offerMpn)
+                            !part && !offer ? "Verified part identity" : hasBoth && normMpnKey(partMpn) && normMpnKey(offerMpn)
                               ? normMpnKey(partMpn) === normMpnKey(offerMpn)
                                 ? "Same exact part number"
                                 : `New replacement/interchange: ${partMpn}`
@@ -778,6 +715,8 @@ export default function SearchOverlay({ open, onClose }: Props) {
                                   </div>
 
                                   <div className="mt-3 grid gap-2">
+                                    {!part && !offer && <p className="text-xs text-gray-500">Availability and pricing will appear here when available.</p>}
+                                    {base.source_url && <a href={base.source_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-700">View verified source</a>}
                                     {offer ? (
                                       <Link
                                         href={optionHref(offer, true)}
