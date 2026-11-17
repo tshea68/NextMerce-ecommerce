@@ -82,6 +82,31 @@ export async function POST(req: NextRequest) {
     });
 
     const isRefurbOnly = items.length > 0 && items.every((x) => x.isRefurb);
+    if (!isRefurbOnly) {
+      // Server-side gate: never create a payable session from catalog stock alone.
+      const apiBase = (process.env.NEXT_PUBLIC_API_BASE || "https://api.appliancepartgeeks.com").replace(/\/+$/, "");
+      let check: Response;
+      try {
+        check = await fetch(`${apiBase}/api/checkout/verify-new-stock`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          signal: AbortSignal.timeout(20000),
+          body: JSON.stringify({
+            items: items.map((x) => ({ mpn: x.mpn, quantity: x.quantity, is_refurb: x.isRefurb })),
+            ship_to: shipTo,
+          }),
+        });
+      } catch {
+        return NextResponse.json({ error: "We could not verify supplier availability. Please try again shortly." }, { status: 503 });
+      }
+      const proof = await check.json().catch(() => null);
+      if (!check.ok || proof?.verified !== true) {
+        return NextResponse.json({
+          error: typeof proof?.detail === "string" ? proof.detail : "Supplier availability could not be verified. Please refresh your cart.",
+        }, { status: check.status === 409 ? 409 : 503 });
+      }
+    }
     const origin = req.nextUrl.origin;
 
     const metadata: Record<string, string> = {
